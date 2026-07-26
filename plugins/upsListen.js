@@ -9,6 +9,7 @@
  * @desc 获取 UPS 状态并监控断电情况
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
+ * @depe []
  */
 
 const net = require("net");

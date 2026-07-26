@@ -8,6 +8,7 @@
  * @priority 10
  * @public true
  * @class 工具
+ * @depe []
  */
 
 const http = require("http");

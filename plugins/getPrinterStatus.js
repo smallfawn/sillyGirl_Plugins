@@ -9,6 +9,7 @@
  * @desc 定时获取打印机状态，支持 IPP 打印测试图片
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
+ * @depe ["ipp"]
  */
 
 const http = require("http");

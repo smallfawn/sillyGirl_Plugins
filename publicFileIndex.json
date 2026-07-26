@@ -11,9 +11,9 @@
     "admin": true,
     "path": "plugins/getPrinterStatus.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/getPrinterStatus.js",
-    "dependencies": {
-      "ipp": "latest"
-    },
+    "dependencies": [
+      "ipp"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -29,7 +29,7 @@
     "admin": true,
     "path": "plugins/ipChange.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ipChange.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -45,7 +45,7 @@
     "admin": false,
     "path": "plugins/jdCodeLogin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdCodeLogin.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -61,7 +61,7 @@
     "admin": false,
     "path": "plugins/officialCommands.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/officialCommands.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -77,7 +77,7 @@
     "admin": true,
     "path": "plugins/qinglongManage.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/qinglongManage.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -93,7 +93,7 @@
     "admin": false,
     "path": "plugins/smallcat.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/smallcat.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -109,7 +109,7 @@
     "admin": true,
     "path": "plugins/upsListen.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/upsListen.js",
-    "dependencies": {},
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   }

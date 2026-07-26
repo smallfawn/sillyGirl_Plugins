@@ -6,19 +6,26 @@
 
 ```text
 plugins/插件名.js
+plugins/插件名.py
 ```
 
-插件源不提供 `package.json`。`publicFileIndex.json` 会从脚本 `require()` 中生成依赖信息，`dependencies` 使用和 `package.json` 一样的对象格式，默认版本为 `latest`，例如：
+插件源不提供 `package.json`。插件依赖写在脚本头部注释里，使用 `@depe` 声明依赖数组，例如：
 
-```json
-{
-  "dependencies": {
-    "ipp": "latest"
-  }
-}
+```js
+/**
+ * @title getPrinterStatus
+ * @depe ["ipp"]
+ */
 ```
 
-SillyGirl 的依赖管理会展示识别到的依赖，由用户手动点击安装或卸载。
+Action 会在提交插件后自动扫描依赖并回写 `@depe`：
+
+| 插件类型 | 扫描工具 | 结果 |
+|----------|----------|------|
+| NodeJS | `madge` | 写入 `@depe ["包名"]` |
+| Python | `pipreqs` | 写入 `@depe ["包名"]` |
+
+`publicFileIndex.json` 也会同步写入 `dependencies` 字段，格式固定为数组。SillyGirl 的依赖管理会展示识别到的依赖，由用户手动点击安装或卸载。
 
 定时运行不写在脚本注释里。需要定时执行时，在 SillyGirl 的“定时任务”里选择对应脚本和命令。
 

@@ -9,6 +9,7 @@
  * @desc IP变动通知
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
+ * @depe []
  */
 
 const http = require("http");

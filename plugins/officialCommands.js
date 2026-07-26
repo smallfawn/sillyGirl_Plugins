@@ -8,6 +8,7 @@
  * @priority 1
  * @public true
  * @class 工具
+ * @depe []
  */
 
 const {

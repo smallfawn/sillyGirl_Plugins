@@ -1,0 +1,29 @@
+name: Generate publicFileIndex
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/**"
+      - "scripts/generate-public-file-index.mjs"
+      - ".github/workflows/public-file-index.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/generate-public-file-index.mjs
+      - name: Commit publicFileIndex
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update publicFileIndex"
+          file_pattern: publicFileIndex.json

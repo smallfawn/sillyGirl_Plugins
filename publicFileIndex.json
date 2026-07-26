@@ -49,6 +49,22 @@
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
+  "744db706-8673-5586-8752-c5d04e73cf7a": {
+    "id": "744db706-8673-5586-8752-c5d04e73cf7a",
+    "title": "魔幻手机语录",
+    "author": "sillyGirl",
+    "version": "v1.0.0",
+    "desc": "随机回复傻妞和陆小千相关短句",
+    "class": "娱乐",
+    "rule": "raw ^\\s*(傻妞语录|傻妞台词|陆小千语录|小千语录|小千台词|魔幻手机语录|魔幻手机台词)\\s*$",
+    "public": true,
+    "admin": false,
+    "path": "plugins/magicPhoneQuotes.py",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/magicPhoneQuotes.py",
+    "dependencies": [],
+    "type": "python",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
   "b025e568-7fe6-9115-6194-b3833b5a1568": {
     "id": "b025e568-7fe6-9115-6194-b3833b5a1568",
     "title": "官方命令",

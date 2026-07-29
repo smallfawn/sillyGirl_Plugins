@@ -1,19 +1,21 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.4
- * @desc 提供时间、版本、更新、重启四个基础管理命令
- * @rule ^\s*(时间|版本|更新|重启)\s*$
+ * @version v1.0.5
+ * @desc 提供时间、版本、更新、升级、重启五个基础管理命令
+ * @rule ^\s*(时间|版本|更新|升级|重启)\s*$
  * @admin false
  * @priority 1
  * @public true
  * @class 工具
+ * @on_start true
  * @depe []
  */
 
 const {
   sender: s,
   Bucket,
+  pushAdmin,
   version: getSillyGirlVersion,
   restart: restartSillyGirl,
   update: updateSillyGirl,
@@ -26,6 +28,9 @@ const DEFAULTS = {
   update_timeout: 120,
 };
 
+const STATE_BUCKET = "sillyGirl";
+const UPDATE_RESTART_NOTICE_KEY = "official_commands_update_restart_notice";
+
 const schema = sillyGirlCreateSchema.object({
   enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
   update_timeout: sillyGirlCreateSchema.integer().setTitle("更新超时秒数").setMin(10).setMax(600).setDefault(120),
@@ -35,10 +40,11 @@ const pluginConfig = new SillyGirlPluginConfig(schema);
 
 async function main() {
   const cmd = String(await s.getContent() || "").trim();
+  if (!cmd) return notifyPendingRestart();
   if (cmd === "时间") return replyTime();
   if (cmd === "版本") return replyVersion();
   if (cmd === "重启") return restart();
-  if (cmd === "更新") return update(await loadConfig());
+  if (cmd === "更新" || cmd === "升级") return update(await loadConfig());
 }
 
 async function loadConfig() {
@@ -87,6 +93,7 @@ async function restart() {
 }
 
 async function update(cfg) {
+  const bucket = new Bucket(STATE_BUCKET);
   await s.reply("收到更新命令，正在检查权限");
 
   if (!cfg.enable) {
@@ -105,6 +112,10 @@ async function update(cfg) {
     if (typeof updateSillyGirl !== "function") {
       throw new Error("当前 SillyGirl 运行时未导出 update，请先升级主程序到 v0.2.3 或更新插件运行时");
     }
+    await bucket.set(UPDATE_RESTART_NOTICE_KEY, {
+      at: Date.now(),
+      message: "SillyGirl 更新已完成并自动重启成功",
+    });
     const result = await withTimeout(
       updateSillyGirl({
         timeout: cfg.update_timeout,
@@ -127,10 +138,31 @@ async function update(cfg) {
     }
     await s.reply(lines.join("\n"));
   } catch (error) {
+    await bucket.delete(UPDATE_RESTART_NOTICE_KEY).catch(() => undefined);
     await s.reply(
       "更新失败：" + errorText(error) + "\n" +
       "请确认当前版本已内置 curl，且 GitHub 加速地址可以访问 Release 文件。"
     );
+  }
+}
+
+async function notifyPendingRestart() {
+  const bucket = new Bucket(STATE_BUCKET);
+  const notice = await bucket.get(UPDATE_RESTART_NOTICE_KEY, null);
+  if (!notice) return;
+  await bucket.delete(UPDATE_RESTART_NOTICE_KEY).catch(() => undefined);
+
+  const info = await getSillyGirlVersion().catch(() => ({}));
+  const text = [
+    notice.message || "SillyGirl 更新已完成并自动重启成功",
+    `当前版本：${String(info.current || "").trim() || "-"}`,
+    `最新版本：${String(info.remote || "").trim() || String(info.current || "").trim() || "-"}`,
+  ].join("\n");
+
+  try {
+    await pushAdmin(text);
+  } catch (error) {
+    console.error("官方命令重启后通知失败：" + errorText(error));
   }
 }
 

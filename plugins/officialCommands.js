@@ -1,7 +1,7 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.2
+ * @version v1.0.3
  * @desc 提供时间、版本、更新、重启四个基础管理命令
  * @rule ^\s*(时间|版本|更新|重启)\s*$
  * @admin false
@@ -23,39 +23,12 @@ const {
 
 const DEFAULTS = {
   enable: true,
-  update_mode: "auto",
-  app_dir: "",
-  git_remote: "origin",
-  git_branch: "",
-  docker_socket: "/var/run/docker.sock",
-  docker_watchtower_image: "containrrr/watchtower:latest",
   update_timeout: 120,
   restart_after_update: false,
 };
 
 const schema = sillyGirlCreateSchema.object({
   enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
-  update_mode: sillyGirlCreateSchema.string()
-    .setTitle("更新模式")
-    .setEnum(["auto", "git", "docker"])
-    .setEnumNames(["自动", "源码 Git", "Docker"])
-    .setDefault("auto"),
-  app_dir: sillyGirlCreateSchema.string()
-    .setTitle("SillyGirl 源码目录")
-    .setDescription("源码 Git 部署时填写 sillyGirl 主程序仓库目录；留空会自动探测常见目录。")
-    .setDefault(""),
-  git_remote: sillyGirlCreateSchema.string().setTitle("Git Remote").setDefault("origin"),
-  git_branch: sillyGirlCreateSchema.string()
-    .setTitle("Git 分支")
-    .setDescription("留空使用当前分支的 upstream；没有 upstream 时默认 main。")
-    .setDefault(""),
-  docker_socket: sillyGirlCreateSchema.string()
-    .setTitle("Docker Socket")
-    .setDescription("Docker 更新需要部署时挂载 /var/run/docker.sock。")
-    .setDefault("/var/run/docker.sock"),
-  docker_watchtower_image: sillyGirlCreateSchema.string()
-    .setTitle("Watchtower 镜像")
-    .setDefault("containrrr/watchtower:latest"),
   update_timeout: sillyGirlCreateSchema.integer().setTitle("更新超时秒数").setMin(10).setMax(600).setDefault(120),
   restart_after_update: sillyGirlCreateSchema.boolean().setTitle("更新后自动重启").setDefault(false),
 });
@@ -136,34 +109,16 @@ async function update(cfg) {
     }
     const result = await withTimeout(
       updateSillyGirl({
-        mode: cfg.update_mode,
-        appDir: cfg.app_dir,
-        gitRemote: cfg.git_remote,
-        gitBranch: cfg.git_branch,
-        dockerSocket: cfg.docker_socket,
-        dockerWatchtowerImage: cfg.docker_watchtower_image,
         timeout: cfg.update_timeout,
         restart: cfg.restart_after_update,
       }),
       (cfg.update_timeout + 15) * 1000,
       "更新执行超时"
     );
-    if (result.mode === "docker") {
-      const lines = [
-        "Docker 更新已启动",
-        `容器：${String(result.repo || "").replace(/^docker:/, "")}`,
-        `镜像：${result.before || "-"}`,
-      ];
-      const output = compactOutput(result.output);
-      if (output) lines.push(output);
-      lines.push("稍后容器会由 Watchtower 自动重建，请等待 1-2 分钟后刷新页面。");
-      await s.reply(lines.join("\n"));
-      return;
-    }
     const lines = [
-      result.changed ? "更新完成" : "已经是最新代码",
-      `目录：${result.repo}`,
-      `提交：${result.before} -> ${result.after}`,
+      result.changed ? "更新完成" : "已经是最新版本",
+      `来源：${result.repo || "-"}`,
+      `版本：${result.before || "-"} -> ${result.after || "-"}`,
     ];
     const output = compactOutput(result.output);
     if (output) lines.push("输出：\n" + output);
@@ -176,7 +131,7 @@ async function update(cfg) {
   } catch (error) {
     await s.reply(
       "更新失败：" + errorText(error) + "\n" +
-      "源码部署请检查 Git 仓库目录；Docker 部署请确认已挂载 /var/run/docker.sock。"
+      "请确认当前版本已内置 curl，且 GitHub 加速地址可以访问 Release 文件。"
     );
   }
 }
@@ -184,12 +139,6 @@ async function update(cfg) {
 function normalizeConfig(input) {
   return Object.assign({}, DEFAULTS, input || {}, {
     enable: input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable,
-    update_mode: ["auto", "git", "docker"].includes(String(input && input.update_mode || "")) ? String(input.update_mode) : DEFAULTS.update_mode,
-    app_dir: String(input && input.app_dir || DEFAULTS.app_dir).trim(),
-    git_remote: String(input && input.git_remote || DEFAULTS.git_remote).trim() || DEFAULTS.git_remote,
-    git_branch: String(input && input.git_branch || DEFAULTS.git_branch).trim(),
-    docker_socket: String(input && input.docker_socket || DEFAULTS.docker_socket).trim() || DEFAULTS.docker_socket,
-    docker_watchtower_image: String(input && input.docker_watchtower_image || DEFAULTS.docker_watchtower_image).trim() || DEFAULTS.docker_watchtower_image,
     update_timeout: clamp(Number(input && input.update_timeout || DEFAULTS.update_timeout), 10, 600),
     restart_after_update: Boolean(input && input.restart_after_update),
   });

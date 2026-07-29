@@ -1,7 +1,7 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.0
+ * @version v1.0.1
  * @desc 提供时间、版本、更新、重启四个基础管理命令
  * @rule ^\s*(时间|版本|更新|重启)\s*$
  * @admin false
@@ -14,6 +14,7 @@
 const {
   sender: s,
   Bucket,
+  version: getSillyGirlVersion,
   restart: restartSillyGirl,
   update: updateSillyGirl,
   sillyGirlCreateSchema,
@@ -83,15 +84,17 @@ async function replyTime() {
 }
 
 async function replyVersion() {
+  const info = await getSillyGirlVersion();
   const bucket = new Bucket("sillyGirl");
-  const current = await firstValue(bucket, ["version", "compiled_at"], "-");
-  const latest = await firstValue(bucket, ["remote_version", "latest_version"], current);
+  const current = String(info.current || "").trim() || "-";
+  const latest = String(info.remote || "").trim() || current;
   const startedAt = await bucket.get("started_at", "");
   const text = [
     "SillyGirl 版本",
     `当前版本：${current}`,
     `最新版本：${latest || current}`,
   ];
+  if (info.source) text.push(`来源：${info.source}`);
   if (startedAt) text.push(`启动时间：${startedAt}`);
   text.push(current && latest && normalizeVersion(current) !== normalizeVersion(latest) ? "状态：有新版本" : "状态：已是最新");
   await s.reply(text.join("\n"));
@@ -156,14 +159,6 @@ async function update(cfg) {
       "源码部署请检查 Git 仓库目录；Docker 部署请确认已挂载 /var/run/docker.sock。"
     );
   }
-}
-
-async function firstValue(bucket, keys, fallback) {
-  for (const key of keys) {
-    const value = await bucket.get(key, "");
-    if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
-  }
-  return fallback;
 }
 
 function normalizeConfig(input) {

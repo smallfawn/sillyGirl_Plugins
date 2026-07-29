@@ -1,7 +1,7 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.3
+ * @version v1.0.4
  * @desc 提供时间、版本、更新、重启四个基础管理命令
  * @rule ^\s*(时间|版本|更新|重启)\s*$
  * @admin false
@@ -24,13 +24,11 @@ const {
 const DEFAULTS = {
   enable: true,
   update_timeout: 120,
-  restart_after_update: false,
 };
 
 const schema = sillyGirlCreateSchema.object({
   enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
   update_timeout: sillyGirlCreateSchema.integer().setTitle("更新超时秒数").setMin(10).setMax(600).setDefault(120),
-  restart_after_update: sillyGirlCreateSchema.boolean().setTitle("更新后自动重启").setDefault(false),
 });
 
 const pluginConfig = new SillyGirlPluginConfig(schema);
@@ -110,7 +108,7 @@ async function update(cfg) {
     const result = await withTimeout(
       updateSillyGirl({
         timeout: cfg.update_timeout,
-        restart: cfg.restart_after_update,
+        restart: true,
       }),
       (cfg.update_timeout + 15) * 1000,
       "更新执行超时"
@@ -123,7 +121,7 @@ async function update(cfg) {
     const output = compactOutput(result.output);
     if (output) lines.push("输出：\n" + output);
     if (result.restarted) {
-      lines.push("已配置更新后自动重启，1 秒后重启");
+      lines.push("已触发自动重启，请等待 1-2 分钟后刷新页面");
     } else {
       lines.push("如需生效，请发送：重启");
     }
@@ -140,7 +138,6 @@ function normalizeConfig(input) {
   return Object.assign({}, DEFAULTS, input || {}, {
     enable: input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable,
     update_timeout: clamp(Number(input && input.update_timeout || DEFAULTS.update_timeout), 10, 600),
-    restart_after_update: Boolean(input && input.restart_after_update),
   });
 }
 

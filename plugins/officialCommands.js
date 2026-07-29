@@ -1,7 +1,7 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.1
+ * @version v1.0.2
  * @desc 提供时间、版本、更新、重启四个基础管理命令
  * @rule ^\s*(时间|版本|更新|重启)\s*$
  * @admin false
@@ -63,14 +63,20 @@ const schema = sillyGirlCreateSchema.object({
 const pluginConfig = new SillyGirlPluginConfig(schema);
 
 async function main() {
-  const cfg = normalizeConfig(await pluginConfig.get());
-  if (!cfg.enable) return s.reply("官方命令插件未启用，请先到插件配置开启");
-
   const cmd = String(await s.getContent() || "").trim();
   if (cmd === "时间") return replyTime();
   if (cmd === "版本") return replyVersion();
   if (cmd === "重启") return restart();
-  if (cmd === "更新") return update(cfg);
+  if (cmd === "更新") return update(await loadConfig());
+}
+
+async function loadConfig() {
+  try {
+    return normalizeConfig(await withTimeout(pluginConfig.get(), 5000, "读取官方命令插件配置超时"));
+  } catch (error) {
+    await s.reply("读取官方命令配置失败，使用默认配置继续：" + errorText(error));
+    return normalizeConfig(DEFAULTS);
+  }
 }
 
 async function replyTime() {
@@ -110,6 +116,13 @@ async function restart() {
 }
 
 async function update(cfg) {
+  await s.reply("收到更新命令，正在检查权限");
+
+  if (!cfg.enable) {
+    await s.reply("官方命令插件未启用，请先到插件配置开启");
+    return;
+  }
+
   if (!(await s.isAdmin())) {
     await s.reply("仅管理员可用");
     return;
@@ -118,16 +131,23 @@ async function update(cfg) {
   await s.reply("开始更新 SillyGirl");
 
   try {
-    const result = await updateSillyGirl({
-      mode: cfg.update_mode,
-      appDir: cfg.app_dir,
-      gitRemote: cfg.git_remote,
-      gitBranch: cfg.git_branch,
-      dockerSocket: cfg.docker_socket,
-      dockerWatchtowerImage: cfg.docker_watchtower_image,
-      timeout: cfg.update_timeout,
-      restart: cfg.restart_after_update,
-    });
+    if (typeof updateSillyGirl !== "function") {
+      throw new Error("当前 SillyGirl 运行时未导出 update，请先升级主程序到 v0.2.3 或更新插件运行时");
+    }
+    const result = await withTimeout(
+      updateSillyGirl({
+        mode: cfg.update_mode,
+        appDir: cfg.app_dir,
+        gitRemote: cfg.git_remote,
+        gitBranch: cfg.git_branch,
+        dockerSocket: cfg.docker_socket,
+        dockerWatchtowerImage: cfg.docker_watchtower_image,
+        timeout: cfg.update_timeout,
+        restart: cfg.restart_after_update,
+      }),
+      (cfg.update_timeout + 15) * 1000,
+      "更新执行超时"
+    );
     if (result.mode === "docker") {
       const lines = [
         "Docker 更新已启动",
@@ -206,6 +226,15 @@ function compactOutput(value) {
   if (!text) return "";
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   return lines.slice(-8).join("\n").slice(0, 1000);
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message || "执行超时")), Math.max(1000, timeoutMs));
+    }),
+  ]);
 }
 
 function errorText(error) {

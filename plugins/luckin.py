@@ -9,7 +9,7 @@ r"""
  * @priority 10
  * @public true
  * @class 工具
- * @depe ["requests","cryptography"]
+ * @depe ["cryptography","requests","urllib3"]
  */
 """
 

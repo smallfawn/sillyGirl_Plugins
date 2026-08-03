@@ -95,7 +95,8 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/luckin.py",
     "dependencies": [
       "cryptography",
-      "requests"
+      "requests",
+      "urllib3"
     ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -129,6 +130,7 @@
     "path": "plugins/meituan.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meituan.py",
     "dependencies": [
+      "cryptography",
       "httpx",
       "pycryptodome"
     ],

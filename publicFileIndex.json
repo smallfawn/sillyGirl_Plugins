@@ -1,4 +1,20 @@
 {
+  "f8a5b0f2-1295-fb76-21ff-43c49235f13a": {
+    "id": "f8a5b0f2-1295-fb76-21ff-43c49235f13a",
+    "title": "饿了么Code登录",
+    "author": "sillyGirl",
+    "version": "v1.0.3",
+    "desc": "输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙 elmck",
+    "class": "工具",
+    "rule": "^\\s*(饿了么Code|饿了么|[Ee][Ll][Mm])\\s*(登录|换[Cc]ookie|取[Cc][Kk])?\\s*([^\\s]+)?\\s*$",
+    "public": true,
+    "admin": false,
+    "path": "plugins/elemeCodeLogin.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/elemeCodeLogin.js",
+    "dependencies": [],
+    "type": "node",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
   "fbd8dead-f6ca-56e8-8293-d7980d1bbf91": {
     "id": "fbd8dead-f6ca-56e8-8293-d7980d1bbf91",
     "title": "getPrinterStatus",
@@ -14,6 +30,22 @@
     "dependencies": [
       "ipp"
     ],
+    "type": "node",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
+  "7258c7f7-b0da-fbca-fb0f-a6b1e7f7b14e": {
+    "id": "7258c7f7-b0da-fbca-fb0f-a6b1e7f7b14e",
+    "title": "沪上阿姨签到",
+    "author": "sillyGirl",
+    "version": "v1.0.1",
+    "desc": "基于 SmallCat 微信账号完成沪上阿姨会员登录和小满活动每日签到",
+    "class": "工具",
+    "rule": "^\\s*(沪上阿姨|沪上签到|[Hh][Uu][Ss][Hh][Ee][Nn][Gg])\\s*(查询|强制|dry-run|force)?\\s*$",
+    "public": true,
+    "admin": false,
+    "path": "plugins/husheng.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/husheng.js",
+    "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -49,6 +81,25 @@
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
+  "8e6a647d-743c-d17c-5264-055039c67b93": {
+    "id": "8e6a647d-743c-d17c-5264-055039c67b93",
+    "title": "瑞幸咖啡抽奖",
+    "author": "sillyGirl",
+    "version": "v1.0.0",
+    "desc": "从 SmallCat 读取微信账号，完成瑞幸小程序登录、活动校验、抽奖和中奖记录查询",
+    "class": "工具",
+    "rule": "raw ^\\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\\s*(查询|抽奖)?\\s*$",
+    "public": true,
+    "admin": false,
+    "path": "plugins/luckin.py",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/luckin.py",
+    "dependencies": [
+      "cryptography",
+      "requests"
+    ],
+    "type": "python",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
   "744db706-8673-5586-8752-c5d04e73cf7a": {
     "id": "744db706-8673-5586-8752-c5d04e73cf7a",
     "title": "魔幻手机语录",
@@ -62,6 +113,25 @@
     "path": "plugins/magicPhoneQuotes.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/magicPhoneQuotes.py",
     "dependencies": [],
+    "type": "python",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
+  "236304b7-8a86-154b-2144-b98678b3c407": {
+    "id": "236304b7-8a86-154b-2144-b98678b3c407",
+    "title": "美团Code登录",
+    "author": "sillyGirl",
+    "version": "v1.0.0",
+    "desc": "从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙",
+    "class": "工具",
+    "rule": "raw ^\\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\\s*(登录|取[Tt]oken)?\\s*([^\\s]+)?\\s*$",
+    "public": true,
+    "admin": true,
+    "path": "plugins/meituan.py",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meituan.py",
+    "dependencies": [
+      "httpx",
+      "pycryptodome"
+    ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -109,6 +179,22 @@
     "admin": false,
     "path": "plugins/smallcat.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/smallcat.js",
+    "dependencies": [],
+    "type": "node",
+    "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
+  },
+  "2bcb93a7-9a4d-ac5b-5679-17e421f8fa84": {
+    "id": "2bcb93a7-9a4d-ac5b-5679-17e421f8fa84",
+    "title": "smallcat口令解析",
+    "author": "sillyGirl",
+    "version": "v1.0.1",
+    "desc": "输入“解析：小程序口令/短链”，通过 SmallCat 内联客户端返回小程序信息",
+    "class": "工具",
+    "rule": "^\\s*解析[:：]\\s*(.+)\\s*$",
+    "public": true,
+    "admin": false,
+    "path": "plugins/smallcatCommandParser.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/smallcatCommandParser.js",
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"

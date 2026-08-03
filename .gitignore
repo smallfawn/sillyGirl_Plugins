@@ -1,2 +1,15 @@
 __pycache__/
 *.py[cod]
+.codex-artifacts/
+
+# Local credentials and private key material
+.env
+.env.*
+!.env.example
+.npmrc
+.pypirc
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json

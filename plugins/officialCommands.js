@@ -1,9 +1,9 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.5
- * @desc 提供时间、版本、更新、升级、重启五个基础管理命令
- * @rule ^\s*(时间|版本|更新|升级|重启)\s*$
+ * @version v1.0.6
+ * @desc 提供时间、版本、我是谁、更新、升级、重启基础管理命令
+ * @rule ^\s*(时间|版本|我是谁|更新|升级|重启)\s*$
  * @admin false
  * @priority 1
  * @public true
@@ -43,6 +43,7 @@ async function main() {
   if (!cmd) return notifyPendingRestart();
   if (cmd === "时间") return replyTime();
   if (cmd === "版本") return replyVersion();
+  if (cmd === "我是谁") return replyIdentity();
   if (cmd === "重启") return restart();
   if (cmd === "更新" || cmd === "升级") return update(await loadConfig());
 }
@@ -81,6 +82,16 @@ async function replyVersion() {
   if (startedAt) text.push(`启动时间：${startedAt}`);
   text.push(current && latest && normalizeVersion(current) !== normalizeVersion(latest) ? "状态：有新版本" : "状态：已是最新");
   await s.reply(text.join("\n"));
+}
+
+async function replyIdentity() {
+  const [nicknameValue, keyValue] = await Promise.all([
+    s.getUserName(),
+    s.getUserId(),
+  ]);
+  const key = String(keyValue || "").trim() || "-";
+  const nickname = String(nicknameValue || "").trim() || key;
+  await s.reply(`${nickname}的key：${key}`);
 }
 
 async function restart() {

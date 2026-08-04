@@ -1,7 +1,7 @@
 /**
  * @title 京东Code登录
  * @author smallfawn
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 通过 smallcat OAuth 获取京东 PT Cookie 并同步 JD_COOKIE 到青龙/呆呆
  * @rule ^\s*(京东登录|京东同步|[Jj][Dd]登录|[Jj][Dd]同步)\s*$
  * @admin false
@@ -17,11 +17,10 @@ const {
   sender: s,
   console,
   form,
-  Container,
+  container,
   utils,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const SCRIPT_VERSION = "v1.1.0";
 const JD_PT_LOGIN_URL = "https://plogin.m.jd.com/user/login.action?appid=300&returnurl=https%3A%2F%2Fm.jd.com%2F&source=wq_passport";
@@ -83,9 +82,9 @@ async function main() {
     validateConfig(cfg);
     await s.reply(`京东Code登录已触发，正在读取 smallcat #${cfg.smallcat_id} 用户列表...`);
 
-    const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
+    const smallcat = new container.SmallCat({ id: cfg.smallcat_id });
     const accounts = await loadAccounts(cfg, smallcat);
-    const panel = cfg.sync_panel === "daidai" ? new ct.DaiDai({ id: cfg.daidai_id }) : new ct.QingLong({ id: cfg.qinglong_id });
+    const panel = cfg.sync_panel === "daidai" ? new container.DaiDai({ id: cfg.daidai_id }) : new container.QingLong({ id: cfg.qinglong_id });
 
     await s.reply([
       "京东 PT Cookie 登录开始",

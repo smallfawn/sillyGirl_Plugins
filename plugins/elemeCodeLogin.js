@@ -1,7 +1,7 @@
 /**
  * @title 饿了么Code登录
  * @author sillyGirl
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙/呆呆 elmck
  * @rule ^\s*(饿了么Code|饿了么|[Ee][Ll][Mm])\s*(登录|换[Cc]ookie|取[Cc][Kk])?\s*([^\s]+)?\s*$
  * @admin false
@@ -22,11 +22,10 @@ const {
   sender: s,
   console,
   form,
-  Container,
+  container,
   utils,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const APP_ID = process.env.ELEME_APPID || 'wxece3a9a4c82f58c9';
 const APP_VERSION = process.env.ELEME_APP_VERSION || '12.6.3';
@@ -555,7 +554,7 @@ function parseCommand(content) {
 
 async function resolveInputCode(cfg, directCode) {
   if (directCode) return directCode;
-  const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
+  const smallcat = new container.SmallCat({ id: cfg.smallcat_id });
   if (typeof smallcat.getCode !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.getCode');
   const usersPayload = unwrapServicePayload(await loadSmallcatAccountPayload(smallcat, cfg));
   const users = Array.isArray(usersPayload)
@@ -742,7 +741,7 @@ async function syncPanelEnv(cfg, result) {
 }
 
 async function syncQingLong(cfg, result) {
-  const ql = new ct.QingLong({ id: cfg.qinglong_id });
+  const ql = new container.QingLong({ id: cfg.qinglong_id });
   const payload = await ql.getEnvs({ searchValue: cfg.ql_env_name });
   const envs = envItems(payload).filter(item => item.name === cfg.ql_env_name);
   return upsertEnv({
@@ -758,7 +757,7 @@ async function syncQingLong(cfg, result) {
 }
 
 async function syncDaiDai(cfg, result) {
-  const dd = new ct.DaiDai({ id: cfg.daidai_id });
+  const dd = new container.DaiDai({ id: cfg.daidai_id });
   const payload = await dd.getEnvs(cfg.ql_env_name);
   const envs = envItems(payload).filter(item => item.name === cfg.ql_env_name);
   return upsertEnv({

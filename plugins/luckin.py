@@ -2,7 +2,7 @@ r"""
 /**
  * @title 瑞幸咖啡抽奖
  * @author sillyGirl
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 从 SmallCat 读取微信账号，完成瑞幸小程序登录、活动校验、抽奖和中奖记录查询
  * @rule raw ^\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\s*(查询|抽奖)?\s*$
  * @admin false
@@ -28,9 +28,7 @@ import uuid
 from typing import Any
 from urllib.parse import urlencode
 
-from sillygirl import Container, form, sender as s, utils
-
-ct = Container()
+from sillygirl import container, form, sender as s, utils
 
 APP_ID = "wx21c7506e98a2fe75"
 APP_VERSION = "916"
@@ -828,7 +826,7 @@ async def main() -> None:
     try:
         command = parse_command(str(await s.getContent() or ""))
         query_only = bool(config["query_only"] or command["query_only"])
-        smallcat = ct.SmallCat({"id": config["smallcat_id"]})
+        smallcat = container.SmallCat({"id": config["smallcat_id"]})
         accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         mode = "查询" if query_only else "抽奖"
         await s.reply(f"瑞幸咖啡{mode}开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")

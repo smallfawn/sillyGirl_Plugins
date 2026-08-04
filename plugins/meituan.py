@@ -2,7 +2,7 @@ r"""
 /**
  * @title 美团Code登录
  * @author sillyGirl
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙/呆呆
  * @rule raw ^\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\s*(登录|取[Tt]oken)?\s*([^\s]+)?\s*$
  * @admin true
@@ -31,9 +31,7 @@ import zlib
 from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 
-from sillygirl import Container, form, sender as s, utils
-
-ct = Container()
+from sillygirl import container, form, sender as s, utils
 
 # JSGuard 固定参数。签名、siua、dfpid 均在本文件内生成。
 MTG_BASE64_ALPHABET = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
@@ -1229,8 +1227,8 @@ def env_items(payload: Any) -> List[Dict[str, Any]]:
 
 async def sync_panel_env(config: Dict[str, Any], result: Dict[str, Any], label: str) -> str:
     if config["sync_panel"] == "daidai":
-        return await sync_env(config, ct.DaiDai({"id": config["daidai_id"]}), result, label)
-    return await sync_env(config, ct.QingLong({"id": config["qinglong_id"]}), result, label)
+        return await sync_env(config, container.DaiDai({"id": config["daidai_id"]}), result, label)
+    return await sync_env(config, container.QingLong({"id": config["qinglong_id"]}), result, label)
 
 
 async def sync_env(config: Dict[str, Any], panel: Any, result: Dict[str, Any], label: str) -> str:
@@ -1335,7 +1333,7 @@ async def main() -> None:
             await s.reply("美团 CODE 登录开始（来源：命令参数）")
             await s.reply(await run_direct_code(command["code"], config))
             return
-        smallcat = ct.SmallCat({"id": config["smallcat_id"]})
+        smallcat = container.SmallCat({"id": config["smallcat_id"]})
         accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         await s.reply(f"美团 CODE 登录开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")
         outputs = []

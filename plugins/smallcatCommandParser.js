@@ -1,7 +1,7 @@
 /**
  * @title smallcat口令解析
  * @author sillyGirl
- * @version v1.1.3
+ * @version v1.1.4
  * @desc 输入“解析：小程序口令/短链”，通过 SmallCat 内联客户端返回小程序信息
  * @rule ^\s*解析[:：]\s*(.+)\s*$
  * @admin false
@@ -15,10 +15,9 @@ const {
   sender: s,
   console,
   form,
-  Container,
+  container,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const DEFAULTS = {
   enable: true,
@@ -86,7 +85,7 @@ function validateConfig(cfg) {
 }
 
 async function translateLink(cfg, command) {
-  const sm = new ct.SmallCat({ id: cfg.smallcat_id });
+  const sm = new container.SmallCat({ id: cfg.smallcat_id });
   const openid = await resolveOpenid(sm, cfg);
   const payload = await sm.translateLink({
     openid,

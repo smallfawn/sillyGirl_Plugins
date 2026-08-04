@@ -1,7 +1,7 @@
 /**
  * @title 沪上阿姨签到
  * @author sillyGirl
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 基于 SmallCat 微信账号完成沪上阿姨会员登录和小满活动每日签到
  * @rule ^\s*(沪上阿姨|沪上签到|[Hh][Uu][Ss][Hh][Ee][Nn][Gg])\s*(查询|强制|dry-run|force)?\s*$
  * @admin false
@@ -22,11 +22,10 @@ const {
   sender: s,
   console,
   form,
-  Container,
+  container,
   utils,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const TOKEN_SECRET_B64 = 'SjdoOCZeQmdzNSNibio3aG4lIT1raDMwOCpidjIhc14=';
 const SIGN_SECRET_B64 = 'dWgzJEhnJl5ISzg3NiVnYnhWRzdmJCVwPTBNfj5zMXg=';
@@ -947,7 +946,7 @@ async function main() {
     const input = parseCommand(String(await s.getContent() || ''));
     if (input.dryRun) cfg.dry_run = true;
     if (input.force) cfg.force = true;
-    const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
+    const smallcat = new container.SmallCat({ id: cfg.smallcat_id });
     const accounts = selectAccounts(await loadSmallcatAccounts(smallcat, cfg), cfg.account_selector);
     await s.reply('沪上阿姨签到开始：SmallCat #' + cfg.smallcat_id + '，账号 ' + accounts.length + ' 个');
     const outputs = [];

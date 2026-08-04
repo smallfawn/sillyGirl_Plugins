@@ -1,7 +1,7 @@
 /**
  * @title smallcat登录
  * @author sillyGirl
- * @version v1.1.1
+ * @version v1.1.2
  * @desc 通过 smallcat 二维码扫码登录和删除已保存账号
  * @rule ^\s*sm(登录|退出)(?:\s+(.+))?\s*$
  * @admin false
@@ -16,10 +16,9 @@ const {
   console,
   utils,
   form,
-  Container,
+  container,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const DEFAULTS = {
   enable: true,
@@ -62,7 +61,7 @@ async function main() {
 
   const action = matched[1];
   const arg = String(matched[2] || "").trim();
-  const sm = new ct.SmallCat({ id: cfg.smallcat_id });
+  const sm = new container.SmallCat({ id: cfg.smallcat_id });
 
   try {
     if (action === "登录") {

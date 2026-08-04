@@ -1,7 +1,7 @@
 /**
  * @title 面板变量管理
  * @author sillyGirl
- * @version v1.0.1
+ * @version v1.0.2
  * @desc 青龙/呆呆面板管理脚本 - 管理面板、环境变量等
  * @rule ^(?:青龙|呆呆|面板列表|面板状态|变量列表|变量详情|新建变量|修改变量|修改变量备注|删除变量|启用变量|禁用变量|通知)
  * @admin true
@@ -14,10 +14,9 @@
 const {
   sender: s,
   console,
-  Container,
+  container,
 } = require('sillygirl');
 
-const ct = new Container();
 
 const MAX_PANEL_SCAN = 50;
 
@@ -90,7 +89,7 @@ function panelLabel(kind) {
 }
 
 function panelCtor(kind) {
-  return kind === "daidai" ? ct.DaiDai : ct.QingLong;
+  return kind === "daidai" ? container.DaiDai : container.QingLong;
 }
 
 function menuText(label = "青龙") {
@@ -109,7 +108,7 @@ function menuText(label = "青龙") {
 }
 
 async function readPanels(kind) {
-  const info = await ct.getList(kind);
+  const info = await container.getList(kind);
   return Array.isArray(info.list) ? info.list : [];
 }
 

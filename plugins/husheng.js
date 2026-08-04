@@ -1,7 +1,7 @@
 /**
  * @title 沪上阿姨签到
  * @author sillyGirl
- * @version v1.0.1
+ * @version v1.1.0
  * @desc 基于 SmallCat 微信账号完成沪上阿姨会员登录和小满活动每日签到
  * @rule ^\s*(沪上阿姨|沪上签到|[Hh][Uu][Ss][Hh][Ee][Nn][Gg])\s*(查询|强制|dry-run|force)?\s*$
  * @admin false
@@ -20,6 +20,7 @@ const tls = require('node:tls');
 const zlib = require('node:zlib');
 const {
   sender: s,
+  userList,
   SmallCat,
   sillyGirlCreateSchema,
   SillyGirlPluginConfig,
@@ -48,6 +49,8 @@ const NANOID_ALPHABET = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjkl
 const DEFAULTS = {
   enable: true,
   smallcat_id: 1,
+  account_mode: 'authorized',
+  manual_openids: '',
   account_selector: '',
   dry_run: false,
   force: false,
@@ -65,6 +68,13 @@ const schema = sillyGirlCreateSchema.object({
   enable: sillyGirlCreateSchema.boolean().setTitle('是否启用').setDefault(true),
   smallcat_id: sillyGirlCreateSchema.integer()
     .setTitle('smallcat 编号').setDescription('后台 smallcat 页面里的编号，从 1 开始').setMin(1).setDefault(1),
+  account_mode: sillyGirlCreateSchema.string()
+    .setTitle('openid 获取模式')
+    .setDescription('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
+    .setEnum(['authorized', 'manual']).setEnumNames(['普通用户授权', '手动填写']).setDefault('authorized'),
+  manual_openids: sillyGirlCreateSchema.string()
+    .setTitle('手动 openid').setDescription('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号')
+    .setWidget('textarea').setDefault(''),
   account_selector: sillyGirlCreateSchema.string()
     .setTitle('执行账号').setDescription('留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部可用账号').setDefault(''),
   dry_run: sillyGirlCreateSchema.boolean().setTitle('仅查询').setDescription('只查询状态，不提交签到').setDefault(false),
@@ -701,6 +711,8 @@ function normalizeConfig(raw) {
   const cfg = Object.assign({}, DEFAULTS, source);
   cfg.enable = source.enable === undefined ? true : yes(source.enable);
   cfg.smallcat_id = positiveInt(cfg.smallcat_id, 1);
+  cfg.account_mode = cfg.account_mode === 'manual' ? 'manual' : 'authorized';
+  cfg.manual_openids = String(cfg.manual_openids || '').trim();
   cfg.account_selector = String(cfg.account_selector || '').trim();
   cfg.dry_run = yes(cfg.dry_run);
   cfg.force = yes(cfg.force);
@@ -739,6 +751,34 @@ function normalizeAccounts(payload) {
       });
     })
     .filter(function hasOpenid(item) { return item.openid; });
+}
+
+async function loadSmallcatAccounts(smallcat, cfg) {
+  if (typeof smallcat.request !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.request');
+  const wanted = cfg.account_mode === 'manual'
+    ? new Set(splitOpenids(cfg.manual_openids))
+    : await authorizedOpenidSet();
+  const accounts = normalizeAccounts(unwrapSmallCat(await smallcat.request('GET', '/api/accounts')));
+  return wanted.size ? accounts.filter(function allowed(item) { return wanted.has(item.openid); }) : accounts;
+}
+
+async function authorizedOpenidSet() {
+  if (typeof userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 userList');
+  const users = await userList();
+  const allowed = new Set();
+  for (const user of (Array.isArray(users) ? users : [])) {
+    if (!user || user.disabled || !user.authorized) continue;
+    for (const openid of ((user.bindings && user.bindings.smallcat_openids) || [])) {
+      const value = String(openid || '').trim();
+      if (value) allowed.add(value);
+    }
+  }
+  if (!allowed.size) throw new Error('没有普通用户授权的 SmallCat 账号');
+  return allowed;
+}
+
+function splitOpenids(value) {
+  return Array.from(new Set(String(value || '').split(/[,，;；\s]+/).map(function trim(item) { return item.trim(); }).filter(Boolean)));
 }
 
 function selectAccounts(users, selector) {
@@ -909,7 +949,7 @@ async function main() {
     if (input.dryRun) cfg.dry_run = true;
     if (input.force) cfg.force = true;
     const smallcat = new SmallCat({ id: cfg.smallcat_id });
-    const accounts = selectAccounts(normalizeAccounts(unwrapSmallCat(await smallcat.userList())), cfg.account_selector);
+    const accounts = selectAccounts(await loadSmallcatAccounts(smallcat, cfg), cfg.account_selector);
     await s.reply('沪上阿姨签到开始：SmallCat #' + cfg.smallcat_id + '，账号 ' + accounts.length + ' 个');
     const outputs = [];
     for (const account of accounts) {
@@ -953,6 +993,8 @@ const testApi = {
   normalizeConfig: normalizeConfig,
   parseCommand: parseCommand,
   normalizeAccounts: normalizeAccounts,
+  loadSmallcatAccounts: loadSmallcatAccounts,
+  splitOpenids: splitOpenids,
   selectAccounts: selectAccounts,
   unwrapSmallCat: unwrapSmallCat,
   findDeepValue: findDeepValue,

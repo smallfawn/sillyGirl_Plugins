@@ -1,7 +1,7 @@
 /**
  * @title 饿了么Code登录
  * @author sillyGirl
- * @version v1.0.3
+ * @version v1.1.0
  * @desc 输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙 elmck
  * @rule ^\s*(饿了么Code|饿了么|[Ee][Ll][Mm])\s*(登录|换[Cc]ookie|取[Cc][Kk])?\s*([^\s]+)?\s*$
  * @admin false
@@ -20,6 +20,7 @@ const os = require('node:os');
 const zlib = require('node:zlib');
 const {
   sender: s,
+  userList,
   QingLong,
   SmallCat,
   sillyGirlCreateSchema,
@@ -435,6 +436,8 @@ async function buildRiskHeaders(opts = {}) {
 const DEFAULTS = {
   enable: true,
   smallcat_id: 1,
+  account_mode: 'authorized',
+  manual_openids: '',
   umid_token: '',
   request_timeout: 30,
   sync_qinglong: false,
@@ -449,6 +452,14 @@ const schema = sillyGirlCreateSchema.object({
     .setTitle('smallcat 编号')
     .setDescription('命令不带 CODE 时使用；后台 smallcat 页面中的编号，从 1 开始')
     .setMin(1).setDefault(1),
+  account_mode: sillyGirlCreateSchema.string()
+    .setTitle('openid 获取模式')
+    .setDescription('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
+    .setEnum(['authorized', 'manual']).setEnumNames(['普通用户授权', '手动填写']).setDefault('authorized'),
+  manual_openids: sillyGirlCreateSchema.string()
+    .setTitle('手动 openid')
+    .setDescription('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号，本插件使用第一个可用账号')
+    .setWidget('textarea').setDefault(''),
   umid_token: sillyGirlCreateSchema.string()
     .setTitle('固定 bx-umidtoken')
     .setDescription('通常留空自动获取；网络环境取不到 UMID 时可手动填写')
@@ -514,6 +525,8 @@ function normalizeConfig(raw) {
   const cfg = Object.assign({}, DEFAULTS, raw || {});
   cfg.enable = raw && raw.enable !== undefined ? yes(raw.enable) : true;
   cfg.smallcat_id = positiveInt(cfg.smallcat_id, 1);
+  cfg.account_mode = cfg.account_mode === 'manual' ? 'manual' : 'authorized';
+  cfg.manual_openids = String(cfg.manual_openids || '').trim();
   cfg.umid_token = String(cfg.umid_token || '').trim();
   cfg.request_timeout = Math.max(5, Math.min(positiveInt(cfg.request_timeout, 30), 90));
   cfg.sync_qinglong = yes(cfg.sync_qinglong);
@@ -534,19 +547,61 @@ function parseCommand(content) {
 async function resolveInputCode(cfg, directCode) {
   if (directCode) return directCode;
   const smallcat = new SmallCat({ id: cfg.smallcat_id });
-  if (typeof smallcat.userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.userList');
   if (typeof smallcat.getCode !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.getCode');
-  const usersPayload = unwrapServicePayload(await smallcat.userList());
+  const usersPayload = unwrapServicePayload(await loadSmallcatAccountPayload(smallcat, cfg));
   const users = Array.isArray(usersPayload)
     ? usersPayload
     : (usersPayload && Array.isArray(usersPayload.items) ? usersPayload.items : []);
-  const user = users.find(item => item && !item.disabled && String(item.openid || '').trim());
+  const wanted = new Set(splitOpenids(cfg.manual_openids));
+  const user = users.find(item => {
+    const openid = String(item && (item.openid || item.openId) || '').trim();
+    return item && !item.disabled && openid && (cfg.account_mode !== 'manual' || wanted.size === 0 || wanted.has(openid));
+  });
   if (!user) throw new Error('SmallCat 用户列表没有有效 openid');
-  const openid = String(user.openid).trim();
+  const openid = String(user.openid || user.openId).trim();
   const payload = unwrapServicePayload(await smallcat.getCode({ openid, appid: APP_ID }));
   const code = nestedText(payload, ['code', 'wxCode', 'wx_code', 'loginCode']);
   if (!code) throw new Error(`SmallCat 未返回 CODE：${responseMessage(payload) || '响应字段为空'}`);
   return code;
+}
+
+async function loadSmallcatAccountPayload(smallcat, cfg) {
+  if (typeof smallcat.request !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.request');
+  if (cfg.account_mode === 'manual') return smallcat.request('GET', '/api/accounts');
+  const allowed = await authorizedOpenidSet();
+  return filterSmallcatAccounts(await smallcat.request('GET', '/api/accounts'), allowed);
+}
+
+async function authorizedOpenidSet() {
+  if (typeof userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 userList');
+  const users = await userList();
+  const allowed = new Set();
+  for (const user of (Array.isArray(users) ? users : [])) {
+    if (!user || user.disabled || !user.authorized) continue;
+    for (const openid of ((user.bindings && user.bindings.smallcat_openids) || [])) {
+      const value = String(openid || '').trim();
+      if (value) allowed.add(value);
+    }
+  }
+  if (!allowed.size) throw new Error('没有普通用户授权的 SmallCat 账号');
+  return allowed;
+}
+
+function filterSmallcatAccounts(value, allowed) {
+  if (Array.isArray(value)) return value.map(item => filterSmallcatAccounts(item, allowed)).filter(item => item !== undefined);
+  if (!value || typeof value !== 'object') return value;
+  const openid = String(value.openid || value.openId || value.open_id || '').trim();
+  if (openid && !allowed.has(openid)) return undefined;
+  const result = {};
+  for (const [key, item] of Object.entries(value)) {
+    const filtered = filterSmallcatAccounts(item, allowed);
+    if (filtered !== undefined) result[key] = filtered;
+  }
+  return result;
+}
+
+function splitOpenids(value) {
+  return [...new Set(String(value || '').split(/[,，;；\s]+/).map(item => item.trim()).filter(Boolean))];
 }
 
 async function havanaCodeLogin(code, cfg) {
@@ -801,6 +856,8 @@ if (globalThis.__ELEME_CODE_LOGIN_TEST__) {
     normalizeConfig,
     parseCommand,
     resolveInputCode,
+    loadSmallcatAccountPayload,
+    splitOpenids,
   };
 } else {
   main().catch(async error => {

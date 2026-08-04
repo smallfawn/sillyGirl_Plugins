@@ -1,7 +1,7 @@
 /**
  * @title smallcat口令解析
  * @author sillyGirl
- * @version v1.0.1
+ * @version v1.1.0
  * @desc 输入“解析：小程序口令/短链”，通过 SmallCat 内联客户端返回小程序信息
  * @rule ^\s*解析[:：]\s*(.+)\s*$
  * @admin false
@@ -13,6 +13,7 @@
 
 const {
   sender: s,
+  userList,
   SmallCat,
   sillyGirlCreateSchema,
   SillyGirlPluginConfig,
@@ -22,6 +23,7 @@ const {
 const DEFAULTS = {
   enable: true,
   smallcat_id: 1,
+  account_mode: "authorized",
   auth: "",
   openid: "",
   scene: 23,
@@ -34,14 +36,20 @@ const schema = sillyGirlCreateSchema.object({
     .setDescription("后台 smallcat 页面中的编号，从 1 开始；地址读取该面板配置")
     .setMin(1)
     .setDefault(DEFAULTS.smallcat_id),
+  account_mode: sillyGirlCreateSchema.string()
+    .setTitle("openid 获取模式")
+    .setDescription("普通用户授权：只读取已在 User 页面授权本插件的账号；手动填写：使用下面的 openid，留空读取 SmallCat 全部账号")
+    .setEnum(["authorized", "manual"])
+    .setEnumNames(["普通用户授权", "手动填写"])
+    .setDefault(DEFAULTS.account_mode),
   auth: sillyGirlCreateSchema.string()
     .setTitle("smallcat AUTH")
-    .setDescription("本插件调用 SmallCat 内联客户端时使用的 API AUTH")
+    .setDescription("可选覆盖；留空使用 SmallCat 面板配置中的 AUTH")
     .setWidget("password")
     .setDefault(""),
   openid: sillyGirlCreateSchema.string()
-    .setTitle("smallcat openid")
-    .setDescription("已保存在 smallcat 中、用于解析口令的账号 openid")
+    .setTitle("手动 openid")
+    .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔，解析时使用第一个；留空读取全部账号后使用第一个")
     .setDefault(""),
   scene: sillyGirlCreateSchema.integer()
     .setTitle("解析场景值")
@@ -82,6 +90,7 @@ function normalizeConfig(input) {
   const cfg = Object.assign({}, DEFAULTS, input || {});
   cfg.enable = input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable;
   cfg.smallcat_id = positiveInt(cfg.smallcat_id, DEFAULTS.smallcat_id);
+  cfg.account_mode = cfg.account_mode === "manual" ? "manual" : "authorized";
   cfg.auth = String(cfg.auth || "").trim();
   cfg.openid = String(cfg.openid || "").trim();
   cfg.scene = positiveInt(cfg.scene, DEFAULTS.scene);
@@ -89,15 +98,15 @@ function normalizeConfig(input) {
 }
 
 function validateConfig(cfg) {
-  if (!cfg.auth) throw new Error("请先在插件配置中填写 smallcat AUTH");
-  if (!cfg.openid) throw new Error("请先在插件配置中填写 smallcat openid");
+  if (!Number.isInteger(cfg.smallcat_id) || cfg.smallcat_id < 1) throw new Error("smallcat 编号必须从 1 开始");
 }
 
 async function translateLink(cfg, command) {
   const sm = new SmallCat({ id: cfg.smallcat_id });
-  await bindConfiguredAuth(sm, cfg.auth);
+  if (cfg.auth) await bindConfiguredAuth(sm, cfg.auth);
+  const openid = await resolveOpenid(sm, cfg);
   const payload = await sm.translateLink({
-    openid: cfg.openid,
+    openid,
     link: command,
     scene: cfg.scene,
   });
@@ -105,6 +114,57 @@ async function translateLink(cfg, command) {
     throw new Error(responseMessage(payload) || "smallcat 接口返回失败状态");
   }
   return payload && Object.prototype.hasOwnProperty.call(payload, "data") ? payload.data : payload;
+}
+
+async function resolveOpenid(sm, cfg) {
+  const manual = splitOpenids(cfg.openid);
+  if (cfg.account_mode === "manual" && manual.length) return manual[0];
+
+  let payload;
+  if (cfg.account_mode === "authorized") {
+    const allowed = await authorizedOpenidSet();
+    payload = await sm.request("GET", "/api/accounts");
+    const account = accountItems(payload).find((item) => item && !item.disabled && allowed.has(String(item.openid || item.openId || "").trim()));
+    if (!account) throw new Error("没有普通用户授权的 SmallCat 账号");
+    return String(account.openid || account.openId).trim();
+  } else {
+    payload = await sm.request("GET", "/api/accounts");
+  }
+  const account = accountItems(payload).find((item) => item && !item.disabled && String(item.openid || item.openId || "").trim());
+  if (!account) throw new Error(cfg.account_mode === "authorized" ? "没有普通用户授权的 SmallCat 账号" : "SmallCat 全部账号中没有有效 openid");
+  return String(account.openid || account.openId).trim();
+}
+
+async function authorizedOpenidSet() {
+  if (typeof userList !== "function") throw new Error("当前 SillyGirl 版本缺少 userList");
+  const users = await userList();
+  const allowed = new Set();
+  for (const user of (Array.isArray(users) ? users : [])) {
+    if (!user || user.disabled || !user.authorized) continue;
+    for (const openid of ((user.bindings && user.bindings.smallcat_openids) || [])) {
+      const value = String(openid || "").trim();
+      if (value) allowed.add(value);
+    }
+  }
+  if (!allowed.size) throw new Error("没有普通用户授权的 SmallCat 账号");
+  return allowed;
+}
+
+function splitOpenids(value) {
+  return [...new Set(String(value || "").split(/[,，;；\s]+/).map((item) => item.trim()).filter(Boolean))];
+}
+
+function accountItems(payload) {
+  const queue = [payload];
+  while (queue.length) {
+    const value = queue.shift();
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== "object") continue;
+    for (const key of ["data", "list", "items", "accounts", "users", "value"]) {
+      if (value[key] !== undefined) queue.push(value[key]);
+    }
+  }
+  return [];
 }
 
 async function bindConfiguredAuth(sm, auth) {
@@ -211,10 +271,14 @@ function errorText(error) {
   return error && error.message ? String(error.message).trim() : String(error || "未知错误").trim();
 }
 
-main().catch(async (error) => {
-  try {
-    await s.reply("smallcat口令解析异常：" + errorText(error));
-  } catch (_) {
-    console.error("smallcat口令解析异常", error);
-  }
-});
+if (globalThis.__SMALLCAT_COMMAND_PARSER_TEST__) {
+  module.exports = { normalizeConfig, resolveOpenid, splitOpenids, accountItems };
+} else {
+  main().catch(async (error) => {
+    try {
+      await s.reply("smallcat口令解析异常：" + errorText(error));
+    } catch (_) {
+      console.error("smallcat口令解析异常", error);
+    }
+  });
+}

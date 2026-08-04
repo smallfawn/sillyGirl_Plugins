@@ -2,7 +2,7 @@ r"""
 /**
  * @title 瑞幸咖啡抽奖
  * @author sillyGirl
- * @version v1.0.0
+ * @version v1.1.0
  * @desc 从 SmallCat 读取微信账号，完成瑞幸小程序登录、活动校验、抽奖和中奖记录查询
  * @rule raw ^\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\s*(查询|抽奖)?\s*$
  * @admin false
@@ -28,7 +28,7 @@ import uuid
 from typing import Any
 from urllib.parse import urlencode
 
-from sillygirl import SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema
+from sillygirl import SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema, userList
 
 APP_ID = "wx21c7506e98a2fe75"
 APP_VERSION = "916"
@@ -54,6 +54,8 @@ UA_MKT = UA_CAPI + f" miniProgram/{APP_ID}"
 DEFAULTS = {
     "enable": True,
     "smallcat_id": 1,
+    "account_mode": "authorized",
+    "manual_openids": "",
     "account_selector": "",
     "activity_no": DEFAULT_ACTIVITY_NO,
     "activity_id": DEFAULT_ACTIVITY_ID,
@@ -72,6 +74,21 @@ schema = sillyGirlCreateSchema.object(
             .setDescription("后台 smallcat 页面里的编号，从 1 开始；AUTH 直接使用面板配置")
             .setMin(1)
             .setDefault(1)
+        ),
+        "account_mode": (
+            sillyGirlCreateSchema.string()
+            .setTitle("openid 获取模式")
+            .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+            .setEnum(["authorized", "manual"])
+            .setEnumNames(["普通用户授权", "手动填写"])
+            .setDefault("authorized")
+        ),
+        "manual_openids": (
+            sillyGirlCreateSchema.string()
+            .setTitle("手动 openid")
+            .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+            .setWidget("textarea")
+            .setDefault("")
         ),
         "account_selector": (
             sillyGirlCreateSchema.string()
@@ -348,6 +365,33 @@ def normalize_accounts(payload: Any) -> list[dict[str, Any]]:
     return accounts
 
 
+def split_openids(value: Any) -> set[str]:
+    return {item for item in re.split(r"[,，;；\s]+", str(value or "")) if item}
+
+
+async def load_smallcat_accounts(smallcat: SmallCat, config: dict[str, Any]) -> list[dict[str, Any]]:
+    wanted = split_openids(config["manual_openids"]) if config["account_mode"] == "manual" else await authorized_openids()
+    payload = await smallcat.request("GET", "/api/accounts")
+    accounts = normalize_accounts(payload)
+    return [account for account in accounts if account["openid"] in wanted] if wanted else accounts
+
+
+async def authorized_openids() -> set[str]:
+    users = await userList()
+    allowed: set[str] = set()
+    for user in users if isinstance(users, list) else []:
+        if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
+            continue
+        bindings = user.get("bindings") if isinstance(user.get("bindings"), dict) else {}
+        for openid in bindings.get("smallcat_openids") or []:
+            value = str(openid or "").strip()
+            if value:
+                allowed.add(value)
+    if not allowed:
+        raise RuntimeError("没有普通用户授权的 SmallCat 账号")
+    return allowed
+
+
 def select_accounts(accounts: list[dict[str, Any]], selector: str) -> list[dict[str, Any]]:
     enabled = [account for account in accounts if not account.get("disabled")]
     if not enabled:
@@ -446,6 +490,8 @@ def normalize_config(raw: Any) -> dict[str, Any]:
     config.update(source)
     config["enable"] = True if "enable" not in source else as_bool(source.get("enable"))
     config["smallcat_id"] = positive_int(config.get("smallcat_id"), 1)
+    config["account_mode"] = "manual" if config.get("account_mode") == "manual" else "authorized"
+    config["manual_openids"] = str(config.get("manual_openids") or "").strip()
     config["account_selector"] = str(config.get("account_selector") or "").strip()
     config["activity_no"] = str(config.get("activity_no") or DEFAULT_ACTIVITY_NO).strip()
     config["activity_id"] = positive_int(config.get("activity_id"), DEFAULT_ACTIVITY_ID)
@@ -782,7 +828,7 @@ async def main() -> None:
         command = parse_command(str(await s.getContent() or ""))
         query_only = bool(config["query_only"] or command["query_only"])
         smallcat = SmallCat({"id": config["smallcat_id"]})
-        accounts = select_accounts(normalize_accounts(await smallcat.userList()), config["account_selector"])
+        accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         mode = "查询" if query_only else "抽奖"
         await s.reply(f"瑞幸咖啡{mode}开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")
         results = []

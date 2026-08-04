@@ -1,7 +1,7 @@
 /**
  * @title 京东Code登录
  * @author smallfawn
- * @version v1.0.1
+ * @version v1.1.0
  * @desc 通过 smallcat OAuth 获取京东 PT Cookie 并同步 JD_COOKIE 到青龙
  * @rule ^\s*(京东登录|京东同步|[Jj][Dd]登录|[Jj][Dd]同步)\s*$
  * @admin false
@@ -16,6 +16,7 @@ const https = require("https");
 const { URL, URLSearchParams } = require("url");
 const {
   sender: s,
+  userList,
   QingLong,
   SmallCat,
   sillyGirlCreateSchema,
@@ -24,13 +25,15 @@ const {
   console,
 } = require("sillygirl");
 
-const SCRIPT_VERSION = "v1.0.1";
+const SCRIPT_VERSION = "v1.1.0";
 const JD_PT_LOGIN_URL = "https://plogin.m.jd.com/user/login.action?appid=300&returnurl=https%3A%2F%2Fm.jd.com%2F&source=wq_passport";
 const JD_COOKIE_ENV_NAME = "JD_COOKIE";
 
 const DEFAULTS = {
   enable: true,
   smallcat_id: 1,
+  account_mode: "authorized",
+  manual_openids: "",
   accounts_json: "",
   qinglong_id: 1,
   ql_cookie_env_name: JD_COOKIE_ENV_NAME,
@@ -40,9 +43,18 @@ const DEFAULTS = {
 const schema = sillyGirlCreateSchema.object({
   enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
   smallcat_id: sillyGirlCreateSchema.integer().setTitle("smallcat 编号").setDescription("后台 smallcat 页面里的编号，从 1 开始").setDefault(1),
+  account_mode: sillyGirlCreateSchema.string()
+    .setTitle("openid 获取模式")
+    .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+    .setEnum(["authorized", "manual"]).setEnumNames(["普通用户授权", "手动填写"]).setDefault("authorized"),
+  manual_openids: sillyGirlCreateSchema.string()
+    .setTitle("手动 openid")
+    .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+    .setWidget("textarea")
+    .setDefault(""),
   accounts_json: sillyGirlCreateSchema.string()
-    .setTitle("账号 JSON")
-    .setDescription('留空自动读取 smallcat 用户列表；示例：[{"name":"京东账号1","openid":"openid"}]')
+    .setTitle("手动账号 JSON")
+    .setDescription('仅手动填写模式生效且优先于手动 openid；留空从 SmallCat 读取；示例：[{"name":"京东账号1","openid":"openid"}]')
     .setWidget("textarea")
     .setDefault(""),
   qinglong_id: sillyGirlCreateSchema.integer().setTitle("青龙面板编号").setDescription("后台青龙容器页面里的编号，从 1 开始").setDefault(1),
@@ -109,6 +121,8 @@ async function main() {
 function normalizeConfig(raw) {
   const cfg = Object.assign({}, DEFAULTS, raw || {});
   cfg.smallcat_id = Number(env("SMALLCAT_ID", cfg.smallcat_id) || 1);
+  cfg.account_mode = cfg.account_mode === "manual" ? "manual" : "authorized";
+  cfg.manual_openids = String(cfg.manual_openids || "").trim();
   cfg.accounts_json = env("JD_ACCOUNTS_JSON", cfg.accounts_json);
   cfg.ql_cookie_env_name = env("QL_COOKIE_ENV_NAME", cfg.ql_cookie_env_name);
   cfg.qinglong_id = Number(cfg.qinglong_id || 0);
@@ -127,7 +141,7 @@ function validateConfig(cfg) {
 }
 
 async function loadAccounts(cfg, smallcat) {
-  if (cfg.accounts_json) {
+  if (cfg.account_mode === "manual" && cfg.accounts_json) {
     let values;
     try {
       values = JSON.parse(cfg.accounts_json);
@@ -137,12 +151,38 @@ async function loadAccounts(cfg, smallcat) {
     return normalizeAccounts(values, "账号 JSON");
   }
 
-  const payload = await smallcat.userList();
+  if (typeof smallcat.request !== "function") throw new Error("当前 SillyGirl 版本缺少 SmallCat.request");
+  const wanted = cfg.account_mode === "manual"
+    ? new Set(splitOpenids(cfg.manual_openids))
+    : await authorizedOpenidSet();
+  const payload = await smallcat.request("GET", "/api/accounts");
   let values = payload && (payload.value ?? payload.data);
   if (values && typeof values === "object" && !Array.isArray(values)) {
     values = values.data || values.list || values.items;
   }
-  return normalizeAccounts(values, "smallcat 用户列表");
+  let accounts = normalizeAccounts(values, "smallcat 用户列表");
+  if (wanted.size) accounts = accounts.filter((item) => wanted.has(item.openid));
+  if (!accounts.length) throw new Error(cfg.account_mode === "manual" ? "手动 openid 在 SmallCat 全部账号中没有匹配项" : "没有普通用户授权的 SmallCat 账号");
+  return accounts;
+}
+
+async function authorizedOpenidSet() {
+  if (typeof userList !== "function") throw new Error("当前 SillyGirl 版本缺少 userList");
+  const users = await userList();
+  const allowed = new Set();
+  for (const user of (Array.isArray(users) ? users : [])) {
+    if (!user || user.disabled || !user.authorized) continue;
+    for (const openid of ((user.bindings && user.bindings.smallcat_openids) || [])) {
+      const value = String(openid || "").trim();
+      if (value) allowed.add(value);
+    }
+  }
+  if (!allowed.size) throw new Error("没有普通用户授权的 SmallCat 账号");
+  return allowed;
+}
+
+function splitOpenids(value) {
+  return [...new Set(String(value || "").split(/[,，;；\s]+/).map((item) => item.trim()).filter(Boolean))];
 }
 
 function normalizeAccounts(values, sourceName) {
@@ -728,10 +768,14 @@ function displayJdUrl(value) {
   }
 }
 
-main().catch(async (err) => {
-  try {
-    await s.reply(`京东Code登录异常：${userErrorMessage(err)}`);
-  } catch (_) {
-    console.error("京东Code登录异常", err);
-  }
-});
+if (globalThis.__JD_CODE_LOGIN_TEST__) {
+  module.exports = { normalizeConfig, loadAccounts, normalizeAccounts, splitOpenids };
+} else {
+  main().catch(async (err) => {
+    try {
+      await s.reply(`京东Code登录异常：${userErrorMessage(err)}`);
+    } catch (_) {
+      console.error("京东Code登录异常", err);
+    }
+  });
+}

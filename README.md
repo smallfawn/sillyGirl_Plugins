@@ -38,11 +38,13 @@ Action 会在提交插件后自动扫描依赖并回写 `@depe`：
 | upsListen | `plugins/upsListen.js` | 已适配 | 使用 NodeJS 内置 `net` 查询 NUT 服务 |
 | 青龙管理 | `plugins/qinglongManage.js` | 已适配 | 管理青龙面板状态、环境变量和系统通知 |
 | 官方命令 | `plugins/officialCommands.js` | 已适配 | 支持 `时间`、`版本`、`我是谁`、`更新`、`升级`、`重启`；`我是谁` 返回当前昵称对应的 key |
-| smallcat口令解析 | `plugins/smallcatCommandParser.js` | 已适配 | 配置 smallcat URL、AUTH 和 openid，发送 `解析：小程序口令/短链` 获取小程序信息 |
-| 饿了么Code登录 | `plugins/elemeCodeLogin.js` | 已适配 | `饿了么` 自动读取 SmallCat 首个可用账号的 openid 后取 CODE；`饿了么登录 CODE` 直接换 Cookie，可选同步青龙 `elmck` |
-| 沪上阿姨签到 | `plugins/husheng.js` | 已适配 | 从 SmallCat 读取账号和 wx.login CODE，完成会员登录、手机号绑定、小满活动授权及每日签到；命令 `沪上阿姨` / `沪上阿姨 查询` / `沪上阿姨 强制` |
-| 瑞幸咖啡抽奖 | `plugins/luckin.py` | 已适配 | 从 SmallCat 读取账号和 wx.login CODE，完成瑞幸小程序登录、活动校验、抽奖及中奖记录查询；命令 `瑞幸` / `瑞幸 查询` |
-| 美团Code登录 | `plugins/meituan.py` | 已适配 | 从 SmallCat 读取账号和 wx.login CODE，本地生成 mtgsig、siua、dfpid 后换取 `MT_TOKEN`；命令 `美团`，支持可选青龙同步 |
+| smallcat登录 | `plugins/smallcat.js` | 已适配 | 支持普通用户授权账号或手动 openid；手动留空时列出全部 SmallCat 账号 |
+| smallcat口令解析 | `plugins/smallcatCommandParser.js` | 已适配 | 支持“普通用户授权”和“手动 openid”两种账号模式；发送 `解析：小程序口令/短链` 获取小程序信息 |
+| 饿了么Code登录 | `plugins/elemeCodeLogin.js` | 已适配 | 支持普通用户授权账号或手动 openid；手动留空读取全部；`饿了么登录 CODE` 可直接换 Cookie并同步青龙 `elmck` |
+| 京东Code登录 | `plugins/jdCodeLogin.js` | 已适配 | 支持普通用户授权账号、手动 openid 或手动账号 JSON；手动留空读取全部 SmallCat 账号 |
+| 沪上阿姨签到 | `plugins/husheng.js` | 已适配 | 支持普通用户授权账号或手动 openid；完成会员登录、手机号绑定、小满活动授权及每日签到 |
+| 瑞幸咖啡抽奖 | `plugins/luckin.py` | 已适配 | 支持普通用户授权账号或手动 openid；完成瑞幸登录、活动校验、抽奖及中奖记录查询 |
+| 美团Code登录 | `plugins/meituan.py` | 已适配 | 支持普通用户授权账号或手动 openid；本地生成 mtgsig、siua、dfpid 后换取 `MT_TOKEN` |
 
 ## 兼容差异
 

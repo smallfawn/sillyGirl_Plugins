@@ -2,7 +2,7 @@ r"""
 /**
  * @title 美团Code登录
  * @author sillyGirl
- * @version v1.0.0
+ * @version v1.1.0
  * @desc 从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙
  * @rule raw ^\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\s*(登录|取[Tt]oken)?\s*([^\s]+)?\s*$
  * @admin true
@@ -31,7 +31,7 @@ import zlib
 from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 
-from sillygirl import QingLong, SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema
+from sillygirl import QingLong, SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema, userList
 
 # JSGuard 固定参数。签名、siua、dfpid 均在本文件内生成。
 MTG_BASE64_ALPHABET = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
@@ -42,6 +42,8 @@ LOGIN_URL = "https://open.meituan.com/user/v1/weappsilentlogin"
 DEFAULTS = {
     "enable": True,
     "smallcat_id": 1,
+    "account_mode": "authorized",
+    "manual_openids": "",
     "account_selector": "",
     "proxy_url": "",
     "request_timeout": 25,
@@ -61,6 +63,21 @@ schema = sillyGirlCreateSchema.object(
             .setDescription("后台 smallcat 页面里的编号，从 1 开始；AUTH 使用面板配置")
             .setMin(1)
             .setDefault(1)
+        ),
+        "account_mode": (
+            sillyGirlCreateSchema.string()
+            .setTitle("openid 获取模式")
+            .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+            .setEnum(["authorized", "manual"])
+            .setEnumNames(["普通用户授权", "手动填写"])
+            .setDefault("authorized")
+        ),
+        "manual_openids": (
+            sillyGirlCreateSchema.string()
+            .setTitle("手动 openid")
+            .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+            .setWidget("textarea")
+            .setDefault("")
         ),
         "account_selector": (
             sillyGirlCreateSchema.string()
@@ -954,6 +971,8 @@ def normalize_config(raw: Any) -> Dict[str, Any]:
     config.update(source)
     config["enable"] = True if "enable" not in source else as_bool(source.get("enable"))
     config["smallcat_id"] = positive_int(config.get("smallcat_id"), 1)
+    config["account_mode"] = "manual" if config.get("account_mode") == "manual" else "authorized"
+    config["manual_openids"] = str(config.get("manual_openids") or "").strip()
     config["account_selector"] = str(config.get("account_selector") or "").strip()
     config["proxy_url"] = str(config.get("proxy_url") or "").strip()
     config["request_timeout"] = max(5, min(positive_int(config.get("request_timeout"), 25), 90))
@@ -997,6 +1016,33 @@ def normalize_accounts(payload: Any) -> List[Dict[str, Any]]:
         if account["openid"]:
             accounts.append(account)
     return accounts
+
+
+def split_openids(value: Any) -> set[str]:
+    return {item for item in re.split(r"[,，;；\s]+", str(value or "")) if item}
+
+
+async def load_smallcat_accounts(smallcat: SmallCat, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+    wanted = split_openids(config["manual_openids"]) if config["account_mode"] == "manual" else await authorized_openids()
+    payload = await smallcat.request("GET", "/api/accounts")
+    accounts = normalize_accounts(payload)
+    return [account for account in accounts if account["openid"] in wanted] if wanted else accounts
+
+
+async def authorized_openids() -> set[str]:
+    users = await userList()
+    allowed: set[str] = set()
+    for user in users if isinstance(users, list) else []:
+        if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
+            continue
+        bindings = user.get("bindings") if isinstance(user.get("bindings"), dict) else {}
+        for openid in bindings.get("smallcat_openids") or []:
+            value = str(openid or "").strip()
+            if value:
+                allowed.add(value)
+    if not allowed:
+        raise RuntimeError("没有普通用户授权的 SmallCat 账号")
+    return allowed
 
 
 def select_accounts(accounts: List[Dict[str, Any]], selector: str) -> List[Dict[str, Any]]:
@@ -1264,7 +1310,7 @@ async def main() -> None:
             await s.reply(await run_direct_code(command["code"], config))
             return
         smallcat = SmallCat({"id": config["smallcat_id"]})
-        accounts = select_accounts(normalize_accounts(await smallcat.userList()), config["account_selector"])
+        accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         await s.reply(f"美团 CODE 登录开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")
         outputs = []
         for account in accounts:

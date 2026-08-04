@@ -2,7 +2,7 @@ r"""
 /**
  * @title 魔幻手机语录
  * @author sillyGirl
- * @version v1.0.0
+ * @version v1.0.1
  * @desc 随机回复傻妞和陆小千相关短句
  * @rule raw ^\s*(傻妞语录|傻妞台词|陆小千语录|小千语录|小千台词|魔幻手机语录|魔幻手机台词)\s*$
  * @admin false

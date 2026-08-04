@@ -1,7 +1,7 @@
 /**
  * @title smallcat登录
  * @author sillyGirl
- * @version v1.1.0
+ * @version v1.1.1
  * @desc 通过 smallcat 二维码扫码登录和删除已保存账号
  * @rule ^\s*sm(登录|退出)(?:\s+(.+))?\s*$
  * @admin false
@@ -13,14 +13,13 @@
 
 const {
   sender: s,
-  userList,
-  SmallCat,
-  sillyGirlCreateSchema,
-  SillyGirlPluginConfig,
-  sleep,
   console,
   utils,
-} = require("sillygirl");
+  form,
+  Container,
+} = require('sillygirl');
+
+const ct = new Container();
 
 const DEFAULTS = {
   enable: true,
@@ -33,24 +32,22 @@ const DEFAULTS = {
   default_display_name: "",
 };
 
-const schema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
-  smallcat_id: sillyGirlCreateSchema.integer().setTitle("smallcat 编号").setDescription("后台 smallcat 页面里的编号，从 1 开始").setDefault(1),
-  account_mode: sillyGirlCreateSchema.string()
-    .setTitle("openid 获取模式")
-    .setDescription("普通用户授权：只显示已授权本插件的账号；手动填写：按下方 openid 显示，留空显示 SmallCat 全部账号")
-    .setEnum(["authorized", "manual"]).setEnumNames(["普通用户授权", "手动填写"]).setDefault("authorized"),
-  manual_openids: sillyGirlCreateSchema.string()
-    .setTitle("手动 openid")
-    .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
-    .setWidget("textarea").setDefault(""),
-  login_type: sillyGirlCreateSchema.integer().setTitle("登录类型").setDescription("传给 smallcat createQr/addUser 的 type，默认 1").setDefault(1),
-  login_timeout: sillyGirlCreateSchema.integer().setTitle("扫码超时秒数").setMin(30).setMax(600).setDefault(180),
-  poll_interval: sillyGirlCreateSchema.integer().setTitle("轮询间隔秒数").setMin(1).setMax(10).setDefault(3),
-  default_display_name: sillyGirlCreateSchema.string().setTitle("默认备注").setDescription("sm登录 后面没写备注时使用；仍为空则由 smallcat 决定").setDefault(""),
+const pluginConfig = new form({
+  enable: form.boolean().title("是否启用").default(true),
+  smallcat_id: form.integer().title("smallcat 编号").description("后台 smallcat 页面里的编号，从 1 开始").widget("smallcat-panel").default(1),
+  account_mode: form.string()
+    .title("openid 获取模式")
+    .description("普通用户授权：只显示已授权本插件的账号；手动填写：按下方 openid 显示，留空显示 SmallCat 全部账号")
+    .options(["authorized", "manual"]).default("authorized"),
+  manual_openids: form.string()
+    .title("手动 openid")
+    .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+    .widget("textarea").default(""),
+  login_type: form.integer().title("登录类型").description("传给 smallcat createQr/addUser 的 type，默认 1").default(1),
+  login_timeout: form.integer().title("扫码超时秒数").min(30).max(600).default(180),
+  poll_interval: form.integer().title("轮询间隔秒数").min(1).max(10).default(3),
+  default_display_name: form.string().title("默认备注").description("sm登录 后面没写备注时使用；仍为空则由 smallcat 决定").default(""),
 });
-
-const pluginConfig = new SillyGirlPluginConfig(schema);
 
 async function main() {
   const cfg = normalizeConfig(await pluginConfig.get());
@@ -65,7 +62,7 @@ async function main() {
 
   const action = matched[1];
   const arg = String(matched[2] || "").trim();
-  const sm = new SmallCat({ id: cfg.smallcat_id });
+  const sm = new ct.SmallCat({ id: cfg.smallcat_id });
 
   try {
     if (action === "登录") {
@@ -98,7 +95,7 @@ async function login(sm, cfg, displayNameArg) {
   const deadline = Date.now() + cfg.login_timeout * 1000;
   let lastState = "";
   while (Date.now() < deadline) {
-    await sleep(cfg.poll_interval * 1000);
+    await utils.sleep(cfg.poll_interval * 1000);
     const checked = unwrap(await sm.checkQr(uuid));
     const state = firstString(checked, ["state", "status"]);
     const code = firstString(checked, ["wxCode", "wx_code", "code"]);
@@ -179,7 +176,7 @@ async function loadSmallcatAccounts(sm, cfg) {
 
 async function authorizedOpenidSet() {
   if (typeof userList !== "function") throw new Error("当前 SillyGirl 版本缺少 userList");
-  const users = await userList();
+  const users = await utils.userList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;

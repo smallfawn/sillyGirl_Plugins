@@ -2,8 +2,8 @@ r"""
 /**
  * @title 美团Code登录
  * @author sillyGirl
- * @version v1.1.0
- * @desc 从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙
+ * @version v1.1.1
+ * @desc 从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙/呆呆
  * @rule raw ^\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\s*(登录|取[Tt]oken)?\s*([^\s]+)?\s*$
  * @admin true
  * @priority 10
@@ -31,7 +31,9 @@ import zlib
 from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 
-from sillygirl import QingLong, SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema, userList
+from sillygirl import Container, form, sender as s, utils
+
+ct = Container()
 
 # JSGuard 固定参数。签名、siua、dfpid 均在本文件内生成。
 MTG_BASE64_ALPHABET = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
@@ -47,69 +49,77 @@ DEFAULTS = {
     "account_selector": "",
     "proxy_url": "",
     "request_timeout": 25,
+    "sync_panel": "none",
     "sync_qinglong": False,
     "qinglong_id": 1,
+    "daidai_id": 1,
     "ql_env_name": "MT_TOKEN",
     "ql_remarks": "",
     "debug": False,
 }
 
-schema = sillyGirlCreateSchema.object(
+plugin_config = form(
     {
-        "enable": sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(True),
+        "enable": form.boolean().title("是否启用").default(True),
         "smallcat_id": (
-            sillyGirlCreateSchema.integer()
-            .setTitle("smallcat 编号")
-            .setDescription("后台 smallcat 页面里的编号，从 1 开始；AUTH 使用面板配置")
-            .setMin(1)
-            .setDefault(1)
+            form.integer()
+            .title("smallcat 编号")
+            .description("后台 smallcat 页面里的编号，从 1 开始；AUTH 使用面板配置")
+            .widget("smallcat-panel")
+            .min(1)
+            .default(1)
         ),
         "account_mode": (
-            sillyGirlCreateSchema.string()
-            .setTitle("openid 获取模式")
-            .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
-            .setEnum(["authorized", "manual"])
-            .setEnumNames(["普通用户授权", "手动填写"])
-            .setDefault("authorized")
+            form.string()
+            .title("openid 获取模式")
+            .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+            .options(["authorized", "manual"])
+
+            .default("authorized")
         ),
         "manual_openids": (
-            sillyGirlCreateSchema.string()
-            .setTitle("手动 openid")
-            .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
-            .setWidget("textarea")
-            .setDefault("")
+            form.string()
+            .title("手动 openid")
+            .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+            .widget("textarea")
+            .default("")
         ),
         "account_selector": (
-            sillyGirlCreateSchema.string()
-            .setTitle("执行账号")
-            .setDescription("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
-            .setDefault("")
+            form.string()
+            .title("执行账号")
+            .description("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
+            .default("")
         ),
         "proxy_url": (
-            sillyGirlCreateSchema.string()
-            .setTitle("业务请求代理")
-            .setDescription("默认留空直连；仅在明确需要时填写 http/https 代理")
-            .setDefault("")
+            form.string()
+            .title("业务请求代理")
+            .description("默认留空直连；仅在明确需要时填写 http/https 代理")
+            .default("")
         ),
         "request_timeout": (
-            sillyGirlCreateSchema.integer().setTitle("请求超时秒数").setMin(5).setMax(90).setDefault(25)
+            form.integer().title("请求超时秒数").min(5).max(90).default(25)
         ),
-        "sync_qinglong": (
-            sillyGirlCreateSchema.boolean().setTitle("同步青龙").setDescription("登录成功后写入 MT_TOKEN").setDefault(False)
+        "sync_panel": (
+            form.select([
+                {"label": "不同步", "value": "none"},
+                {"label": "同步青龙", "value": "qinglong"},
+                {"label": "同步呆呆", "value": "daidai"},
+            ]).title("同步目标").description("青龙/呆呆容器编号会根据后台容器列表动态渲染").default("none")
         ),
         "qinglong_id": (
-            sillyGirlCreateSchema.integer().setTitle("青龙编号").setDescription("后台青龙页面里的编号，从 1 开始").setMin(1).setDefault(1)
+            form.integer().title("青龙编号").description("后台青龙页面里的编号，从 1 开始").widget("qinglong-panel").min(1).default(1)
         ),
-        "ql_env_name": sillyGirlCreateSchema.string().setTitle("青龙变量名").setDefault("MT_TOKEN"),
+        "daidai_id": (
+            form.integer().title("呆呆编号").description("后台呆呆页面里的编号，从 1 开始").widget("daidai-panel").min(1).default(1)
+        ),
+        "ql_env_name": form.string().title("环境变量名").default("MT_TOKEN"),
         "ql_remarks": (
-            sillyGirlCreateSchema.string().setTitle("青龙备注").setDescription("留空自动使用账号名称或 userId").setDefault("")
+            form.string().title("变量备注").description("留空自动使用账号名称或 userId").default("")
         ),
-        "debug": sillyGirlCreateSchema.boolean().setTitle("调试日志").setDefault(False),
+        "debug": form.boolean().title("调试日志").default(False),
     }
 )
-plugin_config = SillyGirlPluginConfig(schema)
-
-# 配置扫描先执行上面的 SillyGirlPluginConfig；第三方依赖放在其后，首次安装依赖前也能导出表单。
+# 配置扫描先执行上面的 form；第三方依赖放在其后，首次安装依赖前也能导出表单。
 import httpx
 
 class _Undefined:
@@ -976,13 +986,16 @@ def normalize_config(raw: Any) -> Dict[str, Any]:
     config["account_selector"] = str(config.get("account_selector") or "").strip()
     config["proxy_url"] = str(config.get("proxy_url") or "").strip()
     config["request_timeout"] = max(5, min(positive_int(config.get("request_timeout"), 25), 90))
-    config["sync_qinglong"] = as_bool(config.get("sync_qinglong"))
+    raw_sync_panel = str(config.get("sync_panel") or "").strip()
+    config["sync_panel"] = raw_sync_panel if raw_sync_panel in {"none", "qinglong", "daidai"} else ("qinglong" if as_bool(config.get("sync_qinglong")) else "none")
+    config["sync_qinglong"] = config["sync_panel"] == "qinglong"
     config["qinglong_id"] = positive_int(config.get("qinglong_id"), 1)
+    config["daidai_id"] = positive_int(config.get("daidai_id"), 1)
     config["ql_env_name"] = str(config.get("ql_env_name") or "MT_TOKEN").strip() or "MT_TOKEN"
     config["ql_remarks"] = clean_text(config.get("ql_remarks"))
     config["debug"] = as_bool(config.get("debug"))
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", config["ql_env_name"]):
-        raise RuntimeError("青龙变量名格式异常")
+        raise RuntimeError("环境变量名格式异常")
     return config
 
 
@@ -1030,7 +1043,7 @@ async def load_smallcat_accounts(smallcat: SmallCat, config: Dict[str, Any]) -> 
 
 
 async def authorized_openids() -> set[str]:
-    users = await userList()
+    users = await utils.userList()
     allowed: set[str] = set()
     for user in users if isinstance(users, list) else []:
         if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
@@ -1205,7 +1218,7 @@ async def meituan_code_login(code: str, proxy_url: str = "", timeout: int = 25, 
     return result
 
 
-def ql_items(payload: Any) -> List[Dict[str, Any]]:
+def env_items(payload: Any) -> List[Dict[str, Any]]:
     value = decode_json_tree(payload)
     if isinstance(value, dict):
         value = value.get("data", value)
@@ -1214,10 +1227,16 @@ def ql_items(payload: Any) -> List[Dict[str, Any]]:
     return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
 
-async def sync_qinglong(config: Dict[str, Any], result: Dict[str, Any], label: str) -> str:
-    qinglong = QingLong({"id": config["qinglong_id"]})
+async def sync_panel_env(config: Dict[str, Any], result: Dict[str, Any], label: str) -> str:
+    if config["sync_panel"] == "daidai":
+        return await sync_env(config, ct.DaiDai({"id": config["daidai_id"]}), result, label)
+    return await sync_env(config, ct.QingLong({"id": config["qinglong_id"]}), result, label)
+
+
+async def sync_env(config: Dict[str, Any], panel: Any, result: Dict[str, Any], label: str) -> str:
     env_name = config["ql_env_name"]
-    envs = [item for item in ql_items(await qinglong.getEnvs(env_name)) if str(item.get("name") or "") == env_name]
+    query = env_name if config["sync_panel"] == "daidai" else {"searchValue": env_name}
+    envs = [item for item in env_items(await panel.getEnvs(query)) if str(item.get("name") or "") == env_name]
     identity = str(result.get("userId") or result.get("openId") or "").strip()
     remark = config["ql_remarks"] or label or identity or "美团Code登录"
     existing = None
@@ -1230,16 +1249,23 @@ async def sync_qinglong(config: Dict[str, Any], result: Dict[str, Any], label: s
     if existing:
         env_id = existing.get("id") if existing.get("id") is not None else existing.get("_id")
         if env_id in (None, ""):
-            raise RuntimeError("已有青龙变量缺少 id/_id")
+            raise RuntimeError(f"已有{sync_panel_label(config)}变量缺少 id/_id")
         env["id"] = env_id
-        await qinglong.updateEnv(env)
+        await panel.updateEnv(env)
         try:
-            await qinglong.enableEnvs([env_id])
+            if config["sync_panel"] == "daidai":
+                await panel.enableEnv(env_id)
+            else:
+                await panel.enableEnvs([env_id])
         except Exception:
             pass
         return "已更新"
-    await qinglong.createEnv(env)
+    await panel.createEnv(env)
     return "已创建"
+
+
+def sync_panel_label(config: Dict[str, Any]) -> str:
+    return "呆呆" if config.get("sync_panel") == "daidai" else "青龙"
 
 
 def mask_identifier(value: Any, keep: int = 5) -> str:
@@ -1262,12 +1288,12 @@ async def run_account(smallcat: SmallCat, account: Dict[str, Any], config: Dict[
         if result.get("openId"):
             lines.append("openId：" + mask_identifier(result["openId"]))
         lines.append("MT_TOKEN：" + str(result["token"]))
-        if config["sync_qinglong"]:
+        if config["sync_panel"] != "none":
             try:
-                action = await sync_qinglong(config, result, label)
-                lines.append(f"[SUCCESS] 青龙：{action} {config['ql_env_name']}")
+                action = await sync_panel_env(config, result, label)
+                lines.append(f"[SUCCESS] {sync_panel_label(config)}：{action} {config['ql_env_name']}")
             except Exception as exc:
-                lines.append(f"[WARNING] 青龙同步失败：{exc}")
+                lines.append(f"[WARNING] {sync_panel_label(config)}同步失败：{exc}")
         if config["debug"]:
             signature = result.get("debug") or {}
             lines.append("[DEBUG] signed_len=" + str((signature.get("request") or {}).get("signed_len", "")))
@@ -1285,12 +1311,12 @@ async def run_direct_code(code: str, config: Dict[str, Any]) -> str:
         return "\n".join([*lines, f"[ERROR] 美团登录失败：{result.get('error')}", f"结果：失败 | {result.get('error')}"])
     lines.append(f"[SUCCESS] 美团登录成功，userId={result.get('userId') or '未知'}")
     lines.append("MT_TOKEN：" + str(result["token"]))
-    if config["sync_qinglong"]:
+    if config["sync_panel"] != "none":
         try:
-            action = await sync_qinglong(config, result, str(result.get("account") or "命令参数"))
-            lines.append(f"[SUCCESS] 青龙：{action} {config['ql_env_name']}")
+            action = await sync_panel_env(config, result, str(result.get("account") or "命令参数"))
+            lines.append(f"[SUCCESS] {sync_panel_label(config)}：{action} {config['ql_env_name']}")
         except Exception as exc:
-            lines.append(f"[WARNING] 青龙同步失败：{exc}")
+            lines.append(f"[WARNING] {sync_panel_label(config)}同步失败：{exc}")
     lines.append("结果：成功")
     return "\n".join(lines)
 
@@ -1309,7 +1335,7 @@ async def main() -> None:
             await s.reply("美团 CODE 登录开始（来源：命令参数）")
             await s.reply(await run_direct_code(command["code"], config))
             return
-        smallcat = SmallCat({"id": config["smallcat_id"]})
+        smallcat = ct.SmallCat({"id": config["smallcat_id"]})
         accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         await s.reply(f"美团 CODE 登录开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")
         outputs = []

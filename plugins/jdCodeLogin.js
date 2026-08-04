@@ -1,8 +1,8 @@
 /**
  * @title 京东Code登录
  * @author smallfawn
- * @version v1.1.0
- * @desc 通过 smallcat OAuth 获取京东 PT Cookie 并同步 JD_COOKIE 到青龙
+ * @version v1.1.1
+ * @desc 通过 smallcat OAuth 获取京东 PT Cookie 并同步 JD_COOKIE 到青龙/呆呆
  * @rule ^\s*(京东登录|京东同步|[Jj][Dd]登录|[Jj][Dd]同步)\s*$
  * @admin false
  * @priority 10
@@ -13,17 +13,15 @@
 
 const http = require("http");
 const https = require("https");
-const { URL, URLSearchParams } = require("url");
 const {
   sender: s,
-  userList,
-  QingLong,
-  SmallCat,
-  sillyGirlCreateSchema,
-  SillyGirlPluginConfig,
-  sleep,
   console,
-} = require("sillygirl");
+  form,
+  Container,
+  utils,
+} = require('sillygirl');
+
+const ct = new Container();
 
 const SCRIPT_VERSION = "v1.1.0";
 const JD_PT_LOGIN_URL = "https://plogin.m.jd.com/user/login.action?appid=300&returnurl=https%3A%2F%2Fm.jd.com%2F&source=wq_passport";
@@ -35,34 +33,39 @@ const DEFAULTS = {
   account_mode: "authorized",
   manual_openids: "",
   accounts_json: "",
+  sync_panel: "qinglong",
   qinglong_id: 1,
+  daidai_id: 1,
   ql_cookie_env_name: JD_COOKIE_ENV_NAME,
   request_timeout: 30,
 };
 
-const schema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
-  smallcat_id: sillyGirlCreateSchema.integer().setTitle("smallcat 编号").setDescription("后台 smallcat 页面里的编号，从 1 开始").setDefault(1),
-  account_mode: sillyGirlCreateSchema.string()
-    .setTitle("openid 获取模式")
-    .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
-    .setEnum(["authorized", "manual"]).setEnumNames(["普通用户授权", "手动填写"]).setDefault("authorized"),
-  manual_openids: sillyGirlCreateSchema.string()
-    .setTitle("手动 openid")
-    .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
-    .setWidget("textarea")
-    .setDefault(""),
-  accounts_json: sillyGirlCreateSchema.string()
-    .setTitle("手动账号 JSON")
-    .setDescription('仅手动填写模式生效且优先于手动 openid；留空从 SmallCat 读取；示例：[{"name":"京东账号1","openid":"openid"}]')
-    .setWidget("textarea")
-    .setDefault(""),
-  qinglong_id: sillyGirlCreateSchema.integer().setTitle("青龙面板编号").setDescription("后台青龙容器页面里的编号，从 1 开始").setDefault(1),
-  ql_cookie_env_name: sillyGirlCreateSchema.string().setTitle("青龙变量名").setDefault(JD_COOKIE_ENV_NAME),
-  request_timeout: sillyGirlCreateSchema.integer().setTitle("请求超时秒数").setMin(5).setMax(90).setDefault(30),
+const pluginConfig = new form({
+  enable: form.boolean().title("是否启用").default(true),
+  smallcat_id: form.integer().title("smallcat 编号").description("后台 smallcat 页面里的编号，从 1 开始").widget("smallcat-panel").default(1),
+  account_mode: form.string()
+    .title("openid 获取模式")
+    .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+    .options(["authorized", "manual"]).default("authorized"),
+  manual_openids: form.string()
+    .title("手动 openid")
+    .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+    .widget("textarea")
+    .default(""),
+  accounts_json: form.string()
+    .title("手动账号 JSON")
+    .description('仅手动填写模式生效且优先于手动 openid；留空从 SmallCat 读取；示例：[{"name":"京东账号1","openid":"openid"}]')
+    .widget("textarea")
+    .default(""),
+  sync_panel: form.select([
+    { label: "同步青龙", value: "qinglong" },
+    { label: "同步呆呆", value: "daidai" },
+  ]).title("同步目标").description("青龙/呆呆容器编号会根据后台容器列表动态渲染").default("qinglong"),
+  qinglong_id: form.integer().title("青龙面板编号").description("后台青龙容器页面里的编号，从 1 开始").widget("qinglong-panel").default(1),
+  daidai_id: form.integer().title("呆呆面板编号").description("后台呆呆容器页面里的编号，从 1 开始").widget("daidai-panel").default(1),
+  ql_cookie_env_name: form.string().title("环境变量名").default(JD_COOKIE_ENV_NAME),
+  request_timeout: form.integer().title("请求超时秒数").min(5).max(90).default(30),
 });
-
-const pluginConfig = new SillyGirlPluginConfig(schema);
 
 async function main() {
   if (!(await s.isAdmin())) {
@@ -80,16 +83,16 @@ async function main() {
     validateConfig(cfg);
     await s.reply(`京东Code登录已触发，正在读取 smallcat #${cfg.smallcat_id} 用户列表...`);
 
-    const smallcat = new SmallCat({ id: cfg.smallcat_id });
+    const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
     const accounts = await loadAccounts(cfg, smallcat);
-    const ql = new QingLong({ id: cfg.qinglong_id });
+    const panel = cfg.sync_panel === "daidai" ? new ct.DaiDai({ id: cfg.daidai_id }) : new ct.QingLong({ id: cfg.qinglong_id });
 
     await s.reply([
       "京东 PT Cookie 登录开始",
       `脚本版本：${SCRIPT_VERSION}`,
       `账号：${accounts.length}`,
       `smallcat 编号：${cfg.smallcat_id}`,
-      `青龙编号：${cfg.qinglong_id}`,
+      `同步目标：${cfg.sync_panel === "daidai" ? "呆呆 #" + cfg.daidai_id : "青龙 #" + cfg.qinglong_id}`,
     ].join("\n"));
 
     let success = 0;
@@ -99,15 +102,15 @@ async function main() {
         console.log(`京东 PT 登录开始：${account.name} openid=${account.openid}`);
         const cookie = await jdPtCookieLogin(cfg, smallcat, account);
         if (!normalizePtCookie(cookie)) throw new Error("登录结果缺少 pt_key/pt_pin");
-        const action = await syncQl(cfg, ql, account, cookie);
+        const action = await syncPanel(cfg, panel, account, cookie);
         success += 1;
-        await s.reply(`${account.name}：${action === "update" ? "已更新" : "已创建"}青龙变量`);
+        await s.reply(`${account.name}：${action === "update" ? "已更新" : "已创建"}${cfg.sync_panel === "daidai" ? "呆呆" : "青龙"}变量`);
       } catch (err) {
         const message = userErrorMessage(err);
         failures.push(`${account.name}：${message}`);
         await s.reply(`${account.name}：失败\n${message}`);
       }
-      await sleep(1000);
+      await utils.sleep(1000);
     }
 
     const summary = [`完成：成功 ${success}，失败 ${accounts.length - success}`];
@@ -124,8 +127,10 @@ function normalizeConfig(raw) {
   cfg.account_mode = cfg.account_mode === "manual" ? "manual" : "authorized";
   cfg.manual_openids = String(cfg.manual_openids || "").trim();
   cfg.accounts_json = env("JD_ACCOUNTS_JSON", cfg.accounts_json);
+  cfg.sync_panel = cfg.sync_panel === "daidai" ? "daidai" : "qinglong";
   cfg.ql_cookie_env_name = env("QL_COOKIE_ENV_NAME", cfg.ql_cookie_env_name);
   cfg.qinglong_id = Number(cfg.qinglong_id || 0);
+  cfg.daidai_id = Number(cfg.daidai_id || 0);
   cfg.request_timeout = Math.max(5, Math.min(Number(cfg.request_timeout || 30), 90));
   return cfg;
 }
@@ -137,7 +142,8 @@ function env(name, fallback) {
 
 function validateConfig(cfg) {
   if (!Number.isInteger(cfg.smallcat_id) || cfg.smallcat_id < 1) throw new Error("smallcat 编号必须从 1 开始");
-  if (!Number.isInteger(cfg.qinglong_id) || cfg.qinglong_id < 1) throw new Error("青龙面板编号必须从 1 开始");
+  if (cfg.sync_panel === "qinglong" && (!Number.isInteger(cfg.qinglong_id) || cfg.qinglong_id < 1)) throw new Error("青龙面板编号必须从 1 开始");
+  if (cfg.sync_panel === "daidai" && (!Number.isInteger(cfg.daidai_id) || cfg.daidai_id < 1)) throw new Error("呆呆面板编号必须从 1 开始");
 }
 
 async function loadAccounts(cfg, smallcat) {
@@ -168,7 +174,7 @@ async function loadAccounts(cfg, smallcat) {
 
 async function authorizedOpenidSet() {
   if (typeof userList !== "function") throw new Error("当前 SillyGirl 版本缺少 userList");
-  const users = await userList();
+  const users = await utils.userList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;
@@ -286,31 +292,31 @@ function jdPtHeaders() {
   };
 }
 
-async function syncQl(cfg, ql, account, cookie) {
+async function syncPanel(cfg, panel, account, cookie) {
   const pureCookie = normalizePtCookie(cookie);
   if (!pureCookie) throw new Error("待同步结果缺少 pt_key/pt_pin");
 
   const remark = account.remark || normalizePin(cookiePin(pureCookie)) || `JD_COOKIE自动更新-${account.name}-${account.openid}`;
-  const envs = await qlEnvs(cfg, ql);
+  const envs = await panelEnvs(cfg, panel);
   const existing = findExistingEnv(envs, pureCookie, remark);
   if (existing) {
     const id = envId(existing);
-    if (id == null || id === "") throw new Error("已有青龙变量缺少 id/_id");
-    await ql.updateEnv({ id, name: cfg.ql_cookie_env_name, value: pureCookie, remarks: remark });
-    await enableQlEnv(ql, id);
+    if (id == null || id === "") throw new Error(`已有${cfg.sync_panel === "daidai" ? "呆呆" : "青龙"}变量缺少 id/_id`);
+    await panel.updateEnv({ id, name: cfg.ql_cookie_env_name, value: pureCookie, remarks: remark });
+    await enablePanelEnv(cfg, panel, id);
     return "update";
   }
 
-  await ql.createEnv({ name: cfg.ql_cookie_env_name, value: pureCookie, remarks: remark });
+  await panel.createEnv({ name: cfg.ql_cookie_env_name, value: pureCookie, remarks: remark });
   return "create";
 }
 
-async function qlEnvs(cfg, ql) {
-  const data = await ql.getEnvs({ searchValue: cfg.ql_cookie_env_name });
-  return qlItems({ data }).filter((item) => item.name === cfg.ql_cookie_env_name);
+async function panelEnvs(cfg, panel) {
+  const data = cfg.sync_panel === "daidai" ? await panel.getEnvs(cfg.ql_cookie_env_name) : await panel.getEnvs({ searchValue: cfg.ql_cookie_env_name });
+  return envItems({ data }).filter((item) => item.name === cfg.ql_cookie_env_name);
 }
 
-function qlItems(payload) {
+function envItems(payload) {
   if (!payload || typeof payload !== "object") return [];
   const data = payload.data;
   if (Array.isArray(data)) return data.filter((item) => item && typeof item === "object");
@@ -327,9 +333,10 @@ function envId(item) {
   return item.id != null ? item.id : item._id;
 }
 
-async function enableQlEnv(ql, id) {
+async function enablePanelEnv(cfg, panel, id) {
   try {
-    await ql.enableEnvs([id]);
+    if (cfg.sync_panel === "daidai") await panel.enableEnv(id);
+    else await panel.enableEnvs([id]);
   } catch (_) {}
 }
 

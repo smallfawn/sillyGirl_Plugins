@@ -5,7 +5,7 @@
  * @admin true
  * @public true
  * @author smallfawn
- * @version v1.0.0
+ * @version v1.0.1
  * @desc 定时获取打印机状态，支持 IPP 打印测试图片
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
@@ -15,19 +15,20 @@
 const http = require("http");
 const https = require("https");
 const ipp = require("ipp");
-const { promisify } = require("util");
-const { sender: s, console, sillyGirlCreateSchema, SillyGirlPluginConfig } = require("sillygirl");
+const {
+  sender: s,
+  console,
+  form,
+} = require('sillygirl');
 
-const jsonSchema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle("是否开启该打印机脚本").setDefault(false),
-  print_url: sillyGirlCreateSchema.string().setTitle("打印机 IPP 地址").setDescription("格式：http://192.168.x.x:631/ipp/print"),
-  test_enable: sillyGirlCreateSchema.boolean().setTitle("是否开启每周自动打印测试图防止堵头").setDefault(false),
-  test_image: sillyGirlCreateSchema.string()
-    .setTitle("测试打印图片地址")
-    .setDefault("https://raw.githubusercontent.com/smallfawn/Bncr_Plugins/main/plugins/smallfawn/assets/printer_test.jpeg"),
+const config = new form({
+  enable: form.boolean().title("是否开启该打印机脚本").default(false),
+  print_url: form.string().title("打印机 IPP 地址").description("格式：http://192.168.x.x:631/ipp/print"),
+  test_enable: form.boolean().title("是否开启每周自动打印测试图防止堵头").default(false),
+  test_image: form.string()
+    .title("测试打印图片地址")
+    .default("https://raw.githubusercontent.com/smallfawn/Bncr_Plugins/main/plugins/smallfawn/assets/printer_test.jpeg"),
 });
-const config = new SillyGirlPluginConfig(jsonSchema);
-
 class PrinterService {
   async execute(operation, message, url) {
     if (!url) throw new Error("打印机 URL 未提供，请先设置 print_url");

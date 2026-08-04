@@ -1,8 +1,8 @@
 /**
  * @title 饿了么Code登录
  * @author sillyGirl
- * @version v1.1.0
- * @desc 输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙 elmck
+ * @version v1.1.1
+ * @desc 输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙/呆呆 elmck
  * @rule ^\s*(饿了么Code|饿了么|[Ee][Ll][Mm])\s*(登录|换[Cc]ookie|取[Cc][Kk])?\s*([^\s]+)?\s*$
  * @admin false
  * @priority 10
@@ -20,13 +20,13 @@ const os = require('node:os');
 const zlib = require('node:zlib');
 const {
   sender: s,
-  userList,
-  QingLong,
-  SmallCat,
-  sillyGirlCreateSchema,
-  SillyGirlPluginConfig,
   console,
+  form,
+  Container,
+  utils,
 } = require('sillygirl');
+
+const ct = new Container();
 
 const APP_ID = process.env.ELEME_APPID || 'wxece3a9a4c82f58c9';
 const APP_VERSION = process.env.ELEME_APP_VERSION || '12.6.3';
@@ -440,43 +440,50 @@ const DEFAULTS = {
   manual_openids: '',
   umid_token: '',
   request_timeout: 30,
+  sync_panel: 'none',
   sync_qinglong: false,
   qinglong_id: 1,
+  daidai_id: 1,
   ql_env_name: 'elmck',
   ql_remarks: '',
 };
 
-const schema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle('是否启用').setDefault(true),
-  smallcat_id: sillyGirlCreateSchema.integer()
-    .setTitle('smallcat 编号')
-    .setDescription('命令不带 CODE 时使用；后台 smallcat 页面中的编号，从 1 开始')
-    .setMin(1).setDefault(1),
-  account_mode: sillyGirlCreateSchema.string()
-    .setTitle('openid 获取模式')
-    .setDescription('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
-    .setEnum(['authorized', 'manual']).setEnumNames(['普通用户授权', '手动填写']).setDefault('authorized'),
-  manual_openids: sillyGirlCreateSchema.string()
-    .setTitle('手动 openid')
-    .setDescription('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号，本插件使用第一个可用账号')
-    .setWidget('textarea').setDefault(''),
-  umid_token: sillyGirlCreateSchema.string()
-    .setTitle('固定 bx-umidtoken')
-    .setDescription('通常留空自动获取；网络环境取不到 UMID 时可手动填写')
-    .setWidget('password').setDefault(''),
-  request_timeout: sillyGirlCreateSchema.integer()
-    .setTitle('请求超时秒数').setMin(5).setMax(90).setDefault(30),
-  sync_qinglong: sillyGirlCreateSchema.boolean()
-    .setTitle('同步到青龙').setDescription('开启后创建或更新 elmck 环境变量').setDefault(false),
-  qinglong_id: sillyGirlCreateSchema.integer()
-    .setTitle('青龙面板编号').setMin(1).setDefault(1),
-  ql_env_name: sillyGirlCreateSchema.string()
-    .setTitle('青龙变量名').setDefault('elmck'),
-  ql_remarks: sillyGirlCreateSchema.string()
-    .setTitle('青龙变量备注').setDescription('留空时自动使用饿了么账号信息').setDefault(''),
+const pluginConfig = new form({
+  enable: form.boolean().title('是否启用').default(true),
+  smallcat_id: form.integer()
+    .title('smallcat 编号')
+    .description('命令不带 CODE 时使用；后台 smallcat 页面中的编号，从 1 开始')
+    .widget('smallcat-panel')
+    .min(1).default(1),
+  account_mode: form.string()
+    .title('openid 获取模式')
+    .description('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
+    .options(['authorized', 'manual']).default('authorized'),
+  manual_openids: form.string()
+    .title('手动 openid')
+    .description('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号，本插件使用第一个可用账号')
+    .widget('textarea').default(''),
+  umid_token: form.string()
+    .title('固定 bx-umidtoken')
+    .description('通常留空自动获取；网络环境取不到 UMID 时可手动填写')
+    .widget('password').default(''),
+  request_timeout: form.integer()
+    .title('请求超时秒数').min(5).max(90).default(30),
+  sync_panel: form.select([
+    { label: '不同步', value: 'none' },
+    { label: '同步青龙', value: 'qinglong' },
+    { label: '同步呆呆', value: 'daidai' },
+  ]).title('同步目标').description('青龙/呆呆容器编号会根据后台容器列表动态渲染').default('none'),
+  qinglong_id: form.integer()
+    .title('青龙面板编号').widget('qinglong-panel').min(1).default(1),
+  daidai_id: form.integer()
+    .title('呆呆面板编号').widget('daidai-panel').min(1).default(1),
+  ql_env_name: form.string()
+    .title('环境变量名').default('elmck'),
+  ql_remarks: form.string()
+    .title('变量备注').description('留空时自动使用饿了么账号信息').default(''),
 });
 
-const pluginConfig = new SillyGirlPluginConfig(schema);
 const ACCOUNT_COOKIE_FIELDS = [
   ['cookie2', ['cookie2', 'sid']],
   ['sid', ['sid']],
@@ -507,13 +514,13 @@ async function main() {
     const result = await havanaCodeLogin(code, cfg);
     if (!result.ok) throw new Error(result.error || '饿了么 CODE 登录失败');
 
-    let qlAction = '';
-    if (cfg.sync_qinglong) qlAction = await syncQingLong(cfg, result);
+    let syncAction = '';
+    if (cfg.sync_panel !== 'none') syncAction = await syncPanelEnv(cfg, result);
     const lines = ['饿了么 CODE 换 Cookie 成功'];
     if (result.username) lines.push(`账号：${result.username}`);
     if (result.userId) lines.push(`userId：${result.userId}`);
     lines.push(`Cookie：${result.cookie}`);
-    if (qlAction) lines.push(`青龙：${qlAction === 'update' ? '已更新' : '已创建'} ${cfg.ql_env_name}`);
+    if (syncAction) lines.push(`${cfg.sync_panel === 'daidai' ? '呆呆' : '青龙'}：${syncAction === 'update' ? '已更新' : '已创建'} ${cfg.ql_env_name}`);
     if (result.riskWarning) lines.push(`提示：${result.riskWarning}`);
     await s.reply(lines.join('\n'));
   } catch (error) {
@@ -529,8 +536,10 @@ function normalizeConfig(raw) {
   cfg.manual_openids = String(cfg.manual_openids || '').trim();
   cfg.umid_token = String(cfg.umid_token || '').trim();
   cfg.request_timeout = Math.max(5, Math.min(positiveInt(cfg.request_timeout, 30), 90));
-  cfg.sync_qinglong = yes(cfg.sync_qinglong);
+  cfg.sync_panel = ['qinglong', 'daidai', 'none'].includes(String(cfg.sync_panel || '')) ? String(cfg.sync_panel) : (yes(cfg.sync_qinglong) ? 'qinglong' : 'none');
+  cfg.sync_qinglong = cfg.sync_panel === 'qinglong';
   cfg.qinglong_id = positiveInt(cfg.qinglong_id, 1);
+  cfg.daidai_id = positiveInt(cfg.daidai_id, 1);
   cfg.ql_env_name = String(cfg.ql_env_name || 'elmck').trim() || 'elmck';
   cfg.ql_remarks = String(cfg.ql_remarks || '').trim();
   return cfg;
@@ -546,7 +555,7 @@ function parseCommand(content) {
 
 async function resolveInputCode(cfg, directCode) {
   if (directCode) return directCode;
-  const smallcat = new SmallCat({ id: cfg.smallcat_id });
+  const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
   if (typeof smallcat.getCode !== 'function') throw new Error('当前 SillyGirl 版本缺少 SmallCat.getCode');
   const usersPayload = unwrapServicePayload(await loadSmallcatAccountPayload(smallcat, cfg));
   const users = Array.isArray(usersPayload)
@@ -574,7 +583,7 @@ async function loadSmallcatAccountPayload(smallcat, cfg) {
 
 async function authorizedOpenidSet() {
   if (typeof userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 userList');
-  const users = await userList();
+  const users = await utils.userList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;
@@ -727,29 +736,69 @@ function requestTextAny({ url, method = 'GET', headers = {}, body = '', timeout 
   });
 }
 
+async function syncPanelEnv(cfg, result) {
+  if (cfg.sync_panel === 'daidai') return syncDaiDai(cfg, result);
+  return syncQingLong(cfg, result);
+}
+
 async function syncQingLong(cfg, result) {
-  const ql = new QingLong({ id: cfg.qinglong_id });
+  const ql = new ct.QingLong({ id: cfg.qinglong_id });
   const payload = await ql.getEnvs({ searchValue: cfg.ql_env_name });
-  const envs = qlItems(payload).filter(item => item.name === cfg.ql_env_name);
-  const identity = result.userId || result.openId || cookieValue(result.cookie, 'munb') || cookieValue(result.cookie, 'openId');
-  const remark = cfg.ql_remarks || result.username || identity || '饿了么Code登录';
+  const envs = envItems(payload).filter(item => item.name === cfg.ql_env_name);
+  return upsertEnv({
+    panel: ql,
+    envs,
+    envName: cfg.ql_env_name,
+    value: result.cookie,
+    remark: envRemark(cfg, result),
+    identity: envIdentity(result),
+    enable: (id) => ql.enableEnvs([id]),
+    missingIdMessage: '已有青龙变量缺少 id/_id',
+  });
+}
+
+async function syncDaiDai(cfg, result) {
+  const dd = new ct.DaiDai({ id: cfg.daidai_id });
+  const payload = await dd.getEnvs(cfg.ql_env_name);
+  const envs = envItems(payload).filter(item => item.name === cfg.ql_env_name);
+  return upsertEnv({
+    panel: dd,
+    envs,
+    envName: cfg.ql_env_name,
+    value: result.cookie,
+    remark: envRemark(cfg, result),
+    identity: envIdentity(result),
+    enable: (id) => dd.enableEnv(id),
+    missingIdMessage: '已有呆呆变量缺少 id/_id',
+  });
+}
+
+function envIdentity(result) {
+  return result.userId || result.openId || cookieValue(result.cookie, 'munb') || cookieValue(result.cookie, 'openId');
+}
+
+function envRemark(cfg, result) {
+  return cfg.ql_remarks || result.username || envIdentity(result) || '饿了么Code登录';
+}
+
+async function upsertEnv({ panel, envs, envName, value, remark, identity, enable, missingIdMessage }) {
   const existing = envs.find(item => {
     if (String(item.remarks || item.remark || '') === remark) return true;
-    if (!identity) return String(item.value || '') === result.cookie;
-    return [item.value, item.remarks, item.remark].some(value => String(value || '').includes(identity));
+    if (!identity) return String(item.value || '') === value;
+    return [item.value, item.remarks, item.remark].some(current => String(current || '').includes(identity));
   });
   if (existing) {
     const id = existing.id != null ? existing.id : existing._id;
-    if (id == null || id === '') throw new Error('已有青龙变量缺少 id/_id');
-    await ql.updateEnv({ id, name: cfg.ql_env_name, value: result.cookie, remarks: remark });
-    try { await ql.enableEnvs([id]); } catch (_) {}
+    if (id == null || id === '') throw new Error(missingIdMessage);
+    await panel.updateEnv({ id, name: envName, value, remarks: remark });
+    try { await enable(id); } catch (_) {}
     return 'update';
   }
-  await ql.createEnv({ name: cfg.ql_env_name, value: result.cookie, remarks: remark });
+  await panel.createEnv({ name: envName, value, remarks: remark });
   return 'create';
 }
 
-function qlItems(payload) {
+function envItems(payload) {
   if (!payload || typeof payload !== 'object') return [];
   if (Array.isArray(payload)) return payload;
   const data = payload.data;
@@ -852,6 +901,7 @@ if (globalThis.__ELEME_CODE_LOGIN_TEST__) {
     buildRiskHeaders,
     buildAccountCookie,
     havanaCodeLogin,
+    syncPanelEnv,
     syncQingLong,
     normalizeConfig,
     parseCommand,

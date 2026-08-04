@@ -5,7 +5,7 @@
  * @admin true
  * @public true
  * @author smallfawn
- * @version v1.0.0
+ * @version v1.0.1
  * @desc 获取 UPS 状态并监控断电情况
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
@@ -13,18 +13,20 @@
  */
 
 const net = require("net");
-const { sender: s, console, sillyGirlCreateSchema, SillyGirlPluginConfig } = require("sillygirl");
+const {
+  sender: s,
+  console,
+  form,
+} = require('sillygirl');
 
-const jsonSchema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle("是否开启 ups-nut-server 监控").setDefault(false),
-  ups_nut_server_ip: sillyGirlCreateSchema.string().setTitle("ups-nut-server 地址").setDescription("格式：192.168.x.x"),
-  ups_nut_server_port: sillyGirlCreateSchema.number().setTitle("ups-nut-server 端口").setDefault(3493),
-  ups_nut_server_username: sillyGirlCreateSchema.string().setTitle("ups nut server 用户名").setDefault("nut"),
-  ups_nut_server_password: sillyGirlCreateSchema.string().setTitle("ups nut server 密码").setDefault("nut").setWidget("password"),
-  ups_nut_server_ups_name: sillyGirlCreateSchema.string().setTitle("ups nut server ups 名称").setDefault("ups0"),
+const config = new form({
+  enable: form.boolean().title("是否开启 ups-nut-server 监控").default(false),
+  ups_nut_server_ip: form.string().title("ups-nut-server 地址").description("格式：192.168.x.x"),
+  ups_nut_server_port: form.number().title("ups-nut-server 端口").default(3493),
+  ups_nut_server_username: form.string().title("ups nut server 用户名").default("nut"),
+  ups_nut_server_password: form.string().title("ups nut server 密码").default("nut").widget("password"),
+  ups_nut_server_ups_name: form.string().title("ups nut server ups 名称").default("ups0"),
 });
-const config = new SillyGirlPluginConfig(jsonSchema);
-
 const testMap = {
   "Done and passed": "通过",
   "Done and warned": "警告",

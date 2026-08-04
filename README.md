@@ -48,6 +48,6 @@ Action 会在提交插件后自动扫描依赖并回写 `@depe`：
 
 ## 兼容差异
 
-BNCR 的 `sysMethod.pushAdmin()` 没有直接等价的 SillyGirl NodeJS 脚本 API。已迁移插件在定时任务里使用 `sender.reply()` 发送通知；实际投递目标取决于 SillyGirl 定时任务 Sender 的平台配置。
+SillyGirl v2 使用 `sender.pushAdmin(content, options)` 推送管理员；定时任务也可以继续使用 `sender.reply()`，实际投递目标取决于任务 Sender 的平台和接收人配置。
 
-配置表单统一使用 SillyGirl 运行时导出的 `sillyGirlCreateSchema` / `SillyGirlPluginConfig`，插件安装时会自动注册到后台「插件配置」。
+配置表单统一使用 SillyGirl v2 链式写法：`const config = new form({ token: form.string().title("Token").default("") })`，插件安装时会自动注册到后台「插件配置」。

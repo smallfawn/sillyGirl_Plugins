@@ -1,7 +1,7 @@
 /**
  * @title 沪上阿姨签到
  * @author sillyGirl
- * @version v1.1.0
+ * @version v1.1.1
  * @desc 基于 SmallCat 微信账号完成沪上阿姨会员登录和小满活动每日签到
  * @rule ^\s*(沪上阿姨|沪上签到|[Hh][Uu][Ss][Hh][Ee][Nn][Gg])\s*(查询|强制|dry-run|force)?\s*$
  * @admin false
@@ -20,12 +20,13 @@ const tls = require('node:tls');
 const zlib = require('node:zlib');
 const {
   sender: s,
-  userList,
-  SmallCat,
-  sillyGirlCreateSchema,
-  SillyGirlPluginConfig,
   console,
+  form,
+  Container,
+  utils,
 } = require('sillygirl');
+
+const ct = new Container();
 
 const TOKEN_SECRET_B64 = 'SjdoOCZeQmdzNSNibio3aG4lIT1raDMwOCpidjIhc14=';
 const SIGN_SECRET_B64 = 'dWgzJEhnJl5ISzg3NiVnYnhWRzdmJCVwPTBNfj5zMXg=';
@@ -64,33 +65,31 @@ const DEFAULTS = {
   debug: false,
 };
 
-const schema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle('是否启用').setDefault(true),
-  smallcat_id: sillyGirlCreateSchema.integer()
-    .setTitle('smallcat 编号').setDescription('后台 smallcat 页面里的编号，从 1 开始').setMin(1).setDefault(1),
-  account_mode: sillyGirlCreateSchema.string()
-    .setTitle('openid 获取模式')
-    .setDescription('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
-    .setEnum(['authorized', 'manual']).setEnumNames(['普通用户授权', '手动填写']).setDefault('authorized'),
-  manual_openids: sillyGirlCreateSchema.string()
-    .setTitle('手动 openid').setDescription('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号')
-    .setWidget('textarea').setDefault(''),
-  account_selector: sillyGirlCreateSchema.string()
-    .setTitle('执行账号').setDescription('留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部可用账号').setDefault(''),
-  dry_run: sillyGirlCreateSchema.boolean().setTitle('仅查询').setDescription('只查询状态，不提交签到').setDefault(false),
-  force: sillyGirlCreateSchema.boolean().setTitle('强制签到').setDescription('已签到时仍提交一次').setDefault(false),
-  date: sillyGirlCreateSchema.string().setTitle('签到日期').setDescription('留空使用当天，格式 YYYY-MM-DD').setDefault(''),
-  user_agent: sillyGirlCreateSchema.string().setTitle('User-Agent').setDefault(DEFAULT_USER_AGENT),
-  channel_code: sillyGirlCreateSchema.string().setTitle('注册渠道').setDefault(DEFAULT_CHANNEL_CODE),
-  flow_scene: sillyGirlCreateSchema.integer().setTitle('flowScene').setDefault(DEFAULT_FLOW_SCENE),
-  oa_openid: sillyGirlCreateSchema.string().setTitle('公众号 openid').setDescription('通常保持 null').setDefault(DEFAULT_OA_OPENID),
-  proxy_url: sillyGirlCreateSchema.string()
-    .setTitle('业务请求代理').setDescription('留空使用 SmallCat 账号 proxyUrl；支持 http/https 代理').setDefault(''),
-  request_timeout: sillyGirlCreateSchema.integer().setTitle('请求超时秒数').setMin(5).setMax(90).setDefault(20),
-  debug: sillyGirlCreateSchema.boolean().setTitle('调试日志').setDefault(false),
+const pluginConfig = new form({
+  enable: form.boolean().title('是否启用').default(true),
+  smallcat_id: form.integer()
+    .title('smallcat 编号').description('后台 smallcat 页面里的编号，从 1 开始').widget('smallcat-panel').min(1).default(1),
+  account_mode: form.string()
+    .title('openid 获取模式')
+    .description('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
+    .options(['authorized', 'manual']).default('authorized'),
+  manual_openids: form.string()
+    .title('手动 openid').description('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号')
+    .widget('textarea').default(''),
+  account_selector: form.string()
+    .title('执行账号').description('留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部可用账号').default(''),
+  dry_run: form.boolean().title('仅查询').description('只查询状态，不提交签到').default(false),
+  force: form.boolean().title('强制签到').description('已签到时仍提交一次').default(false),
+  date: form.string().title('签到日期').description('留空使用当天，格式 YYYY-MM-DD').default(''),
+  user_agent: form.string().title('User-Agent').default(DEFAULT_USER_AGENT),
+  channel_code: form.string().title('注册渠道').default(DEFAULT_CHANNEL_CODE),
+  flow_scene: form.integer().title('flowScene').default(DEFAULT_FLOW_SCENE),
+  oa_openid: form.string().title('公众号 openid').description('通常保持 null').default(DEFAULT_OA_OPENID),
+  proxy_url: form.string()
+    .title('业务请求代理').description('留空使用 SmallCat 账号 proxyUrl；支持 http/https 代理').default(''),
+  request_timeout: form.integer().title('请求超时秒数').min(5).max(90).default(20),
+  debug: form.boolean().title('调试日志').default(false),
 });
-const pluginConfig = new SillyGirlPluginConfig(schema);
-
 class NotMemberError extends Error {}
 class PhoneAlreadyBoundError extends Error {
   constructor(message) {
@@ -764,7 +763,7 @@ async function loadSmallcatAccounts(smallcat, cfg) {
 
 async function authorizedOpenidSet() {
   if (typeof userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 userList');
-  const users = await userList();
+  const users = await utils.userList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;
@@ -948,7 +947,7 @@ async function main() {
     const input = parseCommand(String(await s.getContent() || ''));
     if (input.dryRun) cfg.dry_run = true;
     if (input.force) cfg.force = true;
-    const smallcat = new SmallCat({ id: cfg.smallcat_id });
+    const smallcat = new ct.SmallCat({ id: cfg.smallcat_id });
     const accounts = selectAccounts(await loadSmallcatAccounts(smallcat, cfg), cfg.account_selector);
     await s.reply('沪上阿姨签到开始：SmallCat #' + cfg.smallcat_id + '，账号 ' + accounts.length + ' 个');
     const outputs = [];

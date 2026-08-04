@@ -5,7 +5,7 @@
  * @admin true
  * @public true
  * @author smallfawn
- * @version v1.0.0
+ * @version v1.0.1
  * @desc IP变动通知
  * @class 工具
  * @origin smallfawn/Bncr_Plugins
@@ -14,7 +14,11 @@
 
 const http = require("http");
 const https = require("https");
-const { Bucket, sender: s, console } = require("sillygirl");
+const {
+  sender: s,
+  Bucket,
+  console,
+} = require('sillygirl');
 
 const getIPApi = "https://4.ipw.cn/";
 const db = new Bucket("smallfawnDB");

@@ -1,7 +1,7 @@
 /**
  * @title 官方命令
  * @author sillyGirl
- * @version v1.0.6
+ * @version v1.0.7
  * @desc 提供时间、版本、我是谁、更新、升级、重启基础管理命令
  * @rule ^\s*(时间|版本|我是谁|更新|升级|重启)\s*$
  * @admin false
@@ -15,13 +15,13 @@
 const {
   sender: s,
   Bucket,
-  pushAdmin,
-  version: getSillyGirlVersion,
-  restart: restartSillyGirl,
-  update: updateSillyGirl,
-  sillyGirlCreateSchema,
-  SillyGirlPluginConfig,
-} = require("sillygirl");
+  form,
+  utils,
+} = require('sillygirl');
+
+const getSillyGirlVersion = utils.version;
+const restartSillyGirl = utils.restart;
+const updateSillyGirl = utils.update;
 
 const DEFAULTS = {
   enable: true,
@@ -31,12 +31,10 @@ const DEFAULTS = {
 const STATE_BUCKET = "sillyGirl";
 const UPDATE_RESTART_NOTICE_KEY = "official_commands_update_restart_notice";
 
-const schema = sillyGirlCreateSchema.object({
-  enable: sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(true),
-  update_timeout: sillyGirlCreateSchema.integer().setTitle("更新超时秒数").setMin(10).setMax(600).setDefault(120),
+const pluginConfig = new form({
+  enable: form.boolean().title("是否启用").default(true),
+  update_timeout: form.integer().title("更新超时秒数").min(10).max(600).default(120),
 });
-
-const pluginConfig = new SillyGirlPluginConfig(schema);
 
 async function main() {
   const cmd = String(await s.getContent() || "").trim();
@@ -171,7 +169,7 @@ async function notifyPendingRestart() {
   ].join("\n");
 
   try {
-    await pushAdmin(text);
+    await s.pushAdmin(text);
   } catch (error) {
     console.error("官方命令重启后通知失败：" + errorText(error));
   }

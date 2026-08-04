@@ -2,7 +2,7 @@ r"""
 /**
  * @title 瑞幸咖啡抽奖
  * @author sillyGirl
- * @version v1.1.0
+ * @version v1.1.1
  * @desc 从 SmallCat 读取微信账号，完成瑞幸小程序登录、活动校验、抽奖和中奖记录查询
  * @rule raw ^\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\s*(查询|抽奖)?\s*$
  * @admin false
@@ -28,7 +28,9 @@ import uuid
 from typing import Any
 from urllib.parse import urlencode
 
-from sillygirl import SmallCat, SillyGirlPluginConfig, sender as s, sillyGirlCreateSchema, userList
+from sillygirl import Container, form, sender as s, utils
+
+ct = Container()
 
 APP_ID = "wx21c7506e98a2fe75"
 APP_VERSION = "916"
@@ -65,75 +67,74 @@ DEFAULTS = {
     "debug": False,
 }
 
-schema = sillyGirlCreateSchema.object(
+plugin_config = form(
     {
-        "enable": sillyGirlCreateSchema.boolean().setTitle("是否启用").setDefault(True),
+        "enable": form.boolean().title("是否启用").default(True),
         "smallcat_id": (
-            sillyGirlCreateSchema.integer()
-            .setTitle("smallcat 编号")
-            .setDescription("后台 smallcat 页面里的编号，从 1 开始；AUTH 直接使用面板配置")
-            .setMin(1)
-            .setDefault(1)
+            form.integer()
+            .title("smallcat 编号")
+            .description("后台 smallcat 页面里的编号，从 1 开始；AUTH 直接使用面板配置")
+            .widget("smallcat-panel")
+            .min(1)
+            .default(1)
         ),
         "account_mode": (
-            sillyGirlCreateSchema.string()
-            .setTitle("openid 获取模式")
-            .setDescription("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
-            .setEnum(["authorized", "manual"])
-            .setEnumNames(["普通用户授权", "手动填写"])
-            .setDefault("authorized")
+            form.string()
+            .title("openid 获取模式")
+            .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
+            .options(["authorized", "manual"])
+
+            .default("authorized")
         ),
         "manual_openids": (
-            sillyGirlCreateSchema.string()
-            .setTitle("手动 openid")
-            .setDescription("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
-            .setWidget("textarea")
-            .setDefault("")
+            form.string()
+            .title("手动 openid")
+            .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
+            .widget("textarea")
+            .default("")
         ),
         "account_selector": (
-            sillyGirlCreateSchema.string()
-            .setTitle("执行账号")
-            .setDescription("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
-            .setDefault("")
+            form.string()
+            .title("执行账号")
+            .description("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
+            .default("")
         ),
         "activity_no": (
-            sillyGirlCreateSchema.string()
-            .setTitle("活动编号 activityNo")
-            .setDescription("默认使用内置的幸运星期三活动；活动更新后可在这里覆盖")
-            .setDefault(DEFAULT_ACTIVITY_NO)
+            form.string()
+            .title("活动编号 activityNo")
+            .description("默认使用内置的幸运星期三活动；活动更新后可在这里覆盖")
+            .default(DEFAULT_ACTIVITY_NO)
         ),
         "activity_id": (
-            sillyGirlCreateSchema.integer()
-            .setTitle("活动 ID")
-            .setDescription("活动详情未返回 activityId 时使用的兜底值")
-            .setMin(1)
-            .setDefault(DEFAULT_ACTIVITY_ID)
+            form.integer()
+            .title("活动 ID")
+            .description("活动详情未返回 activityId 时使用的兜底值")
+            .min(1)
+            .default(DEFAULT_ACTIVITY_ID)
         ),
         "query_only": (
-            sillyGirlCreateSchema.boolean()
-            .setTitle("仅查询")
-            .setDescription("开启后只查询活动和中奖记录，不提交抽奖；命令“瑞幸 查询”也会临时开启")
-            .setDefault(False)
+            form.boolean()
+            .title("仅查询")
+            .description("开启后只查询活动和中奖记录，不提交抽奖；命令“瑞幸 查询”也会临时开启")
+            .default(False)
         ),
         "proxy_url": (
-            sillyGirlCreateSchema.string()
-            .setTitle("业务请求代理")
-            .setDescription("留空使用 SmallCat 账号 proxyUrl；支持 http/https 代理")
-            .setDefault("")
+            form.string()
+            .title("业务请求代理")
+            .description("留空使用 SmallCat 账号 proxyUrl；支持 http/https 代理")
+            .default("")
         ),
         "request_timeout": (
-            sillyGirlCreateSchema.integer()
-            .setTitle("请求超时秒数")
-            .setMin(5)
-            .setMax(90)
-            .setDefault(20)
+            form.integer()
+            .title("请求超时秒数")
+            .min(5)
+            .max(90)
+            .default(20)
         ),
-        "debug": sillyGirlCreateSchema.boolean().setTitle("调试日志").setDefault(False),
+        "debug": form.boolean().title("调试日志").default(False),
     }
 )
-plugin_config = SillyGirlPluginConfig(schema)
-
-# 配置扫描会设置 SILLYGIRL_CONFIG_REGISTER_ONLY；SillyGirlPluginConfig 在上面写出
+# 配置扫描会设置 SILLYGIRL_CONFIG_REGISTER_ONLY；form 在上面写出
 # schema 后直接结束进程。第三方业务依赖必须放在它后面，否则首次安装尚未装依赖时，
 # import 会抢先报错，后台只能检测到配置代码却拿不到配置表单。
 import requests
@@ -377,7 +378,7 @@ async def load_smallcat_accounts(smallcat: SmallCat, config: dict[str, Any]) -> 
 
 
 async def authorized_openids() -> set[str]:
-    users = await userList()
+    users = await utils.userList()
     allowed: set[str] = set()
     for user in users if isinstance(users, list) else []:
         if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
@@ -827,7 +828,7 @@ async def main() -> None:
     try:
         command = parse_command(str(await s.getContent() or ""))
         query_only = bool(config["query_only"] or command["query_only"])
-        smallcat = SmallCat({"id": config["smallcat_id"]})
+        smallcat = ct.SmallCat({"id": config["smallcat_id"]})
         accounts = select_accounts(await load_smallcat_accounts(smallcat, config), config["account_selector"])
         mode = "查询" if query_only else "抽奖"
         await s.reply(f"瑞幸咖啡{mode}开始：SmallCat #{config['smallcat_id']}，账号 {len(accounts)} 个")

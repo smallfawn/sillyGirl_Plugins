@@ -1,9 +1,9 @@
 /**
- * @title 青龙管理
+ * @title 面板变量管理
  * @author sillyGirl
- * @version v1.0.0
- * @desc 青龙面板管理脚本 - 管理面板、环境变量等
- * @rule ^(?:青龙|面板列表|面板状态|变量列表|变量详情|新建变量|修改变量|修改变量备注|删除变量|启用变量|禁用变量|通知)
+ * @version v1.0.1
+ * @desc 青龙/呆呆面板管理脚本 - 管理面板、环境变量等
+ * @rule ^(?:青龙|呆呆|面板列表|面板状态|变量列表|变量详情|新建变量|修改变量|修改变量备注|删除变量|启用变量|禁用变量|通知)
  * @admin true
  * @priority 1
  * @public true
@@ -11,7 +11,13 @@
  * @depe []
  */
 
-const { sender: s, QingLong, Bucket, console } = require("sillygirl");
+const {
+  sender: s,
+  console,
+  Container,
+} = require('sillygirl');
+
+const ct = new Container();
 
 const MAX_PANEL_SCAN = 50;
 
@@ -21,58 +27,76 @@ async function main() {
     return;
   }
 
-  const cmd = String(await s.getContent() || "").trim();
-  if (!cmd || cmd === "青龙") {
-    await s.reply(menuText());
+  const parsed = parsePanelCommand(String(await s.getContent() || "").trim());
+  const kind = parsed.kind;
+  const label = panelLabel(kind);
+  const cmd = parsed.command;
+  if (!cmd || cmd === "青龙" || cmd === "呆呆") {
+    await s.reply(menuText(label));
     return;
   }
 
   if (cmd === "面板列表") {
-    await listPanels();
+    await listPanels(kind);
     return;
   }
 
   if (cmd === "面板状态") {
-    await panelStatus();
+    await panelStatus(kind);
     return;
   }
 
-  const ql = await firstAvailablePanel();
+  const panel = await firstAvailablePanel(kind);
   let match;
 
   match = cmd.match(/^变量列表\s*(.*)$/);
-  if (match) return listEnvs(ql, match[1]);
+  if (match) return listEnvs(panel, match[1]);
 
   match = cmd.match(/^变量详情\s*(\d+)$/);
-  if (match) return getEnvDetail(ql, match[1]);
+  if (match) return getEnvDetail(panel, match[1]);
 
   match = cmd.match(/^新建变量\s+([^\s=]+)=([^\s]+)(?:\s+(.+))?$/);
-  if (match) return createEnv(ql, match[1], match[2], match[3] || "");
+  if (match) return createEnv(panel, match[1], match[2], match[3] || "");
 
   match = cmd.match(/^修改变量\s*(\d+)\s+([^\s=]+)=(.+)$/);
-  if (match) return updateEnv(ql, match[1], match[2], match[3]);
+  if (match) return updateEnv(panel, match[1], match[2], match[3]);
 
   match = cmd.match(/^修改变量备注\s*(\d+)\s+(.+)$/);
-  if (match) return updateEnvRemark(ql, match[1], match[2]);
+  if (match) return updateEnvRemark(panel, match[1], match[2]);
 
   match = cmd.match(/^删除变量\s+([\d,，\s]+)$/);
-  if (match) return deleteEnvs(ql, match[1]);
+  if (match) return deleteEnvs(panel, match[1]);
 
   match = cmd.match(/^启用变量\s+([\d,，\s]+)$/);
-  if (match) return toggleEnvs(ql, match[1], true);
+  if (match) return toggleEnvs(panel, match[1], true);
 
   match = cmd.match(/^禁用变量\s+([\d,，\s]+)$/);
-  if (match) return toggleEnvs(ql, match[1], false);
+  if (match) return toggleEnvs(panel, match[1], false);
 
   match = cmd.match(/^通知\s+(.+?)\s*[|｜]\s*(.+)$/);
-  if (match) return sendNotify(ql, match[1], match[2]);
+  if (match) return sendNotify(panel, match[1], match[2]);
 
-  await s.reply(menuText());
+  await s.reply(menuText(label));
 }
 
-function menuText() {
+function parsePanelCommand(cmd) {
+  if (/^呆呆(?:\s|$)/.test(cmd)) return { kind: "daidai", command: cmd.replace(/^呆呆\s*/, "") };
+  if (/^青龙(?:\s|$)/.test(cmd)) return { kind: "qinglong", command: cmd.replace(/^青龙\s*/, "") };
+  return { kind: "qinglong", command: cmd };
+}
+
+function panelLabel(kind) {
+  return kind === "daidai" ? "呆呆" : "青龙";
+}
+
+function panelCtor(kind) {
+  return kind === "daidai" ? ct.DaiDai : ct.QingLong;
+}
+
+function menuText(label = "青龙") {
   return [
-    "青龙管理",
+    label + "管理",
+    "命令前加 青龙/呆呆 可切换面板类型；不写默认青龙",
     "面板列表 | 面板状态",
     "变量列表[关键词] | 变量详情<ID>",
     "新建变量 名称=值[备注]",
@@ -84,24 +108,20 @@ function menuText() {
   ].join("\n");
 }
 
-async function readPanels() {
-  const bucket = new Bucket("sillyGirl");
-  const raw = await bucket.get("qinglong_panels", []);
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw !== "string" || !raw.trim()) return [];
-  const text = raw.startsWith("o:") ? raw.slice(2) : raw;
-  const panels = JSON.parse(text);
-  return Array.isArray(panels) ? panels : [];
+async function readPanels(kind) {
+  const info = await ct.getList(kind);
+  return Array.isArray(info.list) ? info.list : [];
 }
 
-async function listPanels() {
+async function listPanels(kind) {
+  const label = panelLabel(kind);
   try {
-    const panels = await readPanels();
+    const panels = await readPanels(kind);
     if (!panels.length) {
-      await s.reply("未添加面板,请在管理后台添加");
+      await s.reply("未添加" + label + "面板,请在管理后台添加");
       return;
     }
-    const lines = ["面板列表(" + panels.length + "个)"];
+    const lines = [label + "面板列表(" + panels.length + "个)"];
     panels.forEach((panel, index) => {
       const status = panel.status === "online" ? "在线" : "离线";
       lines.push("#" + (index + 1) + " " + (panel.name || "未命名") + " " + status);
@@ -114,14 +134,16 @@ async function listPanels() {
   }
 }
 
-async function panelStatus() {
-  const lines = ["检测中.."];
+async function panelStatus(kind) {
+  const label = panelLabel(kind);
+  const Panel = panelCtor(kind);
+  const lines = [label + "检测中.."];
   let count = 0;
   for (let i = 1; i <= MAX_PANEL_SCAN; i++) {
     try {
-      const ql = new QingLong({ id: i });
-      const envs = await ql.getEnvs();
-      lines.push("#" + i + " " + (ql.name || ql.address || "青龙面板") + " 在线 变量:" + asArray(envs).length);
+      const panel = new Panel({ id: i });
+      const envs = await panel.getEnvs();
+      lines.push("#" + i + " " + (panel.name || panel.address || label + "面板") + " 在线 变量:" + asArray(envs).length);
       count++;
     } catch (error) {
       if (count === 0) continue;
@@ -131,15 +153,16 @@ async function panelStatus() {
   await s.reply(count ? lines.join("\n") : "未添加面板");
 }
 
-async function firstAvailablePanel() {
+async function firstAvailablePanel(kind) {
+  const Panel = panelCtor(kind);
   for (let i = 1; i <= MAX_PANEL_SCAN; i++) {
     try {
-      const ql = new QingLong({ id: i });
-      await ql.getEnvs();
-      return ql;
+      const panel = new Panel({ id: i });
+      await panel.getEnvs();
+      return panel;
     } catch (error) {}
   }
-  throw new Error("无可用青龙面板");
+  throw new Error("无可用" + panelLabel(kind) + "面板");
 }
 
 async function listEnvs(ql, search) {
@@ -247,8 +270,14 @@ async function toggleEnvs(ql, idsText, enable) {
   }
   const actionText = enable ? "启用" : "禁用";
   try {
-    if (enable) await ql.enableEnvs(ids);
-    else await ql.disableEnvs(ids);
+    if (enable && typeof ql.enableEnvs === "function") await ql.enableEnvs(ids);
+    else if (!enable && typeof ql.disableEnvs === "function") await ql.disableEnvs(ids);
+    else {
+      for (const id of ids) {
+        if (enable) await ql.enableEnv(id);
+        else await ql.disableEnv(id);
+      }
+    }
     await s.reply("已" + actionText + ids.length + "个 ID:" + ids.join(","));
   } catch (error) {
     await s.reply(actionText + "失败:" + errorText(error));
@@ -300,6 +329,6 @@ main().catch(async (error) => {
   try {
     await s.reply("异常:" + errorText(error));
   } catch (_) {
-    console.error("青龙管理异常:", error);
+    console.error("面板变量管理异常:", error);
   }
 });

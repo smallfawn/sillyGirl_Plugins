@@ -10,7 +10,7 @@
 //[rule: ^网抑云$]
 //[icon: https://api.iconify.design/lucide:music.svg]
 //[description: 随机返回一条网易云热评]
-//[depe: []]
+// [depe: []]
 
 const { sender: s } = require("sillygirl");
 

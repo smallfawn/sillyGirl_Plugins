@@ -10,7 +10,7 @@
 //[rule: ^转二维码(?:\s+(.+))?$]
 //[icon: https://api.iconify.design/lucide:qr-code.svg]
 //[description: 将命令后的文字或链接生成二维码]
-//[depe: []]
+// [depe: []]
 
 const { sender: s } = require("sillygirl");
 

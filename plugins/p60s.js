@@ -11,7 +11,7 @@
 //[cron: 30 7 * * *]
 //[icon: https://img.icons8.com/fluency/96/news.png]
 //[description: 获取每日 60 秒早报，支持文字、图片及定时管理员推送]
-//[depe: []]
+// [depe: []]
 
 const { sender: s, form } = require("sillygirl");
 

@@ -11,7 +11,7 @@
 //[priority: 0]
 //[icon: https://api.iconify.design/lucide:network.svg]
 //[description: 查询公网 IP，并在定时检查发现变化时通知管理员]
-//[depe: []]
+// [depe: []]
 //[origin: smallfawn/Bncr_Plugins]
 
 const { sender: s, Bucket, form } = require("sillygirl");

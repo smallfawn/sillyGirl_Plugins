@@ -10,7 +10,7 @@
 //[priority: 0]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 定时获取打印机状态，支持 IPP 打印测试图片]
-//[depe: ["ipp"]]
+// [depe: ["ipp"]]
 //[origin: smallfawn/Bncr_Plugins]
 
 const http = require("http");

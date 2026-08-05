@@ -10,7 +10,7 @@
 //[priority: 0]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 获取 UPS 状态并监控断电情况]
-//[depe: []]
+// [depe: []]
 //[origin: smallfawn/Bncr_Plugins]
 
 const net = require("net");

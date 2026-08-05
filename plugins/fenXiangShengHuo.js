@@ -11,7 +11,7 @@
 //[priority: 20]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 粉象生活账号管理、签到、余额查询和提现。]
-//[depe: []]
+// [depe: []]
 
 const crypto = require('node:crypto');
 const http = require('node:http');

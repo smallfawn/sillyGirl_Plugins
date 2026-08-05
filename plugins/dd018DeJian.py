@@ -11,7 +11,7 @@
 # [cron: 0 9 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 。]
-# [depe: ["cryptography","pycryptodome","requests"]]
+# [depe: ["pycryptodome","requests"]]
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time

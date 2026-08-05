@@ -11,7 +11,7 @@
 # [cron: 18 6 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 青龙环境变量格式为“会员ID”；1.0.0初版：支持批量登录]
-# [depe: ["aiohttp","requests","urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio

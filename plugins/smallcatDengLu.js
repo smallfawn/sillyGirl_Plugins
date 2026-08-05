@@ -10,7 +10,7 @@
 //[priority: 10]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 通过 smallcat 二维码扫码登录和删除已保存账号]
-//[depe: []]
+// [depe: []]
 
 const {
   sender: s,

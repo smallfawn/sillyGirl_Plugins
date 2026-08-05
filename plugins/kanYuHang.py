@@ -11,7 +11,7 @@
 # [cron: 0 0 * * *]
 # [icon: https://www.helloimg.com/i/2025/02/03/67a06719bd58f.jpg]
 # [description: 看余杭插件，支持短信跟Token登录；由流云集团附属集团开发，维护能力有限，；账号交青龙禁用启用逻辑；更新:  修复未登录查询异常bug；更新:  修复未登录管理异常；更新:  优化了一些已知问题；更新:  优化了一些已知问题2/26/22:20；相关脚本链接：【看余杭交流学习文件.py]
-# [depe: ["aiohttp","requests"]]
+# [depe: ["requests"]]
 
 
 import asyncio as _sg_asyncio

@@ -10,7 +10,7 @@
 //[priority: 10]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 基于 SmallCat 微信账号完成沪上阿姨会员登录和小满活动每日签到]
-//[depe: []]
+// [depe: []]
 
 'use strict';
 

@@ -11,7 +11,7 @@
 //[priority: 1]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 提供时间、版本、我是谁、更新、升级、重启基础管理命令]
-//[depe: []]
+// [depe: []]
 
 const {
   sender: s,

@@ -299,7 +299,6 @@
     "path": "plugins/dd018DeJian.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.py",
     "dependencies": [
-      "cryptography",
       "pycryptodome",
       "requests"
     ],
@@ -736,8 +735,7 @@
     "path": "plugins/jieTingChe.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.py",
     "dependencies": [
-      "requests",
-      "user-agent"
+      "requests"
     ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -838,7 +836,6 @@
     "path": "plugins/kanYuHang.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.py",
     "dependencies": [
-      "aiohttp",
       "requests"
     ],
     "type": "python",
@@ -1582,7 +1579,6 @@
     "path": "plugins/shuiFeiYi.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.py",
     "dependencies": [
-      "aiohttp",
       "requests",
       "urllib3"
     ],
@@ -1768,7 +1764,6 @@
     "path": "plugins/taiKangZaiXian.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.py",
     "dependencies": [
-      "aiohttp",
       "httpx",
       "requests",
       "urllib3"

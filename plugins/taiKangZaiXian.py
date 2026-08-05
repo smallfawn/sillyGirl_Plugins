@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_42327729_1745494497/256]
 # [description: AI练手，自用；仅提交青龙”；<1.5.0更新(20250515)：优化查询显示，优化青龙提交；>；1.4.0更新(20250430)：增加红包记录查询]
-# [depe: ["aiohttp","httpx","requests","urllib3"]]
+# [depe: ["httpx","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio

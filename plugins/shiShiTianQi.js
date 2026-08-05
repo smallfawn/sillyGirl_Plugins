@@ -10,7 +10,7 @@
 //[rule: ^(天气|今天天气)$|^(.+)(天气)$]
 //[icon: https://img.icons8.com/fluency/96/sun.png]
 //[description: 查询实时天气、温度、湿度、风力和日出日落；支持“天气”及“北京天气”]
-//[depe: []]
+// [depe: []]
 
 const { sender: s, form } = require("sillygirl");
 

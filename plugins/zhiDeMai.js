@@ -10,7 +10,7 @@
 //[rule: ^zdm$]
 //[icon: https://www.smzdm.com/favicon.ico]
 //[description: 查询什么值得买近三小时好价 TOP20]
-//[depe: []]
+// [depe: []]
 
 const { sender: s } = require("sillygirl");
 

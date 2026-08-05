@@ -10,7 +10,7 @@
 //[priority: 10]
 //[icon: https://api.iconify.design/lucide:bot.svg]
 //[description: 输入饿了么 wx.login CODE 换完整 Cookie；不带 CODE 时自动读取 SmallCat 首个可用账号，可选同步青龙/呆呆 elmck]
-//[depe: []]
+// [depe: []]
 
 'use strict';
 

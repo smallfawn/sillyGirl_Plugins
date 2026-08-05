@@ -11,7 +11,7 @@
 //[cron: */5 * * * *]
 //[icon: https://pic2.ziyuan.wang/user/974566903/2025/08/jj_ab8218111b3f2.jpg]
 //[description: 查询实时金银价格，并按设定价格定时通知管理员]
-//[depe: []]
+// [depe: []]
 
 const { sender: s, Bucket } = require("sillygirl");
 

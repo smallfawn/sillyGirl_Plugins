@@ -27,18 +27,31 @@ try:
 except Exception:
     decimal = None
 
-def _sg_run(coro):
-    try:
-        _sg_asyncio.get_running_loop()
-    except RuntimeError:
-        return _sg_asyncio.run(coro)
-    box={}
+_sg_loop = None
+
+def _sg_get_loop():
+    global _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed():
+        return _sg_loop
+    box = {}
     def runner():
-        try: box["v"]=_sg_asyncio.run(coro)
-        except BaseException as e: box["e"]=e
-    t=_sg_Thread(target=runner, daemon=True); t.start(); t.join()
-    if "e" in box: raise box["e"]
-    return box.get("v")
+        loop = _sg_asyncio.new_event_loop()
+        _sg_asyncio.set_event_loop(loop)
+        box["loop"] = loop
+        loop.run_forever()
+    t = _sg_Thread(target=runner, daemon=True)
+    t.start()
+    while "loop" not in box:
+        _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]
+    return _sg_loop
+
+def _sg_run(coro):
+    if not _sg_asyncio.iscoroutine(coro):
+        return coro
+    loop = _sg_get_loop()
+    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
+    return future.result()
 
 def _sg_literal(value, default=None):
     if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:

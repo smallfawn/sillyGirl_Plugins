@@ -1,20 +1,22 @@
-/**
- * @title getPrinterStatus
- * @rule ^(打印机|打印机状态|打印测试图片)$
- * @priority 0
- * @admin true
- * @public true
- * @author smallfawn
- * @version v1.0.1
- * @desc 定时获取打印机状态，支持 IPP 打印测试图片
- * @class 工具
- * @origin smallfawn/Bncr_Plugins
- * @depe ["ipp"]
- */
+// [title: getPrinterStatus]
+// [name: getprinterstatus]
+// [language: javascript]
+// [class: 工具]
+// [author: smallfawn]
+// [version: v1.0.1]
+// [public: true]
+// [admin: true]
+// [rule: ^(打印机|打印机状态|打印测试图片)$]
+// [priority: 0]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [description: 定时获取打印机状态，支持 IPP 打印测试图片]
+// [depe: ["ipp"]]
+// [origin: smallfawn/Bncr_Plugins]
 
 const http = require("http");
 const https = require("https");
 const ipp = require("ipp");
+const { promisify } = require("node:util");
 const {
   sender: s,
   console,

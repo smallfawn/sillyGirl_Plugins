@@ -9,12 +9,24 @@ const branch = process.env.GITHUB_REF_NAME || "main";
 const repoUrl = `https://github.com/${repo}`;
 const pluginExts = new Set([".js", ".py"]);
 
+function normalizeMetaKey(key) {
+  const normalized = String(key || "").trim().toLowerCase();
+  if (!normalized || normalized === "param") return "";
+  if (normalized === "description") return "desc";
+  return normalized;
+}
+
 function parseMeta(content) {
   const meta = {};
-  const block = content.match(/\/\*\*([\s\S]*?)\*\//)?.[1] || "";
-  for (const line of block.split(/\r?\n/)) {
-    const match = line.match(/^\s*\*\s*@([\w+-]+)\s+(.+?)\s*$/);
-    if (match) meta[match[1]] = match[2];
+  const patterns = [
+    /^\s*(?:\/\/|#+)\s*\[\s*([\w+-]+)\s*:\s*(.*?)\s*\]\s*$/gm,
+  ];
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(content))) {
+      const key = normalizeMetaKey(match[1]);
+      if (key) meta[key] = String(match[2] || "").trim();
+    }
   }
   return meta;
 }
@@ -51,15 +63,18 @@ for (const pluginFile of pluginFiles) {
   const content = await readFile(pluginFile, "utf8");
   const meta = parseMeta(content);
   const pluginName = path.basename(pluginFile, path.extname(pluginFile));
+  const name = meta.name || pluginName;
   const author = meta.author || repo.split("/")[0];
   const id = pluginId(`${repo}@${branch}/${relativePath}`);
   const rawBase = `https://raw.githubusercontent.com/${repo}/${branch}`;
   result[id] = {
     id,
+    name,
     title: meta.title || pluginName,
     author,
     version: meta.version || "v1.0.0",
     desc: meta.desc || "",
+    icon: meta.icon || "",
     class: meta.class || "",
     rule: meta.rule || "",
     public: meta.public === "true",

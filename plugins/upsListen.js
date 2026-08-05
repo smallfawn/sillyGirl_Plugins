@@ -1,16 +1,17 @@
-/**
- * @title upsListen
- * @rule ^(ups)$
- * @priority 0
- * @admin true
- * @public true
- * @author smallfawn
- * @version v1.0.1
- * @desc 获取 UPS 状态并监控断电情况
- * @class 工具
- * @origin smallfawn/Bncr_Plugins
- * @depe []
- */
+// [title: upsListen]
+// [name: upslisten]
+// [language: javascript]
+// [class: 工具]
+// [author: smallfawn]
+// [version: v1.0.1]
+// [public: true]
+// [admin: true]
+// [rule: ^(ups)$]
+// [priority: 0]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [description: 获取 UPS 状态并监控断电情况]
+// [depe: []]
+// [origin: smallfawn/Bncr_Plugins]
 
 const net = require("net");
 const {

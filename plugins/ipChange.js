@@ -1,16 +1,17 @@
-/**
- * @title ipChange
- * @rule ^(IP|IP查询)$
- * @priority 0
- * @admin true
- * @public true
- * @author smallfawn
- * @version v1.0.1
- * @desc IP变动通知
- * @class 工具
- * @origin smallfawn/Bncr_Plugins
- * @depe []
- */
+// [title: ipChange]
+// [name: ipchange]
+// [language: javascript]
+// [class: 工具]
+// [author: smallfawn]
+// [version: v1.0.1]
+// [public: true]
+// [admin: true]
+// [rule: ^(IP|IP查询)$]
+// [priority: 0]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [description: IP变动通知]
+// [depe: []]
+// [origin: smallfawn/Bncr_Plugins]
 
 const http = require("http");
 const https = require("https");

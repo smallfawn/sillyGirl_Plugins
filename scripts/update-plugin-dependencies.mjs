@@ -135,40 +135,26 @@ async function scanPythonDependencies(file) {
   }
 }
 
-function lineForDepe(deps) {
-  return ` * @depe ${JSON.stringify(deps)}`;
+function lineForDepe(deps, style = "js") {
+  const prefix = style === "python" ? "#" : "//";
+  return `${prefix} [depe: ${JSON.stringify(deps)}]`;
 }
 
 function updateDepeComment(content, deps) {
-  const jsBlock = content.match(/\/\*\*[\s\S]*?\*\//);
-  if (jsBlock) {
-    return replaceDepeInBlock(content, jsBlock.index, jsBlock[0], deps);
-  }
-  const pyBlock = content.match(/("""|''')[\s\S]*?\1/);
-  if (pyBlock) {
-    return replaceDepeInBlock(content, pyBlock.index, pyBlock[0], deps);
-  }
-  return content;
-}
-
-function replaceDepeInBlock(content, index, block, deps) {
-  const lines = block.split(/\r?\n/);
-  const depeLine = lineForDepe(deps);
-  const existingIndex = lines.findIndex((line) => /^\s*\*\s*@depe\b/.test(line));
+  const lines = content.split(/\r?\n/);
+  const style = content.includes("from sillygirl import") || content.includes("import middleware") ? "python" : "js";
+  const depeLine = lineForDepe(deps, style);
+  const existingIndex = lines.findIndex((line) => /^\s*(?:\/\/|#+)\s*\[\s*depe\s*:/i.test(line));
   if (existingIndex >= 0) {
     lines[existingIndex] = depeLine;
-  } else {
-    let closeIndex = lines.length;
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (lines[i].includes("*/") || lines[i].includes('"""') || lines[i].includes("'''")) {
-        closeIndex = i;
-        break;
-      }
-    }
-    lines.splice(closeIndex, 0, depeLine);
+    return lines.join("\n");
   }
-  const updated = lines.join("\n");
-  return content.slice(0, index) + updated + content.slice(index + block.length);
+  let insertAt = 0;
+  while (insertAt < lines.length && /^\s*(?:\/\/|#+)\s*\[\s*[\w+-]+\s*:/i.test(lines[insertAt])) {
+    insertAt += 1;
+  }
+  lines.splice(insertAt, 0, depeLine);
+  return lines.join("\n");
 }
 
 for (const file of await pluginFiles()) {

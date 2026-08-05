@@ -1,0 +1,108 @@
+# [title: 魔幻手机语录]
+# [name: moHuanShouJiYuLu]
+# [language: python]
+# [class: 娱乐]
+# [author: sillyGirl]
+# [version: v1.0.1]
+# [public: true]
+# [admin: false]
+# [rule: raw ^\s*(傻妞语录|傻妞台词|陆小千语录|小千语录|小千台词|魔幻手机语录|魔幻手机台词)\s*$]
+# [priority: 10]
+# [icon: https://api.iconify.design/lucide:bot.svg]
+# [description: 随机回复傻妞和陆小千相关短句]
+# [depe: []]
+
+import asyncio
+import random
+from sillygirl import sender as s
+
+try:
+    import ast as _sg_ast
+except Exception:
+    _sg_ast = None
+try:
+    import decimal as decimal
+except Exception:
+    decimal = None
+
+def _sg_literal(value, default=None):
+    if isinstance(value, (list, dict, tuple, set, int, float, bool)) or value is None:
+        return value if value is not None else (default if default is not None else [])
+    text = str(value or '').strip()
+    if not text:
+        return default if default is not None else []
+    _sg_json_module = globals().get("_sg_json") or globals().get("json")
+    for parser in ((_sg_json_module.loads if _sg_json_module else None), (_sg_ast.literal_eval if _sg_ast else None)):
+        if not parser:
+            continue
+        try:
+            return parser(text)
+        except Exception:
+            pass
+    return default if default is not None else []
+
+
+QUOTES = [
+    {
+        "role": "傻妞",
+        "text": "华人牌2060款手机傻妞为您服务。",
+    },
+    {
+        "role": "傻妞",
+        "text": "请输入开机密码。",
+    },
+    {
+        "role": "傻妞",
+        "text": "密码正确，进入功能选择。",
+    },
+    {
+        "role": "傻妞",
+        "text": "小千哥哥，傻妞会一直帮你。",
+    },
+    {
+        "role": "傻妞",
+        "text": "傻妞明白。",
+    },
+    {
+        "role": "陆小千",
+        "text": "我老千啊我？",
+    },
+    {
+        "role": "陆小千",
+        "text": "傻妞，帮我一下。",
+    },
+    {
+        "role": "陆小千",
+        "text": "这事儿不能这么办。",
+    },
+    {
+        "role": "陆小千",
+        "text": "别闹了，先救人。",
+    },
+    {
+        "role": "游所为",
+        "text": "给他来一贵的。",
+    },
+    {
+        "role": "黄眉大王",
+        "text": "你脑袋让门挤了吧。",
+    },
+]
+
+
+def quote_pool(command):
+    if "陆小千" in command or "小千" in command:
+        return [item for item in QUOTES if item["role"] == "陆小千"]
+    if "傻妞" in command:
+        return [item for item in QUOTES if item["role"] == "傻妞"]
+    return QUOTES
+
+
+async def main():
+    command = (await s.getContent()).strip()
+    pool = quote_pool(command)
+    item = random.choice(pool or QUOTES)
+    await s.reply(f"{item['role']}：{item['text']}")
+
+
+asyncio.run(main())

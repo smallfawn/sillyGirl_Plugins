@@ -11,7 +11,7 @@
 # [cron: 0 8 * * 1]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 介绍：品赞代理自动签到插件；支持自动签到、用户ID查询、账号管理；登录格式：手机号#密码#备注；每周一自动执行签到任务，无需手动操作；📝 更新日志；v1.4：整体重构代码结构，提升可维护性]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

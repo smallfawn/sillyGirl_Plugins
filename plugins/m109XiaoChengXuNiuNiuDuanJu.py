@@ -11,7 +11,7 @@
 # [cron: 49 8,18 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 无脚本提供；ck提交青龙，格式：token；仅环境变量提交青龙]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

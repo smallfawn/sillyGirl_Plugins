@@ -10,7 +10,7 @@
 # [rule: ?]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 指令：配参填写；介绍：elm代挂插件，直接发送cookie即可绑定，支持多容器，使用前请安装pycryptodome，python-dateutil两个python依赖；指令说明：2.刷新我不饿：管理员执行刷新所有账号，优先使用token刷新，token刷新失败尝试账密刷新；添加定时推送；4.夺宝检测：管理员指令，检测所有账号夺宝情况，添加定时推送；其余用户指令请前往配参填写；更新：增加“提交抢券”指令，需搭配我不饿抢券使用；更新：修复提交抢券bug；更新：新增elm短信登陆，原“刷新账密”命令移除，改为“刷新我不饿”；更新：移除账密功能；更新：增加“同步青龙指令”；更新：增加兑换功能，自行配参填写，仅限私聊使用]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","python-dateutil","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

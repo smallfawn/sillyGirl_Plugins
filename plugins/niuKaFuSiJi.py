@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 牛卡福插件v3；兼容青龙与呆呆面板；短信验证码登录 + 滑块识别]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

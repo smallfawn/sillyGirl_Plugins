@@ -10,7 +10,7 @@
 # [rule: ^太平(管理|查询|配置|运行|教程|检测).*$]
 # [icon: https://img1.baidu.com/it/u=35209519,2603388558&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500]
 # [description: 介绍：《太平通插件指令说明》  插件自带任务!；地址：https://www.yuque.com/yuqueyonghulzdzov/fuzugi/xxdck3s248edagql?singleDoc#；更新：运行时账号火爆通知用户；更新：到期前三天自动检测通知用户；更新：支持自定义教程地址链接；更新：新增火爆推送用户开关功能；更新：新增代理IP功能；更新：修复验证码登录，现已支持验证码登录！]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["curl-cffi","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

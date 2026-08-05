@@ -10,7 +10,7 @@
 # [rule: ^卡看(教程|登录|管理|查询|刷进度)$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 卡看 插件，]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 # [classmethod: def get_base_url(cls, url: str) -> str:]
 # [staticmethod: def parse_url_params(url: str) -> dict:]
 

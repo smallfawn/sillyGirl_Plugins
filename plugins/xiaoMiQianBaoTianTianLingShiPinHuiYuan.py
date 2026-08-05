@@ -10,7 +10,7 @@
 # [rule: ^(米包|小米)(登录|查询|兑换|管理|清理|检测|运行|一键运行|一键抢兑)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@553ad47e5cb49923a02422f1d5678c8166fb43b0/2025/05/11/f1e18712a3d6cd7ad6b7f61b4e7eda25.png]
 # [description: ❶小米钱包内置任务插件，完成浏览组任务、拉新任务、2天拉新任务以及首次访问活动获取会员时长；❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『米包检测』与『米包清理』定时『30 18 * * *』，关于指令『米包一键运行』定时『0 8,20 * * *』，关于指令『米包一键抢兑』定时『57 23,9 * * *』<img src="https://gcore.jsdelivr.net/gh/lhz03/img@b4ba469f8e936494ea135a11f6103c9375eae783/2025/10/21/1ced24729474ae46348e41768234d0d3.png">]
-# [depe: ["beautifulsoup4", "requests", "urllib3"]]
+# [depe: ["beautifulsoup4","cryptography","requests","urllib3"]]
 # [staticmethod: def _parse_cookies(cookies_str: str) -> Dict[str, str]:]
 
 

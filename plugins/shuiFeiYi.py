@@ -11,7 +11,7 @@
 # [cron: 18 6 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 青龙环境变量格式为“会员ID”；1.0.0初版：支持批量登录]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["aiohttp","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

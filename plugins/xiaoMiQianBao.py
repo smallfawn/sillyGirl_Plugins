@@ -10,7 +10,7 @@
 # [rule: ^小米登录$|^登录小米$|^小米查询$|^小米管理$|^小米清理$|^小米一键更新$|^小米$|^小米兑换$|^小米教程$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 小米钱包扫码登录、账号管理和视频会员兑换。]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

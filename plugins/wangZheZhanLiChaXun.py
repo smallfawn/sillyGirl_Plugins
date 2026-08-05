@@ -10,7 +10,7 @@
 # [rule: ^战力查询$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@8b8c57f2b4173a6ec2b5c7e58db07be1158e0e16/2025/02/20/f63f99f95da0cf1fb83949c22061cbfb.png]
 # [description: 王者战力查询精美图片版，触发指令战力查询]
-# [depe: ["beautifulsoup4", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

@@ -11,7 +11,7 @@
 # [cron: 0 9 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 大潮现金毛，概率0.2~1；1.0.3:增加备注功能，推送显示对应备注]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

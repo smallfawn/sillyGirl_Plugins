@@ -11,7 +11,7 @@
 # [cron: 0 9 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 酒仙签到，每日签到浏览任务领金币；1.5：支持AI验证码识别，可配置开关、API地址、密钥、模型]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

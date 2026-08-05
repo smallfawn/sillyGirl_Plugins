@@ -11,7 +11,7 @@
 # [cron: 0 5 * * *]
 # [icon: https://y.gtimg.cn/music/photo_new/T053M000002Qqrye0oyZSp.jpg]
 # [description: 泰康青龙变量管理插件]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

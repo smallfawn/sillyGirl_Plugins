@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://uapis.cn/static/uploads/9b25f4d581_5gbszuxm7Mt8.webp]
 # [description: V1.5:此版本更新适配了呆呆面板丨联通云盘抽奖和联通权益插件，支持验证码/账密登录]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["cryptography","httpx","pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

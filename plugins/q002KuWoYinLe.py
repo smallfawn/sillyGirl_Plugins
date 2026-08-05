@@ -10,7 +10,7 @@
 # [rule: ^^酷我登录$|^酷我登陆$|^登陆酷我$|^登录酷我$|^酷我查询$|^查询酷我$|^酷我管理$|^管理酷我$|^酷我清理$|^酷我$]
 # [icon: https://www.kuwo.cn/favicon.ico]
 # [description: 酷我插件；本插件全程用国产ai豆包完成，ai练习内容仅限参考，请仔细甄别；1.支持查询金币功能；2.手机号+密码即可上传到青龙/呆呆面板]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

@@ -11,7 +11,7 @@
 # [cron: 56 8,15 * * *]
 # [icon: https://img.3dmgame.com/uploads/images/thumbnews/20220914/1663143036_387843.jpg]
 # [description: 介绍：酷狗音乐代挂插件；插件支持手机号登录，无需抓包！！！！；1.7更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

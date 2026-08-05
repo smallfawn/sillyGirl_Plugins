@@ -11,7 +11,7 @@
 # [cron: 56 8,15 * * *]
 # [icon: https://i.pinimg.com/564x/39/f2/20/39f2204f052bb3eeb89a7b6a93276cc0.jpg]
 # [description: 介绍：电信金豆查询管理插件，支持账号管理，查询签到，金豆余额查询，本月话费抢购记录查询；登录格式：手机号#密码；V2.0:此版本更新适配了呆呆面板；V2.1:统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置；V2.4:新增电信517活动查询]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

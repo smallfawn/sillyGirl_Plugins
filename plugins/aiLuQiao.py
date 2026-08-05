@@ -11,7 +11,7 @@
 # [cron: 18 9 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 。]
-# [depe: ["requests"]]
+# [depe: ["cryptography","requests"]]
 # [staticmethod: def _recognize_captcha(captcha_img_base64):]
 
 

@@ -10,7 +10,7 @@
 # [rule: ^(新江北|xjb)(登录|登陆)$|^登(录|陆)(新江北|xjb)$|^(新江北|xjb)(查询|管理)$|^(查询|管理)(新江北|xjb)$|^新江北清理$|^新江北检测$|^新江北$|^新江北教程$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 1.0.0：基础版本]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

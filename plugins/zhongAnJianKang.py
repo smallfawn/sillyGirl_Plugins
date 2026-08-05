@@ -11,7 +11,7 @@
 # [cron: 32 7 * * *]
 # [icon: https://nos.netease.com/ysf/82b362badc596b99e5c3ad437973a560.jpg]
 # [description: 众安健康插件；指令：众安登录、众安管理、众安查询、众安清理；5.9更新：修复众安查询问题；5.16更新：Token真实有效新检测]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

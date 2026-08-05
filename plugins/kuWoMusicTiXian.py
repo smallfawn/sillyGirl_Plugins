@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 格式：手机号#密码；无需抓包，无需抓包；内置定时检测次数数量]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["ntplib","pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

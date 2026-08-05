@@ -11,7 +11,7 @@
 # [cron: 0 10 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 天翼云盘签到，配参中设置天翼云盘的用户名和密码]
-# [depe: ["requests", "rsa"]]
+# [depe: ["requests","rsa"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

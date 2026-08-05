@@ -10,7 +10,7 @@
 # [rule: ^福田下单$|^福田物流查询$]
 # [icon: https://images.mingming.dev/file/7c1c97c112588fbf7c0db.png]
 # [description: 呆呆出品；福田下单插件；指令：福田下单、福田物流查询；功能如下：；1. 支持单账号和多账号批量下单；2.支持在线搜索自定义商品并选择下单；3.支持在线添加自定义地址下单；4.支持查询订单物流信息；4.]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

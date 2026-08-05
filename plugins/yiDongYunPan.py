@@ -10,7 +10,7 @@
 # [rule: ^(云盘)(登录|查询|管理|清理|检测|兑换|一键抢兑)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@391e5db5571432ac74c20afa8e958ac83e32e7a3/2025/02/13/437a3d841eaea843d11f97941c33accb.png]
 # [description: ❷部分功能的实现需自行添加计划任务，关于指令『云盘检测』与『云盘清理』定时『30 18 * * *』，关于指令『云盘一键抢兑』定时『57 9,11,15,19,23 * * *』；❸添加计划任务教程: ⒈先点'系统管理-对接管理或适配器'设置『管理员』发条消息后在'本地开发-实时日志'查看『类型』再点'系统管理-计划任务'按『新增』⒉'定时'框填『57 9,11,15,23 * * *』⒊'指令或内容'框填『云盘一键抢兑』⒋勾选『自处理』⒌ '伪装媒介'填『类型』⒍'伪装个人'框填『管理员ID』]
-# [depe: ["beautifulsoup4", "pycryptodome", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

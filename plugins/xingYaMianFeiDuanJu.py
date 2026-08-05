@@ -11,7 +11,7 @@
 # [cron: 18 8,12,16 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_54326748_1755482552/256]
 # [description: 星芽免费短剧插件；2.2版本更新日志：按面板对接模板增加呆呆面板支持，统一完善青龙/呆呆面板变量查询、新增、更新、删除、失败补交逻辑，兼容旧版青龙配置]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["requests"]]
 # [classmethod: def from_config(cls):]
 # [property: def headers(self):]
 # [staticmethod: def extract_data_list(result):]

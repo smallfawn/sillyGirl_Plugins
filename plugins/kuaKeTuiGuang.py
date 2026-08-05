@@ -10,7 +10,7 @@
 # [rule: ^我要看(.+)$|^夸克清理$|^夸克登录$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 使用方法：发送"我要看XXXX"进行搜索；推广方法：关注公众号"蜂小推"，邀请码：15999112，申请夸克网盘推广项目即可]
-# [depe: ["requests"]]
+# [depe: ["httpx","requests"]]
 # [staticmethod: def get_pwd_id(share_url: str) -> str:]
 
 

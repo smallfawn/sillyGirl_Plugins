@@ -35,6 +35,7 @@
     "path": "plugins/aiKunZhuShou.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiKunZhuShou.py",
     "dependencies": [
+      "parsel",
       "requests"
     ],
     "type": "python",
@@ -55,6 +56,7 @@
     "path": "plugins/aiLuQiao.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiLuQiao.py",
     "dependencies": [
+      "cryptography",
       "requests"
     ],
     "type": "python",
@@ -336,7 +338,6 @@
     "path": "plugins/daChao.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daChao.py",
     "dependencies": [
-      "pycryptodome",
       "requests"
     ],
     "type": "python",
@@ -397,6 +398,7 @@
     "path": "plugins/dd018DeJian.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.py",
     "dependencies": [
+      "cryptography",
       "pycryptodome",
       "requests"
     ],
@@ -602,8 +604,8 @@
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
-  "5d7ad72e-5c37-380b-c46d-b0abdced7053": {
-    "id": "5d7ad72e-5c37-380b-c46d-b0abdced7053",
+  "fbd8dead-f6ca-56e8-8293-d7980d1bbf91": {
+    "id": "fbd8dead-f6ca-56e8-8293-d7980d1bbf91",
     "name": "getprinterstatus",
     "title": "getPrinterStatus",
     "author": "smallfawn",
@@ -614,8 +616,8 @@
     "rule": "^(打印机|打印机状态|打印测试图片)$",
     "public": true,
     "admin": true,
-    "path": "plugins/getprinterstatus.js",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/getprinterstatus.js",
+    "path": "plugins/getPrinterStatus.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/getPrinterStatus.js",
     "dependencies": [
       "ipp"
     ],
@@ -779,8 +781,8 @@
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
-  "00cea1ef-2ac0-d7c1-5e07-59950246a11d": {
-    "id": "00cea1ef-2ac0-d7c1-5e07-59950246a11d",
+  "16c8bb7e-5d81-27f1-6d9d-3b941f527c21": {
+    "id": "16c8bb7e-5d81-27f1-6d9d-3b941f527c21",
     "name": "ipchange",
     "title": "ipChange",
     "author": "smallfawn",
@@ -791,8 +793,8 @@
     "rule": "^(IP|IP查询)$",
     "public": true,
     "admin": true,
-    "path": "plugins/ipchange.js",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ipchange.js",
+    "path": "plugins/ipChange.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ipChange.js",
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -873,7 +875,8 @@
     "path": "plugins/jieTingChe.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.py",
     "dependencies": [
-      "requests"
+      "requests",
+      "user-agent"
     ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -995,6 +998,7 @@
     "path": "plugins/kanYuHang.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.py",
     "dependencies": [
+      "aiohttp",
       "requests"
     ],
     "type": "python",
@@ -1035,6 +1039,7 @@
     "path": "plugins/kuaKeTuiGuang.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuaKeTuiGuang.py",
     "dependencies": [
+      "httpx",
       "requests"
     ],
     "type": "python",
@@ -1095,6 +1100,7 @@
     "path": "plugins/kuWoMusicTiXian.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusicTiXian.py",
     "dependencies": [
+      "ntplib",
       "pycryptodome",
       "requests",
       "urllib3"
@@ -1138,6 +1144,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/leZaiShengHuo.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "requests"
     ],
     "type": "python",
@@ -1158,6 +1165,7 @@
     "path": "plugins/lianTong.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTong.py",
     "dependencies": [
+      "httpx",
       "pycryptodome",
       "requests"
     ],
@@ -1179,6 +1187,8 @@
     "path": "plugins/lianTongYunPan.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTongYunPan.py",
     "dependencies": [
+      "cryptography",
+      "httpx",
       "pycryptodome",
       "requests"
     ],
@@ -1369,7 +1379,6 @@
     "path": "plugins/m109XiaoChengXuNiuNiuDuanJu.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m109XiaoChengXuNiuNiuDuanJu.py",
     "dependencies": [
-      "pycryptodome",
       "requests",
       "urllib3"
     ],
@@ -1455,6 +1464,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanLingQuanPlus.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "requests"
     ],
     "type": "python",
@@ -1475,7 +1485,8 @@
     "path": "plugins/meiTuanTuan.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanTuan.py",
     "dependencies": [
-      "requests"
+      "requests",
+      "user-agent"
     ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -1836,7 +1847,7 @@
     "path": "plugins/shuiFeiYi.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.py",
     "dependencies": [
-      "pycryptodome",
+      "aiohttp",
       "requests",
       "urllib3"
     ],
@@ -2022,7 +2033,8 @@
     "path": "plugins/taiKangZaiXian.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.py",
     "dependencies": [
-      "pycryptodome",
+      "aiohttp",
+      "httpx",
       "requests",
       "urllib3"
     ],
@@ -2066,6 +2078,7 @@
     "path": "plugins/taiPingTong.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiPingTong.py",
     "dependencies": [
+      "curl-cffi",
       "requests",
       "urllib3"
     ],
@@ -2191,8 +2204,8 @@
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
-  "95f0f0b8-7435-5070-976d-bb0cc478cf3a": {
-    "id": "95f0f0b8-7435-5070-976d-bb0cc478cf3a",
+  "30bfe66b-4e34-fe98-24de-83a412b27039": {
+    "id": "30bfe66b-4e34-fe98-24de-83a412b27039",
     "name": "upslisten",
     "title": "upsListen",
     "author": "smallfawn",
@@ -2203,8 +2216,8 @@
     "rule": "^(ups)$",
     "public": true,
     "admin": true,
-    "path": "plugins/upslisten.js",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/upslisten.js",
+    "path": "plugins/upsListen.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/upsListen.js",
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
@@ -2224,6 +2237,7 @@
     "path": "plugins/wangChao.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChao.py",
     "dependencies": [
+      "cryptography",
       "requests",
       "urllib3"
     ],
@@ -2245,6 +2259,7 @@
     "path": "plugins/wangChaoYunDuan.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChaoYunDuan.py",
     "dependencies": [
+      "cryptography",
       "requests",
       "urllib3"
     ],
@@ -2303,6 +2318,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangZheZhanLiChaXun.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "requests"
     ],
     "type": "python",
@@ -2342,6 +2358,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/woBuE.py",
     "dependencies": [
       "pycryptodome",
+      "python-dateutil",
       "requests"
     ],
     "type": "python",
@@ -2381,7 +2398,11 @@
     "admin": true,
     "path": "plugins/xianBaoHou.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xianBaoHou.py",
-    "dependencies": [],
+    "dependencies": [
+      "beautifulsoup4",
+      "colorlog",
+      "requests"
+    ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -2401,6 +2422,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoCanBaWangCan.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "requests"
     ],
     "type": "python",
@@ -2504,6 +2526,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiQianBaoTianTianLingShiPinHuiYuan.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "requests",
       "urllib3"
     ],
@@ -2583,7 +2606,11 @@
     "admin": true,
     "path": "plugins/xieQuDaiLi.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xieQuDaiLi.py",
-    "dependencies": [],
+    "dependencies": [
+      "colorlog",
+      "requests",
+      "urllib3"
+    ],
     "type": "python",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins"
   },
@@ -2665,7 +2692,6 @@
     "path": "plugins/xingYaMianFeiDuanJu.py",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYaMianFeiDuanJu.py",
     "dependencies": [
-      "pycryptodome",
       "requests"
     ],
     "type": "python",
@@ -2748,6 +2774,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiDongYunPan.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "pycryptodome",
       "requests"
     ],
@@ -2992,6 +3019,7 @@
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongGuoLianTong.py",
     "dependencies": [
       "beautifulsoup4",
+      "cryptography",
       "pycryptodome",
       "requests"
     ],

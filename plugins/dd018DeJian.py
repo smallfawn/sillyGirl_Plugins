@@ -11,7 +11,7 @@
 # [cron: 0 9 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 。]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["cryptography","pycryptodome","requests"]]
 # [staticmethod: def _today_sign_detail(detail_list):]
 
 

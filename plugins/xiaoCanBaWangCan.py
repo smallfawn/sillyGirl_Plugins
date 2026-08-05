@@ -10,7 +10,7 @@
 # [rule: ^(小蚕)(登录|查询|提宝|提微|查单|运行|管理|检测|清理|解限|一键运行|一键监控|一键红包雨)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@368cbd87cbbdfd3bff1534d4c7a7957ca76f1c54/2025/02/18/4003bcfc1f8d46cd6f9de1b656bbddab.png]
 # [description: ❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『小蚕检测』与『小蚕清理』定时『30 18 * * *』，关于指令『小蚕一键监控』定时『0 10 * * * *』，关于指令『小蚕一键红包雨』建议定时『0 59 7,9,11,13,15,18 * * *』，关于指令『小蚕一键运行』定时『0 8,20 * * *』<img src="https://gcore.jsdelivr.net/gh/lhz03/img@f054476821a50f66328fa8271886fab6f8b50964/2025/05/01/9ac4e3c4f46248746e9d0c7a353f38f9.png">]
-# [depe: ["beautifulsoup4", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

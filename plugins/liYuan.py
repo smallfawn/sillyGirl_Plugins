@@ -11,7 +11,7 @@
 # [cron: 30 7 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 梨园行戏曲-金币任务自动化；指令：梨园扫码、梨园查询、梨园任务]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

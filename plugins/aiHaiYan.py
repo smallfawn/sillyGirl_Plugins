@@ -11,7 +11,7 @@
 # [cron: 5 11 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 爱海盐代挂提交；2. 采用手机号#密码配置登录，支持带备注提交；3. 支持查询接口测活并读取当天抽奖与阅读记录；4.]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 # [staticmethod: def find_migration_source(user_id, new_account, aliases=None, acc_type="", legacy_key=""):]
 
 

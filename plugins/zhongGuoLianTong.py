@@ -10,7 +10,7 @@
 # [rule: ^(联通)(登录|查询|管理|清理|检测)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@7c2616699a9cf7a628d4a087eb458bb013913a85/2025/12/26/e1b072befcce7bbe3a55685176de670f.png]
 # [description: ❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『联通检测』与『联通清理』定时『30 18 * * *』<img src="https://gcore.jsdelivr.net/gh/lhz03/img@1dab556e9d04a77d6b15802655355fd7be26fa9a/2026/01/21/2157c0cf735b321263a710cf978f43b0.png">]
-# [depe: ["beautifulsoup4", "pycryptodome", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

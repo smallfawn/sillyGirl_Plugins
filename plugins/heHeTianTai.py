@@ -11,7 +11,7 @@
 # [cron: 56 9,19 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 和合天台代挂提交插件；2.5修复查询错误问题,2.8新增批量登录；支持青龙/呆呆变量同步]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 # [staticmethod: def get_all_users():]
 
 

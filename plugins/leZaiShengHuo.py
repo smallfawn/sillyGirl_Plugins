@@ -10,7 +10,7 @@
 # [rule: ^(乐仔)(登录|查询|管理|清理|检测|运行|一键运行)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@e9cd9a11a480cadebc2fd54b8302d737d580595d/2026/01/30/81fd4cd42a523da597582e5727913a23.png]
 # [description: ❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『乐仔检测』与『乐仔清理』定时『30 18 * * *』，关于指令『乐仔一键运行』定时『0 4,16 * * *』<img src="https://gcore.jsdelivr.net/gh/lhz03/img@bd8210bc5df21199ccd7228aa6246390ff0ebe5a/2026/01/30/72f1808271bcf657c196256a7e2c3fb1.png">]
-# [depe: ["beautifulsoup4", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

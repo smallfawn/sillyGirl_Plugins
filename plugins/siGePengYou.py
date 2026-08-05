@@ -11,7 +11,7 @@
 # [cron: 30 8 * * *]
 # [icon: https://tg.96218.xyz/file/BQACAgUAAxkDAAIHH2ndrLaGBqLSp_CBtVTMX_APbIu_AAJVIAAC-STxVqpdpxV5PVduOwQ.png]
 # [description: 指令：；四个朋友登录：绑定或更新 user_id（支持多号换行，格式：备注#user_id）；四个朋友教程：查看 user_id 提交说明；四个朋友上传青龙：强制上传到青龙；四个朋友上传呆呆：强制上传到呆呆面板；四个朋友清理：清理失效或过期账号；更新：1.0.0 首版适配 G_SGPY_UID；脚本地址]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

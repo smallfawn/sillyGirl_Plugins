@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://tg.96218.xyz/file/BQACAgUAAxkDAAIG_mmxCTjoSpkpvhpHLZ64nnYxoloeAAIVHgACZNKIVVmXCAF9vuQQOgQ.png]
 # [description: APP【壹品仓】插件]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

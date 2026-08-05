@@ -11,7 +11,7 @@
 # [cron: 0 8,15 * * *]
 # [icon: https://tg.96218.xyz/file/BQACAgUAAxkDAAIHCmm-LiuIplV2-MijHZDPMGWzMIqcAAIzHAACNG7wVX3FrlyGxlWhOgQ.png]
 # [description: 此插件出自徒弟：huawei；合并版【星妈会】插件，内置飞鹤项目与星妈会项目，插件内置运行；指令：星妈会登录、星妈会查询、星妈会管理、星妈会一键运行、星妈会后台、星妈会教程]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 # [staticmethod: def _normalize_gateway(gateway):]
 
 

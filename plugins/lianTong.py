@@ -11,7 +11,7 @@
 # [cron: 0 8,15 * * *]
 # [icon: https://uapis.cn/static/uploads/9b25f4d581_5gbszuxm7Mt8.webp]
 # [description: 联通插件，使用Online_token登录；V1.7:统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置丨]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["httpx","pycryptodome","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

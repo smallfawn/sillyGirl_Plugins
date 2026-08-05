@@ -11,7 +11,7 @@
 # [cron: 56 8,15 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_42259219_1711261436/256]
 # [description: 望潮插件；1.1更新了WXPUSH通知，现在可以把每个人登录的账户收益通知全部单独发给用户；1.6更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["cryptography","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

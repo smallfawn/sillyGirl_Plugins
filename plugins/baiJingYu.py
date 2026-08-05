@@ -11,7 +11,7 @@
 # [cron: 0 8 * * *]
 # [icon: https://www.yili.com/static/images/logo.png]
 # [description: 白鲸鱼旧衣服回收插件；1.使用手机号+密码登录；1.2版本.就行了美化处理；1.5.1版本支持青龙/呆呆面板填在同一格子里面]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

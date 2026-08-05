@@ -10,7 +10,7 @@
 # [rule: ^美团领券$|^美团刷白$|^美团充分$|^美团查分$|^美团加分$|^美团减分$|^释放锁$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@628ca207fcc92493bfdc7b376802df13d290a228/2025/04/18/0227ee80f756be5352c84c94d7f9cdf6.png]
 # [description: ❷扫码可查看各项目对应领券详情<img src="https://gcore.jsdelivr.net/gh/lhz03/img@21067eaf2abbb6e545cd04507cbcaba81aa51f66/2025/07/05/a55d418210371f7896545baa970b340a.png">]
-# [depe: ["beautifulsoup4", "requests"]]
+# [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

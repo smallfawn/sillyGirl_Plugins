@@ -10,7 +10,7 @@
 # [rule: ^小米登录$|^登录小米$|^小米查询$|^小米管理$|^小米清理$|^小米一键更新$|^小米$|^小米兑换$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 小米社区签到、等级查询和视频会员兑换。]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 # [property: def pwd_wrong(self):return self.status==70016 or'用户名或密码不正确'in self.message or'密码错误'in self.message]
 
 

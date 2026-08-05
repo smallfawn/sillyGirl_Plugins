@@ -11,7 +11,7 @@
 # [cron: 56 9,19 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 速看小说代挂提交插件，支持抓包完整URL整段提交和短信登录；1. 严格执行整段提交：用户发送的完整URL直接存入青龙，不进行任何参数分割或重组；2. 修复因缺失签名参数导致的脚本运行失败问题；3.支持青龙/呆呆变量同步]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 # [staticmethod: def _get_env_identity(env_ref):]
 
 

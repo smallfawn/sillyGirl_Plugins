@@ -11,7 +11,7 @@
 # [cron: 32 8,16 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: ”；1.4.0更新：修复环境变量提交青龙bug；1.3.0更新：插件重构，去除手机号敏感信息，ck需要重新提交，非必要勿更新；1.0.0初版：支持批量登录]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

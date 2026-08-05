@@ -11,7 +11,7 @@
 # [cron: 0/15 * * * * *]
 # [icon: https://iehou.com/view/img/favicon.ico]
 # [description: 线报推送 xbh]
-# [depe: []]
+# [depe: ["beautifulsoup4","colorlog","requests"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

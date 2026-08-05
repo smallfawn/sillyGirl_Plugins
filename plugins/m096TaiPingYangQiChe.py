@@ -11,7 +11,7 @@
 # [cron: 26 8,18 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_4848_1772677983/256]
 # [description: 适配作者：YSJohnson的太平洋汽车脚本；ck提交青龙；格式“账号#密码#openid”；1.4.0更新：修复查询显示问题；1.3.0更新：优化查询显示；1.0.0初版：支持批量ck登录，支持代理]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

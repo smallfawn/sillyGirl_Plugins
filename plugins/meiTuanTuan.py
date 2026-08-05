@@ -11,7 +11,7 @@
 # [cron: 18 5,8,12,15,18,21 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 彻底解决千寻框架emjio问题 请使用最新版本SillyGirl和千寻框架 以及傻妞勾选 新版千寻框架 支持 查询丨删除 账号丨自定义命令(详见配参)，后续的任何使用问题都可以联系幼稚园小妹妹！使用前请安装Python的user-agent和sseclient依赖]
-# [depe: ["requests"]]
+# [depe: ["requests","user-agent"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

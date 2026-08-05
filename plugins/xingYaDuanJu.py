@@ -11,7 +11,7 @@
 # [cron: 6 6,18 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 仅环境变量提交青龙；2.7.0更新:新增token自动续期支持，token有效1月，可自定义是否开启，若开启，需要重新登录一次；2.5.0更新:修复短信登录的一个bug报错；2.4.0更新：优化ck失效查询信息；2.3.0更新：优化登录逻辑，增加管理员同步青龙；2.2.0更新：增加提交青龙环境变量是否携带设备id配参，修复查询ck失效即终止查询的bug；2.1.6更新：调整查询逻辑，只有一个账号时直接查询，否则列表选择查询；2.1.5更新：增加查询时显示账号列表，查询指定账号]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

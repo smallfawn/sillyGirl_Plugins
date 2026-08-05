@@ -10,7 +10,7 @@
 # [rule: ^捷停车登录$|^登录捷停车$|^捷停车查询$|^捷停车管理$|^捷停车$|^捷停车清理$|^捷停车上传$]
 # [icon: https://free.picui.cn/free/2025/12/17/69418a3031112.png]
 # [description: 捷停车小程序自动登录，支持验证码自动识别]
-# [depe: ["requests"]]
+# [depe: ["requests","user-agent"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

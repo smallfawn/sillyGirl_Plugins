@@ -11,7 +11,7 @@
 # [cron: 38 8,18 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_52529046_1757929454/256]
 # [description: 支持短信登录，ck提交青龙；格式“session_id#account_id#client_id#user_agent”；1.4.0更新：修正中奖记录查询问题；1.3.0更新：新增登录方式配参选择；1.0.0初版：支持批量ck登录，支持代理]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

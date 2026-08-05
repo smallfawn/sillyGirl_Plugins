@@ -10,7 +10,7 @@
 # [rule: ^台铃(登录|登陆|查询|管理|清理|教程|上传|上传青龙|上传呆呆|运行|菜单)$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: vx小程序【台铃】签到插件；指令：；台铃查询：查询签到状态与任务进度；台铃上传青龙：强制上传到青龙；台铃上传呆呆：强制上传到呆呆面板；台铃清理：清理失效或过期账号；脚本地址]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

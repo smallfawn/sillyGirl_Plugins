@@ -11,7 +11,7 @@
 # [cron: 8 8 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: AI练手，账密登录（支持批量）；查询调用缓存token,暂不知多久过期，后续有反馈再添加刷新token；1.3.0更新：查询报错请更新sillygirl的go环境；1.2.0更新：修复查询ssl报错；1.0.0初版：支持批量登录]
-# [depe: ["requests", "urllib3"]]
+# [depe: ["requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

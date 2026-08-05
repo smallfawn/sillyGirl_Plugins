@@ -10,7 +10,7 @@
 # [rule: ^(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|清理|刷新|一键刷新)$]
 # [icon: https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg]
 # [description: 顺易充（新）任务插件，]
-# [depe: ["pycryptodome", "requests", "urllib3"]]
+# [depe: ["pycryptodome","requests","urllib3"]]
 
 
 import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse

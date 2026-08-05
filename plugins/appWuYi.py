@@ -11,7 +11,7 @@
 # [cron: 12 7 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 。]
-# [depe: ["pycryptodome", "requests"]]
+# [depe: ["pycryptodome","requests"]]
 # [staticmethod: def generate_device_code():]
 
 

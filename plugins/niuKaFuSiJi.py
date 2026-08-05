@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v3.5]
+# [version: v1.5.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,15 @@
 # [depe: ["pycryptodome","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -159,7 +152,6 @@ SLIDER_API_URL = "https://slider-verification.vzvv.de/solve"
 
 
 def get_proxy_config():
-    """获取代理配置，返回 proxies 字典或 None"""
     proxy_url = sg.bucketGet('s_nkfsj', 'proxy_url') or ''
     proxy_url = proxy_url.strip()
     if not proxy_url:
@@ -212,12 +204,10 @@ DEVICE_MODELS = [
 ]
 
 def generate_random_device_name():
-    """生成随机设备名称"""
     return random.choice(DEVICE_MODELS)
 
 
 def format_red_envelope_details(records, limit=5):
-    """格式化红包明细"""
     if not records:
         return ""
 
@@ -249,7 +239,6 @@ def format_red_envelope_details(records, limit=5):
 
 
 class NucarfAPI:
-    """牛卡福司机端API"""
 
     X_OFFSET = 3
 
@@ -268,11 +257,9 @@ class NucarfAPI:
         self.proxies = get_proxy_config() if use_proxy else None
 
     def generate_device_id(self):
-        """生成随机设备ID"""
         return ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
 
     def get_headers(self, use_encrypt=False):
-        """获取请求头"""
         common_headers_dict = {
             "ip": "192.168.124.153",
             "deviceid": self.device_id,
@@ -318,7 +305,6 @@ class NucarfAPI:
         return headers
 
     def get_simple_headers(self):
-        """获取简单请求头（用于密码登录后的接口）"""
         return {
             "X-Request-Id": str(uuid.uuid4()),
             "X-AppType": "APP",
@@ -331,7 +317,6 @@ class NucarfAPI:
         }
 
     def encrypt_data_cbc(self, data):
-        """使用AES/CBC加密数据（URL-safe Base64）"""
         key = self.AES_KEY.encode('utf-8')
         iv = self.AES_IV.encode('utf-8')
 
@@ -344,7 +329,6 @@ class NucarfAPI:
         return encrypted_base64.replace('+', '-').replace('/', '_').replace('=', '')
 
     def decrypt_data_cbc(self, encrypted_str):
-        """使用AES/CBC解密数据（URL-safe Base64）"""
         try:
             key = self.AES_KEY.encode('utf-8')
             iv = self.AES_IV.encode('utf-8')
@@ -363,7 +347,6 @@ class NucarfAPI:
             return None
 
     def generate_sign(self, data_md5):
-        """生成 RSA 签名"""
         try:
             private_key_text = sg.bucketGet('s_nkfsj', 'rsa_private_key') or self.RSA_PRIVATE_KEY
             if not private_key_text:
@@ -379,7 +362,6 @@ class NucarfAPI:
             return None
 
     def encrypt_aes_ecb(self, data, key):
-        """AES ECB PKCS7 加密（标准Base64）"""
         try:
             key_bytes = key.encode('utf-8')
             cipher = AES.new(key_bytes, AES.MODE_ECB)
@@ -391,7 +373,6 @@ class NucarfAPI:
             return None
 
     def get_captcha(self):
-        """获取滑块验证码"""
         url = f"{self.base_url}/driver/captcha/getCaptcha"
         payload = {
             "clientUid": self.device_id,
@@ -410,7 +391,6 @@ class NucarfAPI:
             return None
 
     def solve_captcha(self, bg_base64, slide_base64):
-        """使用远程API识别滑块验证码"""
         try:
             resp = requests.post(SLIDER_API_URL, json={
                 "bg": bg_base64,
@@ -430,7 +410,6 @@ class NucarfAPI:
             return None
 
     def check_captcha(self, token, x_pos, secret_key):
-        """验证滑块验证码"""
         url = f"{self.base_url}/driver/captcha/checkCaptcha"
 
         point_data = {"x": float(x_pos), "y": 5.0}
@@ -460,7 +439,6 @@ class NucarfAPI:
             return None
 
     def send_sms_code(self, mobile, captcha_verification=""):
-        """发送短信验证码"""
         url = f"{self.base_url}/driver/app/common/sendSmsCode"
 
         data = {
@@ -488,7 +466,6 @@ class NucarfAPI:
             return None
 
     def login_with_sms(self, mobile, sms_code):
-        """使用短信验证码登录"""
         url = f"{self.base_url}/driver/app/auth/login"
 
         data = {
@@ -527,7 +504,6 @@ class NucarfAPI:
             return False, None, str(e)
 
     def get_pub_key(self):
-        """获取 RSA 公钥"""
         url = f"{self.base_url}/driver/app/unify/common/getPubKey"
         try:
             response = requests.get(url, proxies=self.proxies, timeout=30)
@@ -540,7 +516,6 @@ class NucarfAPI:
             return None, None
 
     def encrypt_password(self, password, pub_key_pem):
-        """使用 RSA 公钥加密密码"""
         try:
             key = RSA.importKey(pub_key_pem)
             cipher = PKCS1_v1_5.new(key)
@@ -550,7 +525,6 @@ class NucarfAPI:
             return None
 
     def set_password(self, password):
-        """设置登录密码（首次设置）"""
         pub_key_id, pub_key = self.get_pub_key()
         if not pub_key:
             return False, "获取公钥失败"
@@ -580,7 +554,6 @@ class NucarfAPI:
             return False, str(e)
 
     def login_with_password(self, username, password):
-        """账密登录"""
         pub_key_id, pub_key = self.get_pub_key()
         if not pub_key:
             return False, None, "获取公钥失败"
@@ -621,7 +594,6 @@ class NucarfAPI:
             return False, None, str(e)
 
     def get_points_info(self):
-        """获取积分信息"""
         if not self.token or not self.unify_id:
             return None
 
@@ -642,7 +614,6 @@ class NucarfAPI:
             return None
 
     def get_wallet_balance(self):
-        """获取钱包余额"""
         if not self.token or not self.unify_id:
             return None
 
@@ -659,7 +630,6 @@ class NucarfAPI:
             return None
 
     def get_red_envelope_records(self, page_no=1, page_size=10):
-        """获取红包中奖记录并扁平化返回"""
         if not self.token or not self.unify_id:
             return []
 
@@ -690,7 +660,6 @@ class NucarfAPI:
 
 
 def _get_ql_client():
-    """获取面板客户端，根据开关决定使用青龙或DumbPanel"""
     osname = sg.bucketGet('s_nkfsj', 'osname') or 'S_NKF'
     qlname = sg.bucketGet('s_nkfsj', 'qlname') or ''
     use_dp = str(sg.bucketGet('s_nkfsj', 'use_dumbpanel') or '').lower() == 'true'
@@ -706,7 +675,6 @@ def _get_ql_client():
 
 
 def _normalize_panel_account_info(username, account_info):
-    """兼容字符串/字典两种账号信息，统一提取面板同步所需字段。"""
     if isinstance(account_info, str):
         raw = account_info.strip()
         if not raw:
@@ -737,7 +705,6 @@ def _normalize_panel_account_info(username, account_info):
 
 
 def update_ql_env(username, account_info):
-    """更新青龙环境变量"""
     phone, token, unify_id = _normalize_panel_account_info(username, account_info)
     if not phone or not token or not unify_id:
         return False
@@ -754,13 +721,11 @@ def update_ql_env(username, account_info):
 
 
 def delete_ql_env(username):
-    """删除青龙环境变量"""
     ql = _get_ql_client()
     return ql.delete_env(username)
 
 
 def bind_account():
-    """绑定账号 - 短信验证码登录"""
     sender.reply(
         "=====牛卡福登录=====\n"
         "📱 请输入手机号:\n"
@@ -893,7 +858,7 @@ def bind_account():
             sender.reply(f"❌ 设置密码失败: {set_msg}")
             return
 
-        sender.reply(f"✅ 密码设置成功！")
+        sender.reply("✅ 密码设置成功！")
     else:
         password = pwd_input
 
@@ -940,13 +905,12 @@ def bind_account():
         sender.reply(f"📱 {mask_account(mobile)} 已授权，到期: {accountVip}")
         update_ql_env(mobile, account_info)
     else:
-        sender.reply(f"\n📋 账号需要授权，发送\"牛卡福管理\"进行授权")
+        sender.reply("\n📋 账号需要授权，发送\"牛卡福管理\"进行授权")
 
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
-        sender.reply(f"=====未绑定账号=====\n❌ 未找到账号\n💡 发送 牛卡福登录 绑定\n==================")
+        sender.reply("=====未绑定账号=====\n❌ 未找到账号\n💡 发送 牛卡福登录 绑定\n==================")
         return
 
     accounts = _sg_literal(uservalue)
@@ -1028,13 +992,12 @@ def query_accounts():
             except Exception as e:
                 sender.reply(f"=====查询失败=====\n❌ 错误: {str(e)}\n==================")
 
-        sender.reply(f"✅ 查询完成")
+        sender.reply("✅ 查询完成")
     except Exception as e:
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 
 def manage_account():
-    """管理账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n==================")
         return
@@ -1130,12 +1093,8 @@ def authorize_multiple_accounts(usernames):
     return True
 
 
-def process_mapay_payment(project, months, money, pay_type='alipay'):
-    return True
 
 
-def process_qrcode_payment(project, months, money):
-    return True
 
 
 def ks_auth():
@@ -1143,7 +1102,6 @@ def ks_auth():
 
 
 def batch_update_tokens():
-    """一键更新所有已授权且有密码账号的token和unifyId到青龙变量"""
     if not sender.isAdmin():
         sender.reply("❌ 仅限管理员")
         return
@@ -1271,7 +1229,6 @@ def batch_update_tokens():
 
 
 def show_tutorial():
-    """显示插件使用教程"""
     tutorial = """
 =====牛卡福司机教程=====
 📱 用户指令:
@@ -1299,7 +1256,6 @@ def show_tutorial():
 
 
 def main():
-    """主入口"""
     msg = sender.getMessage()
 
     if '登录' in msg or '登陆' in msg:

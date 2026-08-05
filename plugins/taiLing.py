@@ -13,7 +13,11 @@
 # [depe: ["pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
 try: import ast as _sg_ast
@@ -47,15 +51,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,20 +80,13 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
 def get_pay_config(): return {}
 class MaPayClient:
     def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
     def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
 def get_user_points(user_id=None,bucket="dd_sign_points"):
     try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
     except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -113,7 +101,6 @@ class QingLongClient:
     envSet=add_envs; envUpdate=update_env; envDel=delete_env
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_TLG_use_daidai': form.boolean().title('使用呆呆面板').default(False).description('勾选=上传呆呆面板，不勾选=上传青龙面板(默认)'),
@@ -261,8 +248,6 @@ def save_remark(account_id: str, remark: str):
     bucket_set(BUCKET_REMARK, account_id, remark)
 
 
-def get_bind_time(account_id: str) -> str:
-    return bucket_get(BUCKET_AUTH, f"{account_id}_bind_time")
 
 
 def save_bind_time(account_id: str, t: str = None):
@@ -388,11 +373,6 @@ def get_all_users() -> list:
         return []
 
 
-def get_owner_of_account(account_id: str) -> str:
-    for uid in get_all_users():
-        if account_id in get_user_accounts(uid):
-            return uid
-    return ''
 
 
 def safe_decimal(value: Any, default: str = '0') -> Decimal:
@@ -423,39 +403,22 @@ def mask(text: str, left: int = 6, right: int = 6) -> str:
     return text[:left] + "..." + text[-right:]
 
 
-def mask_phone(phone: str) -> str:
-    if not phone or len(phone) < 7:
-        return phone or "***"
-    return f"{phone[:3]}****{phone[-4:]}"
 
 
 def now_str() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
-def format_money(value: Decimal) -> str:
-    return f"{safe_decimal(value):.2f}"
 
 
-def get_user_points(user_id: str = None) -> Decimal:
-    return 0
 
 
-def set_user_points(points: Decimal, user_id: str = None):
-    bucket_set('dd_sign_points', user_id or userid, str(safe_decimal(points)))
 
 
 def get_auth_status_text(account_id: str) -> str:
     return '2099-12-31'
 
 
-def format_target_label(account_ids: List[str]) -> str:
-    if not account_ids:
-        return "未选择账号"
-    remarks = [(get_remark(acc) or acc) for acc in account_ids]
-    if len(remarks) == 1:
-        return remarks[0]
-    return f"{remarks[0]} 等{len(remarks)}个账号"
 
 
 def build_query_result_message(account_id: str, msg_lines: List[str], index: int = 1, total: int = 1) -> str:
@@ -490,148 +453,24 @@ def build_next_sign_reward_line(reward_items: List[dict]) -> Optional[str]:
     return None
 
 
-def get_mapay_client(config: dict):
-    return True
 
 
-def extract_payment_info(payment_result: Any) -> dict:
-    return True
 
 
-def verify_payment(info: dict, expected: Decimal) -> str:
-    return True
-def poll_ma_pay_status(config: dict, out_trade_no: str, max_tries: int = 150) -> tuple:
-    return True
 
 
-def prompt_months() -> Optional[int]:
-    sender.reply("请输入授权月数（正整数）：\n回复 q 退出")
-    raw = sender.input(60000, 1, False)
-    if not raw or raw.lower() == 'q':
-        sender.reply("✅ 已取消")
-        return None
-    try:
-        months = int(raw.strip())
-        if months <= 0:
-            raise ValueError()
-        return months
-    except Exception:
-        sender.reply("❌ 无效月数")
-        return None
 
 
-def qrcode_payment_flow(target_label: str, months: int, total_price: Decimal, account_count: int, config: dict) -> bool:
-    return True
 
 
-def mapay_payment_flow(target_label: str, months: int, total_price: Decimal, account_count: int, config: dict) -> bool:
-    return True
 
 
-def complete_authorization(account_id: str, months: int, config: dict) -> tuple:
-    return True
 
 
-def apply_authorization(account_ids: List[str], months: int, config: dict) -> tuple:
-    return True
 
 
-def batch_auth_pay(account_ids: List[str]) -> bool:
-    if not account_ids:
-        sender.reply("❌ 未选择账号")
-        return False
-    config = get_config()
-    price = safe_decimal(config.get('price'), '0')
-    points_per_month = safe_decimal(config.get('points_per_month'), '0')
-    total_accounts = len(account_ids)
-    target_label = format_target_label(account_ids)
-    months = prompt_months()
-    if not months:
-        return False
-
-    total_price = price * months * total_accounts
-    total_points = points_per_month * months * total_accounts
-    user_points = get_user_points()
-    has_qrcode = bool(price > 0 and config.get('zsm'))
-    has_mapay = bool(price > 0 and config.get('ma_pay_switch') and get_mapay_client(config))
-    has_points = bool(points_per_month > 0)
-    if not has_qrcode and not has_mapay and not has_points:
-        sender.reply("❌ 未配置授权方式")
-        return False
-
-    options = []
-    handlers = {}
-    option_index = 1
-    if has_qrcode:
-        options.append(f"[{option_index}] 微信扫码 ¥{format_money(total_price)}")
-        handlers[str(option_index)] = 'qrcode'
-        option_index += 1
-    if has_mapay:
-        options.append(f"[{option_index}] 在线处理 ¥{format_money(total_price)}")
-        handlers[str(option_index)] = 'mapay'
-        option_index += 1
-    if has_points:
-        options.append(f"[{option_index}] 积分 {total_points}")
-        handlers[str(option_index)] = 'points'
-
-    sender.reply(
-        f"=====批量授权支付=====\n"
-        f"📱 {target_label}\n"
-        f"⏰ {months}月 × {total_accounts}账号\n"
-        f"💰 ¥{format_money(total_price)} | {total_points}积分\n"
-        f"当前积分: {user_points}\n"
-        f"------------------\n"
-        + "\n".join(options)
-        + "\n回复选择，q取消"
-    )
-    choice = sender.input(120000, 1, False)
-    if not choice or choice.lower() == 'q':
-        sender.reply("✅ 已取消")
-        return False
-    action = handlers.get(choice.strip())
-    if not action:
-        sender.reply("❌ 无效选择")
-        return False
-
-    if action == 'qrcode':
-        if not qrcode_payment_flow(target_label, months, total_price, total_accounts, config):
-            return False
-        pay_name = "微信扫码"
-    elif action == 'mapay':
-        if not mapay_payment_flow(target_label, months, total_price, total_accounts, config):
-            return False
-        pay_name = "在线处理"
-    else:
-        if user_points < total_points:
-            sender.reply(f"❌ 积分不足 {total_points}")
-            return False
-        sender.reply(f"确认扣除 {total_points} 积分？回复 Y 确认，q取消")
-        confirm = sender.input(60000, 1, False)
-        if not confirm or confirm.lower() == 'q':
-            sender.reply("✅ 已取消")
-            return False
-        if confirm.strip().lower() != 'y':
-            sender.reply("❌ 已取消")
-            return False
-        set_user_points(user_points - total_points)
-        pay_name = "积分支付"
-
-    success_count, sync_count, latest_expire = apply_authorization(account_ids, months, config)
-    pn = get_panel_name(config)
-    sync_msg = f"{sync_count}/{success_count}" if is_panel_configured(config) else "未配置"
-    sender.reply(
-        f"=====台铃授权完成=====\n"
-        f"📦 账号数: {success_count}/{total_accounts}\n"
-        f"💳 支付方式: {pay_name}\n"
-        f"⏰ 时长: {months}个月\n"
-        f"📅 到期: {latest_expire or '-'}\n"
-        f"🔄 {pn}推送: {sync_msg}"
-    )
-    return True
 
 
-def admin_batch_authorize(account_ids: List[str]) -> bool:
-    return True
 
 
 def get_random_ua() -> str:
@@ -1156,36 +995,36 @@ def is_panel_configured(config: dict) -> bool:
 
 def show_tutorial():
     sender.reply(
-        f"=====台铃教程=====\n"
-        f"1. 打开台铃APP或小程序，进入签到/积分页面\n"
-        f"2. 抓包找到请求头里的 authorization\n"
-        f"3. 给机器人发送：台铃登录\n"
-        f"4. 按提示提交 备注#authorization 或 备注#authorization#client_id 即可\n"
-        f"5. 登录后可在台铃管理中自助支付授权\n"
-        f"\n"
-        f"提交格式：\n"
-        f"备注#authorization\n"
-        f"备注#authorization#client_id\n"
-        f"\n"
-        f"可用命令：\n"
-        f"台铃登录 - 绑定或更新 authorization\n"
-        f"台铃查询 - 查询签到状态与任务进度\n"
-        f"台铃管理 - 支付授权 / 上传 / 删除 / 批量操作\n"
-        f"台铃授权 - 管理员批量授权入口\n"
-        f"台铃上传 - 手动选择上传目标\n"
-        f"台铃上传青龙 - 直接上传到青龙面板\n"
-        f"台铃上传呆呆 - 直接上传到呆呆面板\n"
-        f"台铃清理 - 清理过期或无效账号\n"
-        f"台铃教程 - 查看本帮助"
+        "=====台铃教程=====\n"
+        "1. 打开台铃APP或小程序，进入签到/积分页面\n"
+        "2. 抓包找到请求头里的 authorization\n"
+        "3. 给机器人发送：台铃登录\n"
+        "4. 按提示提交 备注#authorization 或 备注#authorization#client_id 即可\n"
+        "5. 登录后可在台铃管理中自助支付授权\n"
+        "\n"
+        "提交格式：\n"
+        "备注#authorization\n"
+        "备注#authorization#client_id\n"
+        "\n"
+        "可用命令：\n"
+        "台铃登录 - 绑定或更新 authorization\n"
+        "台铃查询 - 查询签到状态与任务进度\n"
+        "台铃管理 - 支付授权 / 上传 / 删除 / 批量操作\n"
+        "台铃授权 - 管理员批量授权入口\n"
+        "台铃上传 - 手动选择上传目标\n"
+        "台铃上传青龙 - 直接上传到青龙面板\n"
+        "台铃上传呆呆 - 直接上传到呆呆面板\n"
+        "台铃清理 - 清理过期或无效账号\n"
+        "台铃教程 - 查看本帮助"
     )
 
 
 def show_login():
     sender.reply(
-        f"=====台铃登录=====\n"
-        f"请输入：备注#authorization 或 备注#authorization#client_id\n"
-        f"支持换行批量\n"
-        f"回复 q 退出"
+        "=====台铃登录=====\n"
+        "请输入：备注#authorization 或 备注#authorization#client_id\n"
+        "支持换行批量\n"
+        "回复 q 退出"
     )
 
 
@@ -1294,7 +1133,7 @@ def handle_query():
     total = len(accounts)
     sum(1 for a in accounts if is_authorized(a))
 
-    lines = [f"=====台铃查询====="]
+    lines = ["=====台铃查询====="]
     lines.append(f"📦 绑定账号: {total}个")
 
     for i, acc in enumerate(accounts, 1):
@@ -1304,7 +1143,7 @@ def handle_query():
         lines.append(f"[{i}] {remark}")
         lines.append(f"     状态: {auth_status}")
 
-    lines.append(f"[0] 查询所有账号")
+    lines.append("[0] 查询所有账号")
     lines.append("支持格式：1 或 1,3 或 2-4")
     lines.append("回复序号选择（q退出）")
 
@@ -1327,7 +1166,7 @@ def handle_query():
     for i, account_id in enumerate(selected, 1):
         token_data = get_token_data(account_id)
         if not token_data:
-            sender.reply(f"=====台铃查询=====\n账号数据异常")
+            sender.reply("=====台铃查询=====\n账号数据异常")
             continue
 
         ok, msg_lines = query_single_account(token_data)
@@ -1342,7 +1181,7 @@ def handle_manage():
 
     total = len(accounts)
     authed = sum(1 for a in accounts if is_authorized(a))
-    lines = [f"=====台铃管理====="]
+    lines = ["=====台铃管理====="]
     lines.append(f"✅ 已授权: {authed}个")
     lines.append(f"⏳ 未授权: {total - authed}个")
     lines.append("---------------------------")
@@ -1354,9 +1193,9 @@ def handle_manage():
         lines.append(f"[{i}] {remark}")
         lines.append(f"     状态: {auth_status}")
 
-    lines.append(f"[0] 所有账号授权（支付）")
-    lines.append(f"[9998] 删除所有账号（删除）")
-    lines.append(f"[9999] 未授权账号（授权）")
+    lines.append("[0] 所有账号授权（支付）")
+    lines.append("[9998] 删除所有账号（删除）")
+    lines.append("[9999] 未授权账号（授权）")
     lines.append("支持格式：1 或 1,3 或 2-4")
     lines.append("回复序号选择（q退出）")
 
@@ -1401,11 +1240,11 @@ def handle_single_manage(account_id: str):
     pn = get_panel_name(config)
     is_panel_configured(config)
 
-    lines = [f"=====台铃账号操作====="]
-    lines.append(f"📦 数量: 1")
-    lines.append(f"[1] 查询账号")
-    lines.append(f"[2] 授权账号（支付）")
-    lines.append(f"[3] 删除账号")
+    lines = ["=====台铃账号操作====="]
+    lines.append("📦 数量: 1")
+    lines.append("[1] 查询账号")
+    lines.append("[2] 授权账号（支付）")
+    lines.append("[3] 删除账号")
     lines.append(f"[4] 上传{pn}")
     lines.append("回复序号选择，回复 q 返回")
 
@@ -1438,11 +1277,11 @@ def handle_batch_menu(selected: list):
     pn = get_panel_name(config)
     is_panel_configured(config)
 
-    lines = [f"=====台铃批量操作====="]
+    lines = ["=====台铃批量操作====="]
     lines.append(f"📦 数量: {len(selected)}")
-    lines.append(f"[1] 查询账号")
-    lines.append(f"[2] 授权账号（支付）")
-    lines.append(f"[3] 删除账号")
+    lines.append("[1] 查询账号")
+    lines.append("[2] 授权账号（支付）")
+    lines.append("[3] 删除账号")
     lines.append(f"[4] 上传{pn}")
     lines.append("回复序号选择，回复 q 返回")
 
@@ -1488,7 +1327,7 @@ def handle_delete_one(account_id: str):
         sender.reply("✅ 已取消")
         return
     del_account(account_id, ql_config=config.get('ql_config', ''), ql_envname=config.get('ql_envname', 'G_TLG_TOKEN'))
-    sender.reply(f"✅ 删除成功")
+    sender.reply("✅ 删除成功")
 
 
 def handle_delete_all():
@@ -1517,12 +1356,12 @@ def handle_run():
         sender.reply("❌ 当前未绑定账号")
         return
 
-    lines = [f"=====台铃运行====="]
+    lines = ["=====台铃运行====="]
     for i, acc in enumerate(accounts, 1):
         remark = get_remark(acc) or acc
         lines.append(f"[{i}] {remark}")
 
-    lines.append(f"[0] 运行所有账号")
+    lines.append("[0] 运行所有账号")
     lines.append("支持格式：1 或 1,3 或 2-4")
     lines.append("回复序号选择（q退出）")
 
@@ -1548,13 +1387,13 @@ def handle_run():
     for i, account_id in enumerate(selected, 1):
         token_data = get_token_data(account_id)
         if not token_data:
-            sender.reply(f"=====台铃运行=====\n账号数据异常")
+            sender.reply("=====台铃运行=====\n账号数据异常")
             continue
 
         ok, msg_lines = run_single_account(token_data)
         remark = get_remark(account_id) or account_id
 
-        result = [f"=====台铃运行====="]
+        result = ["=====台铃运行====="]
         result.append(f"📍 账号序号: {i}/{len(selected)}")
         result.append(f"🏷 备注: {remark}")
         result.append(f"📌 状态: {'完成' if ok else '失败'}")
@@ -1576,15 +1415,15 @@ def handle_upload():
     pn = get_panel_name(config)
     panel_ok = is_panel_configured(config)
 
-    lines = [f"=====台铃上传目标====="]
+    lines = ["=====台铃上传目标====="]
     lines.append(f"⚙️ 默认上传: {pn}")
     lines.append(f"🧪 环境变量: {config.get('ql_envname', 'G_TLG_TOKEN')}")
     lines.append(f"🔄 青龙配置: {'已配置' if config.get('ql_config') else '未配置'}")
     lines.append(f"🔄 呆呆配置: {'已配置' if config.get('daidai_config') else '未配置'}")
     lines.append(f"[1] 默认面板（{pn}）")
-    lines.append(f"[2] 青龙面板")
-    lines.append(f"[3] 呆呆面板")
-    lines.append(f"[4] 青龙+呆呆（双传）")
+    lines.append("[2] 青龙面板")
+    lines.append("[3] 呆呆面板")
+    lines.append("[4] 青龙+呆呆（双传）")
     lines.append("回复数字选择，回复 q 取消")
 
     sender.reply("\n".join(lines))
@@ -1739,7 +1578,7 @@ def handle_cleanup():
         if warning_list:
             warning_count += len(warning_list)
             msgs = [f"❌ {get_remark(p) or p} {r}，请续费" for p, r in warning_list]
-            notify_msg = f"=====台铃账号提醒=====\n" + "\n".join(msgs)
+            notify_msg = "=====台铃账号提醒=====\n" + "\n".join(msgs)
             try:
                 sg.push('wx', '', uid, '台铃账号状态提醒', notify_msg)
                 notified_users += 1
@@ -1769,26 +1608,26 @@ def handle_menu():
     pn = get_panel_name(config)
 
     lines = [
-        f"╔═══ 台铃菜单 ═══╗",
+        "╔═══ 台铃菜单 ═══╗",
         f"│ 当前管理员：{'是' if is_admin() else '否'}",
         f"│ 依赖状态：{dep_tip}",
         f"│ 默认面板：{pn}",
         f"│ 绑定账号：{len(accounts)}个",
-        f"├───────────────┤",
-        f"│ 用户命令",
-        f"│ 1. 台铃登录  → 绑定 authorization",
-        f"│ 2. 台铃查询  → 查询签到与任务状态",
-        f"│ 3. 台铃管理  → 支付授权/上传/删除/批量",
-        f"│ 4. 台铃运行  → 执行签到与每日任务",
-        f"│ 5. 台铃教程  → 查看使用教程",
-        f"├───────────────┤",
-        f"│ 管理员命令",
-        f"│ 6. 台铃授权    → 批量授权账号",
-        f"│ 7. 台铃上传    → 选择目标上传",
-        f"│ 8. 台铃上传青龙 → 直接上传青龙",
-        f"│ 9. 台铃上传呆呆 → 直接上传呆呆",
-        f"│ 10. 台铃清理   → 清理过期账号",
-        f"╚═══════════════╝",
+        "├───────────────┤",
+        "│ 用户命令",
+        "│ 1. 台铃登录  → 绑定 authorization",
+        "│ 2. 台铃查询  → 查询签到与任务状态",
+        "│ 3. 台铃管理  → 支付授权/上传/删除/批量",
+        "│ 4. 台铃运行  → 执行签到与每日任务",
+        "│ 5. 台铃教程  → 查看使用教程",
+        "├───────────────┤",
+        "│ 管理员命令",
+        "│ 6. 台铃授权    → 批量授权账号",
+        "│ 7. 台铃上传    → 选择目标上传",
+        "│ 8. 台铃上传青龙 → 直接上传青龙",
+        "│ 9. 台铃上传呆呆 → 直接上传呆呆",
+        "│ 10. 台铃清理   → 清理过期账号",
+        "╚═══════════════╝",
     ]
     sender.reply("\n".join(lines))
 

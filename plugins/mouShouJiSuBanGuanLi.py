@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.5]
+# [version: v1.5.0]
 # [public: true]
 # [disable: false]
 # [admin: true]
@@ -12,12 +12,12 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 某手极速版代挂提交；2. 采用备注#ck格式登录，支持带备注提交；3. 支持查询接口实时获取签到金币和账号存活状态；4.]
 # [depe: ["requests"]]
-# [staticmethod: def find_migration_source(user_id, new_account, aliases=None, acc_type="", legacy_key=""):]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -49,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -87,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'ks_nebula_panel_type': form.string().title('对接面板类型').default('').description('qinglong=青龙面板 daidai=呆呆面板'),
@@ -181,7 +143,6 @@ except:
 
 
 def getusercontent():
-    """获取插件完整配置"""
     panel_type = sg.bucketGet('ks_nebula', 'panel_type') or 'qinglong'
     panel_type = panel_type.lower()
 
@@ -293,10 +254,6 @@ def get_owner_user_id(account, fallback_userid=None):
     return ""
 
 def send_message_to_framework_admins(msg):
-    """
-    优先走傻妞框架原生管理员推送。
-    某些框架支持 notifyMasters(msg) 自动发给管理员。
-    """
     notify_func = getattr(sg, 'notifyMasters', None)
     if not callable(notify_func):
         return False
@@ -571,34 +528,7 @@ def save_revenue_snapshot(user_id, account, coin_balance, remark="", nickname=""
     sg.bucketSet('ks_nebula_revenue', key, json.dumps(data, ensure_ascii=False))
     return data
 
-def parse_panel_ks_remark(remarks):
-    try:
-        remarks = str(remarks or '')
-        user_match = re.search(r'用户[:：]\s*([^丨|\s]+)', remarks)
-        id_match = re.search(r'ID[:：]\s*([^丨|\s]+)', remarks)
-        date_match = re.search(r'到期[:：]\s*(\d{4}-\d{2}-\d{2})', remarks)
-        if not user_match or not id_match or not date_match:
-            return None
-        return {
-            'user': user_match.group(1).strip(),
-            'account': id_match.group(1).strip(),
-            'auth_date': date_match.group(1).strip()
-        }
-    except:
-        return None
 
-def normalize_panel_token_value(value, account_id=""):
-    parts = [p.strip() for p in str(value or '').split('#') if p.strip()]
-    account_id = str(account_id or '').strip()
-    if len(parts) >= 4:
-        return '#'.join(parts[-3:])
-    if len(parts) == 3:
-        if account_id and parts[1] == account_id:
-            return '#'.join(parts[1:])
-        return '#'.join(parts)
-    if len(parts) == 2:
-        return '#'.join(parts)
-    return str(value or '').strip()
 
 def build_panel_env_value(token, remark=""):
     token = str(token or "").strip()
@@ -741,8 +671,6 @@ def empower(empowertime, days):
         logger.error(f"授权时间计算失败: {e}")
         raise Exception(f"授权时间计算失败: {e}")
 
-def _build_epay_sign(params_dict, key, exclude_keys=('sign', 'sign_type')):
-    return True
 
 def _create_epay_qr(out_trade_no, channel, project_name, money_str):
     return True
@@ -927,7 +855,6 @@ class ksckClient:
         return hashlib.md5(self.token.encode()).hexdigest()[:8]
 
     def get_info(self):
-        """返回: (网络请求是否成功, CK是否有效, 查询数值, 提示信息)"""
         try:
             if not self.cookie or "kuaishou.api_st=" not in self.cookie:
                 return True, False, 0, "CK缺少 kuaishou.api_st"
@@ -1231,7 +1158,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception(f"获取青龙Token失败 HTTP {response.status_code}: {response.text[:120]}")
-        except Exception as e: raise
+        except Exception: raise
 
     def _get_daidai_token(self):
         try:
@@ -1241,7 +1168,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['access_token']
             raise Exception(f"获取呆呆Token失败 HTTP {response.status_code}: {response.text[:120]}")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         if not self.enabled: return []
@@ -1498,7 +1425,7 @@ def process_single_account_query(account, index, total_count, account_remarks):
 🔐 授权: {'⚠️ 未授权' if not accountVip else ('❌ 已过期' if accountVip < today_time else f'✅ {accountVip}')}
 ⏰ 到期: {auth_time}
 =================="""
-    except Exception as e:
+    except Exception:
         return None
 
 def cxs():
@@ -1533,7 +1460,7 @@ def cxs():
             else:
                 vip_tag = f'✅{vip}'
             menu += f"\n[{i}] {account_display} {vip_tag}"
-        menu += f"\n------------------\n[a] 查询全部\n支持单选/多选/区间，如 1,2 或 3-6\n回复q退出\n=================="
+        menu += "\n------------------\n[a] 查询全部\n支持单选/多选/区间，如 1,2 或 3-6\n回复q退出\n=================="
         sender.reply(menu)
 
         sel = get_user_input(timeout=60)
@@ -1830,7 +1757,7 @@ def pick_accounts_by_indexes(accounts, indexes):
     return [str(accounts[i - 1]) for i in indexes if 1 <= i <= len(accounts)]
 
 def selection_tip(action="选择"):
-    return f"回复 a 全选\n支持单选/多选/区间，如 1,2 或 3-6 或 1,3-8,10\n回复 q 退出"
+    return "回复 a 全选\n支持单选/多选/区间，如 1,2 或 3-6 或 1,3-8,10\n回复 q 退出"
 
 def bindaccount():
     try:
@@ -1852,7 +1779,7 @@ def bindaccount():
             elif remark_input != 'n' and remark_input:
                 remark = remark_input.strip()[:20]
 
-        sender.reply(f"""
+        sender.reply("""
 =====某手极速版 登录=====
 当前模式: 🌐 提交至面板
 ------------------
@@ -2583,267 +2510,12 @@ def clean_expired_accounts(force_report=False):
 
 def admin_auth_options():
     return True
-def collect_admin_stats():
-    stats = {
-        "users": 0, "accounts": 0, "authorized": 0, "unauthorized": 0,
-        "expired": 0, "expiring": 0, "no_token": 0
-    }
-    today = datetime.now().date()
-    users = AccountManager.get_all_users()
-    stats["users"] = len(users)
-    for user in users:
-        for account in AccountManager.get_accounts(user):
-            try:
-                stats["accounts"] += 1
-                account = str(account)
-                token = AccountManager.get_token(account)
-                if not token:
-                    stats["no_token"] += 1
-                vip = '2099-12-31'
-                if not vip:
-                    stats["unauthorized"] += 1
-                    continue
-                try:
-                    vip_date = datetime.strptime(str(vip), "%Y-%m-%d").date()
-                except:
-                    stats["expired"] += 1
-                    continue
-                if vip_date < today:
-                    stats["expired"] += 1
-                else:
-                    stats["authorized"] += 1
-                    if (vip_date - today).days <= config['reminder_days']:
-                        stats["expiring"] += 1
-            except:
-                pass
-    return stats
 
-def admin_overview():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("⏳ 正在统计数据，请稍候...")
-    stats = collect_admin_stats()
-    sender.reply(f"""=====某手极速版数据总览=====
-👥 用户数: {stats['users']}
-📦 账号数: {stats['accounts']}
-✅ 授权中: {stats['authorized']}
-⚠️ 未授权: {stats['unauthorized']}
-❌ 已过期: {stats['expired']}
-⏰ 即将到期: {stats['expiring']}
-🔑 缺少配置: {stats['no_token']}
-==================""")
 
-def send_long_admin_message(title, lines, footer="==================", max_len=1500):
-    if not lines:
-        sender.reply(f"{title}\n📭 暂无数据\n{footer}")
-        return
-    part = 1
-    total_parts = 1
-    chunks = []
-    current = title
-    for line in lines:
-        add_text = "\n" + line
-        if len(current) + len(add_text) + len(footer) + 20 > max_len and current != title:
-            chunks.append(current)
-            current = title
-        current += add_text
-    chunks.append(current)
-    total_parts = len(chunks)
-    for chunk in chunks:
-        page_tip = f"\n-----第 {part}/{total_parts} 段-----" if total_parts > 1 else ""
-        sender.reply(f"{chunk}{page_tip}\n{footer}")
-        part += 1
-        time.sleep(0.2)
 
-def admin_user_ck_preview():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("⏳ 正在生成用户配置预览，请稍候...")
 
-    today = datetime.now().date()
-    rows = []
-    total_accounts = 0
-    for user in AccountManager.get_all_users():
-        try:
-            accounts = AccountManager.get_accounts(user)
-            if not accounts:
-                continue
-            auth_count = 0
-            unauth_count = 0
-            expired_count = 0
-            expiring_count = 0
-            no_token_count = 0
 
-            for account in accounts:
-                account = str(account)
-                total_accounts += 1
-                if not AccountManager.get_token(account):
-                    no_token_count += 1
-                vip = '2099-12-31'
-                if not vip:
-                    unauth_count += 1
-                    continue
-                try:
-                    vip_date = datetime.strptime(str(vip), "%Y-%m-%d").date()
-                except:
-                    expired_count += 1
-                    continue
-                if vip_date < today:
-                    expired_count += 1
-                else:
-                    auth_count += 1
-                    if (vip_date - today).days <= config['reminder_days']:
-                        expiring_count += 1
 
-            rows.append({
-                "user": str(user),
-                "count": len(accounts),
-                "auth": auth_count,
-                "unauth": unauth_count,
-                "expired": expired_count,
-                "expiring": expiring_count,
-                "no_token": no_token_count
-            })
-        except:
-            pass
-
-    rows.sort(key=lambda x: x["count"], reverse=True)
-    lines = [f"👥 用户数: {len(rows)}  📦 账号总数: {total_accounts}", "------------------"]
-    for i, row in enumerate(rows, 1):
-        extra = []
-        if row["unauth"]:
-            extra.append(f"未授权{row['unauth']}")
-        if row["expired"]:
-            extra.append(f"过期{row['expired']}")
-        if row["expiring"]:
-            extra.append(f"临期{row['expiring']}")
-        if row["no_token"]:
-            extra.append(f"缺配置{row['no_token']}")
-        extra_text = f" ({' / '.join(extra)})" if extra else ""
-        lines.append(f"[{i}] 用户: {row['user']}\n配置: {row['count']} 个  授权: {row['auth']} 个{extra_text}")
-
-    send_long_admin_message("=====用户配置预览=====", lines)
-
-def admin_find_account():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("""=====反查账号归属=====
-请输入账号尾号/备注/用户ID
-例如: 893 或 小号 或 wxid
-回复 q 退出
-==================""")
-    keyword = get_user_input()
-    if not keyword or keyword.lower() == 'q': return
-    keyword = keyword.strip()
-
-    matches = []
-    users = AccountManager.get_all_users()
-    for user in users:
-        if keyword in str(user):
-            user_match = True
-        else:
-            user_match = False
-        remarks = RemarkManager.get_all_remarks(user) if config['enable_remark'] else {}
-        for account in AccountManager.get_accounts(user):
-            try:
-                account = str(account)
-                remark = remarks.get(account, "")
-                safe_acc = mask_account(account)
-                account_display = get_account_display(account, remark)
-                vip = '2099-12-31'
-                vip_st = '未授权' if not vip else str(vip)
-                if user_match or keyword in account or keyword in safe_acc or (remark and keyword in remark):
-                    matches.append(f"👤 用户: {user}\n📱 账号: {account_display}\n🔐 授权: {vip_st}")
-            except:
-                pass
-
-    if not matches:
-        sender.reply("❌ 未找到匹配账号")
-        return
-    msg = f"=====反查结果=====\n共找到 {len(matches)} 条"
-    for item in matches[:10]:
-        msg += f"\n------------------\n{item}"
-    if len(matches) > 10:
-        msg += f"\n------------------\n仅显示前10条，共 {len(matches)} 条"
-    msg += "\n=================="
-    sender.reply(msg)
-
-def admin_sync_panel():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("⚠️ 同步面板变量功能已撤销，避免面板备注反向覆盖本地账号归属。")
-    return
-    sender.reply("""=====同步面板变量=====
-[1] 同步所有授权账号
-[2] 同步指定用户账号
-------------------
-回复数字选择，Q退出
-==================""")
-    choice = get_user_input()
-    if not choice or choice.lower() == 'q': return
-
-    users = []
-    if choice == '1':
-        users = AccountManager.get_all_users()
-        total_accounts = sum(len(AccountManager.get_accounts(u)) for u in users)
-        if len(users) <= 1 and total_accounts > 5:
-            sender.reply(
-                "⚠️ 已拦截同步所有授权账号。\n"
-                f"当前本地归属表异常：用户数 {len(users)}，账号数 {total_accounts}。\n"
-                "这通常表示账号被集中到了管理员名下，继续同步会覆盖面板归属备注。\n"
-                "请先恢复 ks_nebula_user 归属表，或使用 [2] 同步指定用户账号。"
-            )
-            return
-        sender.reply(f"⚠️ 即将同步所有授权账号。\n确认请回复【确认同步】")
-        if get_user_input() != "确认同步":
-            sender.reply("✅ 已取消同步")
-            return
-    elif choice == '2':
-        sender.reply("请输入用户ID(QQ号或wxid)，回复q退出")
-        target_user = get_user_input()
-        if not target_user or target_user.lower() == 'q': return
-        users = [target_user.strip()]
-    else:
-        sender.reply("❌ 请输入有效选项")
-        return
-
-    today = str(datetime.now().date())
-    success = 0
-    skipped = 0
-    failed = 0
-    sender.reply("⏳ 正在同步，请稍候...")
-    for user in users:
-        remarks = RemarkManager.get_all_remarks(user) if config['enable_remark'] else {}
-        for account in AccountManager.get_accounts(user):
-            try:
-                account = str(account)
-                vip = '2099-12-31'
-                token = AccountManager.get_token(account)
-                if not vip or vip < today or not token:
-                    skipped += 1
-                    continue
-                remark = remarks.get(account, "")
-                if sys_api.sync_env(token, account, remark, vip, owner_user_id=user):
-                    success += 1
-                else:
-                    failed += 1
-            except:
-                failed += 1
-
-    sender.reply(f"""=====同步完成=====
-✅ 成功: {success}
-⏸️ 跳过: {skipped}
-❌ 失败: {failed}
-==================""")
-
-def admin_auth_all_users():
-    return True
-def admin_auth_specific_user():
-    return True
 def show_tutorial():
     panel_name = '青龙' if config['panel_type'] == 'qinglong' else '呆呆'
     sender.reply(f"""

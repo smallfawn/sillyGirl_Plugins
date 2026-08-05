@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v2.3]
+# [version: v1.3.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,14 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +91,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     's_zx_qlname': form.string().title('设置对接容器').default('').description('青龙容器参数用丨分割'),
@@ -139,7 +115,6 @@ import time
 import hashlib
 import random
 import re
-import base64
 import requests
 from datetime import datetime, timedelta
 
@@ -191,19 +166,6 @@ def generate_android_ua(version):
     android_version = f"{random.randint(12, 15)}.{random.randint(0, 1)}.0"
     return f"GZHealth/{version} (cn.yyzqsh.android; build:{build_number}; Android {android_version}) okhttp/4.10."
 
-def decode_jwt_token(token):
-    try:
-        parts = token.split('.')
-        if len(parts) != 3:
-            return {}
-        payload_str = parts[1]
-        padding = 4 - len(payload_str) % 4
-        if padding != 4:
-            payload_str += '=' * padding
-        payload_bytes = base64.urlsafe_b64decode(payload_str)
-        return json.loads(payload_bytes.decode('utf-8'))
-    except:
-        return {}
 
 def get_proxy(proxy_api, max_retries=3):
     if not proxy_api:
@@ -223,7 +185,6 @@ def get_proxy(proxy_api, max_retries=3):
 
 
 def zx_pwd_login(phone, password):
-    """账密登录"""
     _, _, _, _, _, _, _, _, proxy_api, _, _ = get_user_content()
 
     for attempt in range(3):
@@ -268,7 +229,6 @@ def zx_pwd_login(phone, password):
     return False, None, None, "网络波动，请稍后重试"
 
 def zx_get_basic_member_info(authorization, user_agent):
-    """获取会员基本信息（phone, invitePhone等）"""
     try:
         _, _, _, _, _, _, _, _, proxy_api, _, _ = get_user_content()
 
@@ -301,7 +261,6 @@ def zx_get_basic_member_info(authorization, user_agent):
         return {"error": str(e)}
 
 def zx_get_member_info(authorization, user_agent):
-    """获取会员中心信息"""
     try:
         _, _, _, _, _, _, _, _, proxy_api, _, _ = get_user_content()
 
@@ -334,7 +293,6 @@ def zx_get_member_info(authorization, user_agent):
         return {"error": str(e)}
 
 def zx_get_contrib_detail(authorization, user_agent, page_size=5):
-    """获取贡献值明细"""
     try:
         _, _, _, _, _, _, _, _, proxy_api, _, _ = get_user_content()
 
@@ -365,43 +323,6 @@ def zx_get_contrib_detail(authorization, user_agent, page_size=5):
     except:
         return []
 
-def zx_get_ip_detail(authorization, user_agent, page_size=5):
-    """获取兑换值明细"""
-    try:
-        _, _, _, _, _, _, _, _, proxy_api, _, _ = get_user_content()
-
-        version_match = re.search(r'GZHealth/(\d+\.\d+\.\d+)', user_agent)
-        platform_match = re.search(r'(iOS|Android) \d+\.\d+\.\d+', user_agent)
-
-        if not version_match or not platform_match:
-            return []
-
-        headers = {
-            "Host": BASE_HOST,
-            "platform": platform_match.group(1),
-            "version": version_match.group(1),
-            "Authorization": authorization,
-            "User-Agent": user_agent,
-            "Content-Type": "application/json",
-        }
-
-        proxies = get_proxy(proxy_api) if proxy_api else None
-        date_month = datetime.now().strftime("%Y%m")
-        request_body = {
-            "dateMonth": date_month,
-            "transactionTypeList": [1, 3],
-            "pageNum": 1,
-            "pageSize": page_size
-        }
-        resp = requests.post(API['ip_detail'], headers=headers, json=request_body, timeout=20, proxies=proxies)
-
-        data = resp.json()
-        if data and data.get('success') and data.get('code') == 200:
-            records = data.get('result', {}).get('records', [])
-            return records[:page_size]
-        return []
-    except:
-        return []
 
 
 def bind_account():
@@ -556,9 +477,6 @@ def bind_account():
         sender.reply("❌ 请选择 1 或 2")
 
 def _save_account(phone, token, member_info, batch_mode=False):
-    """保存账密登录的账号
-    batch_mode: 批量模式，不处理授权，返回是否需要授权
-    """
     osname, qlname, _, _, _, _, _, default_version, _, invite_phone_config, invite_reward_days = get_user_content()
 
     sender.reply(member_info)
@@ -633,10 +551,6 @@ def _save_account(phone, token, member_info, batch_mode=False):
     return False
 
 def _save_ck_account(phone, authorization, user_agent, member_info=None, batch_mode=False):
-    """保存CK登录的账号
-    member_info: 会员信息（包含phone, invitePhone等）
-    batch_mode: 批量模式，不处理授权，返回是否需要授权
-    """
     _, _, _, _, _, _, _, _, _, invite_phone_config, invite_reward_days = get_user_content()
 
     account_key = phone
@@ -925,45 +839,9 @@ def authorize_multiple_accounts(accounts):
     return True
 
 
-def generate_iframe_url(url):
-    """将URL通过base64编码生成iframe页面链接"""
-    try:
-        encoded = base64.b64encode(url.encode('utf-8')).decode('utf-8')
-        iframe_url = f"https://metwhale.github.io?u={encoded}"
-        return iframe_url
-    except:
-        return url
 
-def generate_qrcode(url):
-    """生成二维码图片"""
-    QRCODE_API_URL = "https://qrcode.example.invalid/api/qrcode/generate"
-    QRCODE_API_KEY = ""
 
-    try:
-        response = requests.post(
-            QRCODE_API_URL,
-            json={"content": url},
-            headers={"X-API-Key": QRCODE_API_KEY},
-            timeout=10
-        )
-        if response.status_code == 200:
-            result = response.json()
-            if result.get('success') and result.get('data', {}).get('url'):
-                return result['data']['url']
-    except:
-        pass
 
-    try:
-        encoded_url = requests.utils.quote(url)
-        return f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
-    except:
-        return None
-
-def handle_mapay_order(project, months, money, pay_type=None):
-    return True
-
-def pay_order(project, months, money):
-    return True
 
 
 def get_ql_token(host, client_id, client_secret):
@@ -1066,7 +944,6 @@ def delete_ql_env(account):
 
 
 def daily_checkin_reminder():
-    """每日提醒已授权的账号登录APP点击"今日打卡"进行VX绑定"""
     notify = sg.bucketGet('s_zx', 'notify') or ''
     if not notify:
         return "❌ 未配置通知渠道"
@@ -1132,15 +1009,12 @@ def daily_checkin_reminder():
 
     return f"✅ 打卡提醒完成，共 {total_accounts} 个有效账号，发送 {notified_users} 条通知"
 
-def calculate_auth_time_by_days(account, days):
-    return '2099-12-31'
 
 def ks_auth():
     return True
 
 
 def show_tutorial():
-    """显示早纤生活教程"""
     tutorial = """=====早纤生活教程=====
 📱 用户指令:
 • 早纤登录 - 绑定早纤生活账号

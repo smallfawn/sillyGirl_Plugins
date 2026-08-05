@@ -14,9 +14,12 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -48,15 +51,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -86,35 +80,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_szyx_config_ql_config': form.string().title('青龙容器').default('').description('用丨分割三个参数'),
@@ -140,7 +105,6 @@ userid = sender.getUserID()
 
 
 class SenxuanClient:
-    """森选质享客户端"""
 
     def __init__(self, token_with_remark):
         if "#" in token_with_remark:
@@ -173,7 +137,6 @@ class SenxuanClient:
         self.session.headers.update(self.headers)
 
     def get_user_info(self):
-        """获取用户信息"""
         try:
             url = f"{self.base_url}/account/user/overview?source_type=2314&source_from=2321&source_lang=zh_CN&currency_id=86&site_id="
             response = self.session.get(url, timeout=10)
@@ -186,7 +149,6 @@ class SenxuanClient:
         return None
 
     def get_user_info_new(self):
-        """获取用户详细信息"""
         url = f"{self.base_url}/account/user/overview_my"
         params = {
             "source_type": 2314,
@@ -204,11 +166,10 @@ class SenxuanClient:
                 user_data = data.get("data")
                 return user_data
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     def get_video_detail(self, vid: int) -> Optional[Dict[str, Any]]:
-        """获取单个视频详情"""
         url = f"{self.base_url}/video/getOneVideo?source_type=2314&source_from=2321&source_lang=zh_CN&currency_id=86&site_id=&vid={vid}"
         try:
             response = self.session.get(url, timeout=10)
@@ -217,11 +178,10 @@ class SenxuanClient:
             if data.get("code") == 0 and data.get("data"):
                 return data.get("data")
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     def add_user_view_num(self, vid: int) -> Dict[str, Any]:
-        """记录用户观看视频"""
         url = f"{self.base_url}/video/addUserViewNum?source_type=2314&source_from=2321&source_lang=zh_CN&currency_id=86&site_id=&vid={vid}&playMode=0"
         body = {"baseVersion": "3.12.1", "playMode": 0}
         try:
@@ -237,7 +197,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def video_job(self, vid: int, wait_time: int) -> Dict[str, Any]:
-        """提交视频观看完成"""
         url = f"{self.base_url}/video/addVideoJob"
 
         start_time = int(time.time() * 1000)
@@ -261,7 +220,7 @@ class SenxuanClient:
             for i in range(wait_time, 0, -10):
                 print(f"  剩余 {i} 秒...")
                 time.sleep(min(10, i))
-            print(f"  播放完成，提交中...")
+            print("  播放完成，提交中...")
 
             headers = {"Content-Type": "application/json"}
             response = self.session.post(url, json=body, headers=headers, timeout=10)
@@ -274,11 +233,9 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def add_video_job(self, vid: int, wait_time: int) -> Dict[str, Any]:
-        """提交视频任务完成（同video_job）"""
         return self.video_job(vid, wait_time)
 
     def reward_user_small_change(self) -> Dict[str, Any]:
-        """获取答题奖励"""
         url = f"{self.base_url}/video/rewardUserSmallChange"
         try:
             response = self.session.get(url, timeout=10)
@@ -289,7 +246,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def get_video_ids(self) -> List[int]:
-        """获取所有视频ID"""
         try:
             print("正在请求视频列表...")
             url = f"{self.base_url}/video/list?source_type=2314&source_from=2321&source_lang=zh_CN&currency_id=86&site_id=&page=1&limit=10&status=1&source=0&isXn=1"
@@ -313,7 +269,6 @@ class SenxuanClient:
             return []
 
     def watch_video(self, vid: int) -> Dict[str, Any]:
-        """刷视频 - 使用原脚本逻辑"""
         url = f"{self.base_url}/video/videoJob"
 
         end_time = int(time.time() * 1000)
@@ -340,7 +295,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def withdraw(self) -> Dict[str, Any]:
-        """提现 - 新接口（使用手机端请求头）"""
         url = f"{self.base_url}/pay/pay-payment-channel/addUserWithdraw"
 
         params = {
@@ -371,7 +325,7 @@ class SenxuanClient:
                 data = result.get("data", {})
                 process_result = data.get("processResult")
                 if process_result == "success":
-                    print(f"✅ 提现成功")
+                    print("✅ 提现成功")
                     return {"success": True, "msg": "提现成功", "data": data}
                 else:
                     reason = data.get("reason", "未知原因")
@@ -386,7 +340,6 @@ class SenxuanClient:
             return {"success": False, "msg": str(e)}
 
     def get_consume_record(self, page: int = 1, rows: int = 20) -> Dict[str, Any]:
-        """获取奖励记录（新接口 - /api/mobile/pay/index/consumeRecord）"""
         try:
             url = f"{self.base_url}/pay/index/consumeRecord"
             params = {
@@ -422,7 +375,6 @@ class SenxuanClient:
         return {"success": False, "msg": "获取奖励记录失败"}
 
     def get_commission_info(self):
-        """获取佣金信息"""
         try:
             url = f"{self.base_url}/account/commission?page=1&limit=5"
             response = self.session.get(url, timeout=10)
@@ -447,7 +399,6 @@ class SenxuanClient:
         return {"success": False, "msg": "获取佣金信息失败"}
 
     def run_daily_task(self) -> Dict[str, Any]:
-        """运行每日任务"""
         results = {
             "video_count": 0,
             "success_videos": 0,
@@ -480,7 +431,6 @@ class SenxuanClient:
 
                     video_detail = self.get_video_detail(vid)
                     wait_time = 10  # 默认等待时间
-                    reward_amount = 0  # 奖励金额
 
                     if video_detail:
                         wait_time = int(video_detail.get("wait_time", 10))
@@ -489,23 +439,23 @@ class SenxuanClient:
 
                     view_result = self.add_user_view_num(vid)
                     if view_result.get("status") == 500:
-                        print(f"[x] 记录观看失败\n")
+                        print("[x] 记录观看失败\n")
                         continue
 
                     job_result = self.add_video_job(vid, wait_time)
                     if job_result.get("code") == 0:
                         results["success_videos"] += 1
-                        print(f"[✓] 任务完成")
+                        print("[✓] 任务完成")
                     else:
-                        print(f"[x] 任务提交失败\n")
+                        print("[x] 任务提交失败\n")
                         continue
 
                     reward_result = self.reward_user_small_change()
                     if reward_result.get("code") == 0:
                         results["answer_videos"] += 1
-                        print(f"[✓] 奖励获取成功")
+                        print("[✓] 奖励获取成功")
                     else:
-                        print(f"[i] 本视频无奖励或不需要答题")
+                        print("[i] 本视频无奖励或不需要答题")
 
                     print()
                     time.sleep(1)
@@ -530,7 +480,6 @@ class SenxuanClient:
         return results
 
     def get_withdraw_records(self):
-        """获取提现记录"""
         try:
             print("正在获取提现记录...")
             url = f"{self.base_url}/account/withdraw/records?page=1&limit=15"
@@ -555,7 +504,6 @@ class SenxuanClient:
 
 
 def get_config():
-    """获取插件配置"""
     try:
         price_str = sg.bucketGet(bucket="G_szyx_config", key="price") or "0.88"
         price = float(price_str) if price_str.replace(".", "", 1).isdigit() else 0.88
@@ -590,7 +538,6 @@ def get_config():
 
 
 def get_ql_token(url: str, cid: str, sec: str) -> str:
-    """获取青龙Token"""
     try:
         resp = requests.get(
             f"{url}/open/auth/token",
@@ -605,111 +552,11 @@ def get_ql_token(url: str, cid: str, sec: str) -> str:
     return ""
 
 
-def push_to_ql(account_id: str, expire: str, ql_config: str, envname: str) -> bool:
-    """推送单个账号到青龙"""
-    try:
-        parts = ql_config.split("丨")
-        if len(parts) != 3:
-            return False
-        url, cid, sec = parts[0].strip(), parts[1].strip(), parts[2].strip()
-    except:
-        return False
-    token = get_ql_token(url, cid, sec)
-    if not token:
-        return False
-    token_with_remark = sg.bucketGet("G_szyx_token", account_id)
-    if not token_with_remark:
-        return False
-    if "#" in token_with_remark:
-        remark, raw_token = token_with_remark.split("#", 1)
-        remark, raw_token = remark.strip(), raw_token.strip()
-    else:
-        raw_token, remark = token_with_remark.strip(), "默认账号"
-    value = f"{remark}#{raw_token}"
-    remarks = f"森选:{remark}|账号:{account_id}|到期:{expire}"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    try:
-        resp = requests.get(
-            f"{url}/open/envs",
-            headers=headers,
-            params={"searchValue": envname},
-            timeout=10,
-        )
-        envs = resp.json().get("data", [])
-        existing = next(
-            (
-                e
-                for e in envs
-                if e.get("name") == envname and account_id in e.get("remarks", "")
-            ),
-            None,
-        )
-        if existing:
-            env_id = existing.get("_id") or existing.get("id")
-            requests.put(
-                f"{url}/open/envs",
-                headers=headers,
-                json={
-                    "id": env_id,
-                    "name": envname,
-                    "value": value,
-                    "remarks": remarks,
-                },
-                timeout=10,
-            )
-        else:
-            requests.post(
-                f"{url}/open/envs",
-                headers=headers,
-                json=[{"name": envname, "value": value, "remarks": remarks}],
-                timeout=10,
-            )
-        return True
-    except:
-        return False
 
 
-def delete_from_ql(account_id: str, ql_config: str, envname: str) -> bool:
-    """从青龙删除账号"""
-    try:
-        parts = ql_config.split("丨")
-        if len(parts) != 3:
-            return False
-        url, cid, sec = parts[0].strip(), parts[1].strip(), parts[2].strip()
-    except:
-        return False
-    token = get_ql_token(url, cid, sec)
-    if not token:
-        return False
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    try:
-        resp = requests.get(
-            f"{url}/open/envs",
-            headers=headers,
-            params={"searchValue": envname},
-            timeout=10,
-        )
-        envs = resp.json().get("data", [])
-        existing = next(
-            (
-                e
-                for e in envs
-                if e.get("name") == envname and account_id in e.get("remarks", "")
-            ),
-            None,
-        )
-        if existing:
-            env_id = existing.get("_id") or existing.get("id")
-            requests.delete(
-                f"{url}/open/envs", headers=headers, json=[env_id], timeout=10
-            )
-        return True
-    except:
-        return False
 
 
 def get_user_accounts(user_id=None):
-    """获取用户账号列表"""
     if user_id is None:
         user_id = userid
 
@@ -733,18 +580,9 @@ def get_user_points(user_id=None):
     return 0
 
 
-def set_user_points(user_id, points):
-    """设置用户积分 - 适配呆呆积分数据结构"""
-    sg.bucketSet("dd_sign_coin", user_id, str(points["dd_sign_coin"]))
-    sg.bucketSet("dd_sign_points", user_id, str(points["dd_sign_points"]))
-
-    sign_key = f"sign_{user_id}"
-    sg.bucketSet("dd_sign_coin", sign_key, str(points["dd_sign_coin"]))
-    return True
 
 
 def verify_commission_api_rs256(token: str) -> Dict[str, Any]:
-    """验证RS256 Token（新小程序）"""
     try:
         import base64
 
@@ -776,7 +614,6 @@ def verify_commission_api_rs256(token: str) -> Dict[str, Any]:
 
 
 def verify_commission_api(token: str) -> Dict[str, Any]:
-    """使用佣金接口验证token有效性"""
     rs256_result = verify_commission_api_rs256(token)
     if rs256_result["success"]:
         return rs256_result
@@ -821,7 +658,6 @@ def verify_commission_api(token: str) -> Dict[str, Any]:
 
 
 def validate_token(token_with_remark):
-    """验证Token有效性并返回账号信息"""
     try:
         if "#" in token_with_remark:
             remark, raw_token = token_with_remark.split("#", 1)
@@ -857,7 +693,6 @@ def validate_token(token_with_remark):
 
 
 def bindaccount():
-    """森选登录绑定(支持单个或批量)"""
     sender.reply(
         "=====森选登录=====\n单个：粘贴Token\n批量：换行分割，每行 备注#token\n\n💡 回复q退出"
     )
@@ -942,24 +777,15 @@ def authorize_account(account_id):
     return True
 
 
-def wechat_payment_flow(account_id, months, amount, config, nickname):
-    return True
 
 
-def point_payment_flow(account_id, months, required_points):
-    return True
 
 
-def parse_payment_result(raw_data):
-    return True
 
 
-def complete_authorization(account_id, months, display_name):
-    return True
 
 
 def delete_account(account_id):
-    """删除账号"""
     accounts = get_user_accounts()
 
     sender.reply(f"""
@@ -994,7 +820,6 @@ def delete_account(account_id):
 
 
 def batch_delete_accounts(accounts):
-    """批量删除账号"""
     if not accounts:
         sender.reply("❌ 没有账号可删除")
         return
@@ -1061,16 +886,11 @@ def batch_authorize_accounts(unauthorized_accounts):
     return True
 
 
-def batch_wechat_payment(accounts, months, amount, config):
-    return True
 
 
-def batch_point_payment(accounts, months, required_points):
-    return True
 
 
 def run_single_account_task(account_id):
-    """运行单个账号的任务"""
     token_with_remark = sg.bucketGet("G_szyx_token", account_id)
     if not token_with_remark:
         sender.reply("❌ 账号Token缺失，无法运行任务")
@@ -1112,7 +932,6 @@ def run_single_account_task(account_id):
 
 
 def sz_manage():
-    """账号管理"""
     accounts = get_user_accounts()
 
     if not accounts:
@@ -1217,8 +1036,7 @@ def sz_manage():
 
 
 def update_account_token(account_id, old_remark):
-    """更新账号的token"""
-    sender.reply(f"请输入新的token (格式：备注#token 或直接输入token):")
+    sender.reply("请输入新的token (格式：备注#token 或直接输入token):")
     new_token_input = sender.input(120000, 1, False)
 
     if not new_token_input or new_token_input.lower() == "q":
@@ -1249,7 +1067,6 @@ def update_account_token(account_id, old_remark):
 
 
 def sz_auto_run():
-    """一键运行所有已授权账号任务"""
     authorized_accounts = []
     all_accounts = []  # 所有账号，包括已过期的
     auth_keys = [] or []
@@ -1529,7 +1346,6 @@ def sz_auto_run():
 def admin_authorize_account():
     return True
 def query_account_status():
-    """查询账号状态"""
     accounts = get_user_accounts()
 
     if not accounts:
@@ -1701,7 +1517,6 @@ def query_account_status():
 
 
 def show_tutorial():
-    """显示使用教程"""
     tutorial = """森选质享教程
 📱 入口: #小程序://银辉云选/mpcwyYtMQegcNjc
 
@@ -1721,73 +1536,9 @@ def show_tutorial():
     sender.reply(tutorial)
 
 
-def sz_export_qinglong():
-    """导出已授权账号到青龙格式"""
-    accounts = get_user_accounts()
-    if not accounts:
-        sender.reply("❌ 您尚未绑定任何账号")
-        return
-
-    today = datetime.now().date()
-    valid_tokens = []
-    expired_count = 0
-    unauthorized_count = 0
-
-    for account_id in accounts:
-        token_with_remark = sg.bucketGet("G_szyx_token", account_id)
-        if not token_with_remark:
-            continue
-
-        if "#" in token_with_remark:
-            remark, token = token_with_remark.split("#", 1)
-            remark, token = remark.strip(), token.strip()
-        else:
-            token, remark = token_with_remark.strip(), "默认账号"
-
-        auth_data_str = '2099-12-31'
-        if not auth_data_str:
-            unauthorized_count += 1
-            continue
-
-        try:
-            auth_data = json.loads(auth_data_str)
-            expire_date = auth_data.get("expire_time")
-            if expire_date:
-                expire_date_obj = datetime.strptime(expire_date, "%Y-%m-%d").date()
-                if expire_date_obj < today:
-                    expired_count += 1
-                    continue
-        except:
-            unauthorized_count += 1
-            continue
-
-        valid_tokens.append(f"{remark}#{token}")
-
-    if not valid_tokens:
-        msg = "❌ 没有有效的已授权账号可导出"
-        if expired_count:
-            msg += f"\n⏰ 已过期: {expired_count}个"
-        if unauthorized_count:
-            msg += f"\n🔒 未授权: {unauthorized_count}个"
-        sender.reply(msg)
-        return
-
-    env_value = "\n".join(valid_tokens)
-    result_msg = f"""森选青龙配置
-环境变量名: S_SZYX
-格式: 备注#token
-有效账号: {len(valid_tokens)}个"""
-    if expired_count:
-        result_msg += f"\n已过期: {expired_count}个(已跳过)"
-    if unauthorized_count:
-        result_msg += f"\n未授权: {unauthorized_count}个(已跳过)"
-    result_msg += f"\n\n复制以下内容到青龙:\n{env_value}"
-
-    sender.reply(result_msg)
 
 
 def sz_upload_qinglong():
-    """管理员批量上传所有账号到青龙"""
     if not sender.isAdmin():
         sender.reply("❌ 仅管理员可用")
         return
@@ -1906,7 +1657,6 @@ def sz_upload_qinglong():
 
 
 def sz_clean_accounts():
-    """清理未授权和授权过期的森选账号"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有权限执行此操作")
         return
@@ -1977,7 +1727,7 @@ def sz_clean_accounts():
             else:
                 sg.bucketDel(bucket="G_szyx_user", key=user)
 
-        except Exception as e:
+        except Exception:
             failed_count += 1
             continue
 
@@ -1991,7 +1741,7 @@ def sz_clean_accounts():
 📊 清理效率: {efficiency:.1f}%
 =================="""
     else:
-        result_msg = f"""
+        result_msg = """
 =====清理完成=====
 ✅ 未发现需要清理的账号
 所有账号均为有效授权状态

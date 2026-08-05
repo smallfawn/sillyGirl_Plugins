@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.8]
+# [version: v1.8.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,13 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 爱仙居提交插件；1. 支持短信/抓包登录；新增短信登录开关 1.7修复查询登录问题；📞]
 # [depe: ["requests"]]
-# [staticmethod: def get_all_users():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,35 +88,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_axj_dd_axj_qlname': form.string().title('对接系统配置').default('').description('必填项，青龙面板对接信息'),
@@ -134,7 +106,6 @@ _CONFIG_FIELD_MAP = {
     ('dd_axj', 'enable_sms'): 'dd_axj_enable_sms',
 }
 
-import re
 from datetime import datetime, timedelta
 from decimal import Decimal
 import requests
@@ -178,7 +149,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
 _shared_proxy = None
 
 def getusercontent():
-    """获取插件完整配置"""
     dd_hhtt_qlname = sg.bucketGet('dd_axj', 'dd_axj_qlname') or ''
     dd_hhtt_osname = sg.bucketGet('dd_axj', 'dd_axj_osname') or 'axj'
 
@@ -299,11 +269,6 @@ def send_user_notice(user_id, msg, title="爱仙居助手通知"):
         logger.warning(f"Push发送失败 {user_id}: {e}")
     return False
 
-def safe_send_message(user_id, msg, log_context=""):
-    ok = send_user_notice(user_id, msg)
-    if not ok:
-        logger.warning(f"消息发送失败 {log_context}")
-    return ok
 
 def generate_user_agent():
     import random
@@ -314,7 +279,6 @@ def generate_user_agent():
     return f"Mozilla/5.0 (Linux; Android {android_v}; {model} Build/{build_id}; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/{chrome_v} Mobile Safari/537.36;xsb_xianju;xsb_xianju;2.1.3;native_app;7.8.0"
 
 def empower(empowertime, days):
-    """支持正数延期与负数扣除天数"""
     try:
         today_date = datetime.now().date()
         if not empowertime or empowertime <= str(today_date):
@@ -425,7 +389,7 @@ class AiXianJuClient:
 
             try:
                 return response.json()
-            except Exception as je:
+            except Exception:
                 return {"error": f"非JSON响应: {response.text[:100]}"}
         except Exception as e:
             return {"error": str(e)}
@@ -453,7 +417,6 @@ class AiXianJuClient:
         except: return {}
 
     def _request_lottery_info(self):
-        """查询爱仙居抽奖状态 (替代失效的钱包接口)"""
         try:
             headers1 = {"Content-Type": "application/json"}
             payload1 = {"q": "1GwxSBurLoUdKeZiyHuqn7u0cv2qTf081Qj/sdyPH2E=", "accountId": self.account_id, "sessionId": self.session_id, "tenantCode": "xsb_xianju"}
@@ -487,11 +450,10 @@ class AiXianJuClient:
             res4 = self._request_activity("GET", f"https://act.tmlyun.com/activity-api/lottery/h5/activity/lottery/frontPageNum?activityId={activity_id}", headers4)
             remain = (res4.get("data") or {}).get("remainPrizeNum", 0)
             return f"今日剩余可抽奖: {remain}次"
-        except Exception as e:
-            return f"❌抽奖信息查询失败"
+        except Exception:
+            return "❌抽奖信息查询失败"
 
     def check_info(self):
-        """统一信息查询校验并获取详情"""
         try:
             user_res = self._request_main("GET", "/api/user_mumber/numberCenter", {"is_new": 1})
             mobile = "未知"
@@ -629,7 +591,7 @@ class AiXianJuClient:
         try:
             sess = requests.Session()
             proxies = self._get_proxies()
-            res1 = sess.post(url, data=data, headers=headers, verify=False, proxies=proxies, timeout=15)
+            sess.post(url, data=data, headers=headers, verify=False, proxies=proxies, timeout=15)
             req_id_2 = str(uuid.uuid4())
 
             headers2 = {
@@ -881,7 +843,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception("获取Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         if not self.enabled: return []
@@ -1023,7 +985,7 @@ def process_single_account_query(account, index, total_count, account_remarks):
 🔐 【授权状态】 : {'⚠️ 未授权' if not accountVip else '❌ 已过期'}
 ⏰ 【授权时间】 : {auth_time}
 """
-    except Exception as e:
+    except Exception:
         return None
 
 def cxs():
@@ -1096,7 +1058,7 @@ def bindaccount():
                 remark = remark_input.strip()[:20]
 
         if config.get('enable_sms', True):
-            sender.reply(f"""
+            sender.reply("""
 =====爱仙居账号绑定=====
 请选择登录方式：
 [1] 短信登录 (推荐，自动获取Token)
@@ -1154,7 +1116,7 @@ def bindaccount():
 
             if auth_success:
                 full_token_str = result
-                sender.reply(f"🎉 登录成功！正在为您自动绑定...")
+                sender.reply("🎉 登录成功！正在为您自动绑定...")
 
                 info_client = AiXianJuClient(full_token_str)
                 info_res = info_client.check_info()
@@ -1168,7 +1130,7 @@ def bindaccount():
                 return
 
         elif login_type == '2':
-            sender.reply(f"""
+            sender.reply("""
 =====Token登录=====
 当前模式: 🌐 系统(青龙)托管
 ------------------
@@ -1624,17 +1586,13 @@ def clean_expired_accounts():
                 else:
                     sg.bucketDel(bucket='dd_axj_user', key=user)
 
-        except Exception as e:
+        except Exception:
             continue
 
     if sender.isAdmin() and usermessage in ['爱仙居清理', '清理爱仙居']:
         sender.reply(f"=====维护完成=====\n✅ 已清理过期: {cleaned_count}个\n📢 发送提醒: {reminded_count}个\n==================")
 
 def admin_auth_options():
-    return True
-def admin_auth_all_users():
-    return True
-def admin_auth_specific_user():
     return True
 def show_tutorial():
     sender.reply(f"""

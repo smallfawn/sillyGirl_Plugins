@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: yuhualhh]
-# [version: v11.2.3]
+# [version: v1.2.3]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,12 @@
 # [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'yuhua_xcbwc_share': form.string().title('推广码子').default('').description('小蚕推广码直链'),
@@ -209,7 +174,7 @@ class TencentCaptchaClient:
                 js=r.json()
                 if js.get("Response",{}).get("CaptchaCode")==0:self.sid=js.get("Response",{}).get("SId","");return True,""
                 return False,js.get("Response",{}).get("CaptchaMsg","服务异常")
-            except Exception as e: time.sleep(1)
+            except Exception: time.sleep(1)
         return False,"连接超时"
     def get_image_data(self):
         for i in range(3):
@@ -221,7 +186,7 @@ class TencentCaptchaClient:
                     self.uid=d.get("UniqueSId","")
                     return {"bg":d.get("ImageDataL"),"slide":d.get("ImageDataS"),"y":int(d.get("LeftTopY",0))},""
                 return None,d.get("CaptchaMsg","获取失败")
-            except Exception as e: time.sleep(1)
+            except Exception: time.sleep(1)
         return None,"获取超时"
     def verify_answer(self,x):
         for i in range(3):
@@ -231,7 +196,7 @@ class TencentCaptchaClient:
                 d=r.json().get("Response",{})
                 if d.get("CaptchaCode")==0:return True,d.get("Ticket"),d.get("Randstr")
                 return False,d.get("CaptchaMsg"),None
-            except Exception as e: time.sleep(1)
+            except Exception: time.sleep(1)
         return False,"验证超时",None
 class RemoteCaptchaHandler:
     def __init__(self,url):self.url=url;self.token=f"v_{uuid.uuid4().hex[:8]}"
@@ -241,7 +206,7 @@ class RemoteCaptchaHandler:
                 r=requests.post(f"{self.url}?action=init&token={self.token}",json={"bg":bg,"slide":slide,"y":y},headers={"X-API-Key":REMOTE_PHP_SECRET},timeout=10)
                 if DEBUG_LOG: printf(f"[PHP][{i+1}/3] >>> {r.request.url}\n[Req] (Base64 Data)\n<<< {r.status_code}\n[Rsp] {r.text}", "DEBUG")
                 if r.status_code==200:return True
-            except Exception as e: time.sleep(1)
+            except Exception: time.sleep(1)
         return False
     def get_user_url(self):return f"{self.url}?token={self.token}"
     def poll_user_slide(self):
@@ -303,7 +268,7 @@ def sub_fix_risk(acid):
     if not loc_str: sender.reply(f"=====小蚕解限=====\n🤪 账号: {nm}\n❌ 状态: 未记录位置\n==================");return
     try: city_code=int(json.loads(loc_str).get("city_code",440304))
     except: sender.reply(f"=====小蚕解限=====\n🤪 账号: {nm}\n❌ 状态: 位置信息解析失败\n==================");return
-    sender.reply(f"正在执行...")
+    sender.reply("正在执行...")
     api=yuhua(ck)
     try: api.get_silk()
     except: pass
@@ -321,9 +286,9 @@ def sub_fix_risk(acid):
                             pass
                         ph=None;break
                     break
-                except Exception as e: time.sleep(1)
+                except Exception: time.sleep(1)
         if not ph:
-            sender.reply(f"=====身份验证=====\n请输入绑定的手机号\n------------------\n请在60秒内输入\n回复\"q\"退出");ph=sender.input(60000,1,False)
+            sender.reply("=====身份验证=====\n请输入绑定的手机号\n------------------\n请在60秒内输入\n回复\"q\"退出");ph=sender.input(60000,1,False)
             if not ph: sender.reply("❌ 超时已退出");return False
             if ph.strip().lower()=='q': sender.reply("✅ 已退出操作");return False
             ph=ph.strip()
@@ -395,7 +360,7 @@ def sub_fix_risk(acid):
                 vf_ok=True;vf_pass=False;vf_msg=r3.get("status",{}).get("msg");break
             except Exception as e: vf_msg=str(e);time.sleep(1)
         if vf_ok and vf_pass:
-            sender.reply(f"✅ 当前环节解限成功")
+            sender.reply("✅ 当前环节解限成功")
             return True
         else:
             sender.reply(f"❌ 解限失败: {vf_msg if vf_msg else '验证未通过'}")
@@ -503,10 +468,8 @@ def extract_ip_from_proxy(proxy_url):
         return proxy_url.split(':')[0]
     except: return None
 def clear_temp_ip_records():
-    global _temp_ip_usage, _temp_used_ips, _proxy_lock
     with _proxy_lock: _temp_ip_usage.clear(); _temp_used_ips.clear()
 def clear_session_pool():
-    global _session_pool
     try:
         for session in _session_pool.values():
             try: session.close()
@@ -526,7 +489,6 @@ def get_user_input(prompt, timeout=60000):
         return None
     return user_input.strip()
 def get_proxies():
-    global _temp_ip_usage, _temp_used_ips, _proxy_lock, _ip_cache_pool, _ip_cache_lock
     proxy_status = sg.bucketGet('yuhua_xcbwc', 'status') or '0'
     proxy_addr = sg.bucketGet('yuhua_xcbwc', 'proxy') or ''
     if proxy_status not in ['0', '1', '2'] or proxy_status == '0' or not proxy_addr.strip(): return None
@@ -586,7 +548,6 @@ def check_account_valid(acid):
     if not ck: return False, "CK不存在"
     return True, ck
 def safe_request(method, url, max_retries=10, backoff_factor=1, **kwargs):
-    global _temp_used_ips, _proxy_lock
     current_proxies = kwargs.get("proxies", get_proxies())
     proxy_status = sg.bucketGet('yuhua_xcbwc', 'status') or '0'
     consecutive_403_count = 0
@@ -699,19 +660,7 @@ def calc_auth_time(old_time, months):
             if dt > nowd: base = dt
         except: pass
     return (base + timedelta(days=30*months)).strftime("%Y-%m-%d")
-def find_by_teemo(teemo_val):
-    all_u = sg.bucketAllKeys('yuhua_xcbwc_user')
-    for u in all_u:
-        accs = get_accounts(u)
-        for a in accs:
-            ck = sg.bucketGet('yuhua_xcbwc_token', a)
-            if ck:
-                arr = ck.split('#')
-                if len(arr) == 3 and arr[1] == teemo_val: return (u, a)
-    return None
 _silk_cache = {}
-def _md5(s: str) -> str:
-    return hashlib.md5(s.encode('utf-8')).hexdigest()
 def generate_xc_headers(servername, methodname, teemo="0", vayne="0", sivir="", extra=None, device_key=None, city_code="440304"):
     ru = uuid.uuid4().hex
     teemo_str = str(teemo)
@@ -792,7 +741,6 @@ class BaseApiClient:
                 time.sleep(0.05)
 class yuhua(BaseApiClient):
     def get_silk(self, force_refresh=False):
-        global _silk_cache
         cache_key = f"{self.vayne}_{self.teemo}_{self.sivir}"
         if not force_refresh and cache_key in _silk_cache: return _silk_cache[cache_key]
         time.sleep(random.uniform(1.0, 2.0))
@@ -1202,9 +1150,6 @@ def analyze_task_result(logs):
     if ip_blocked_task_count > 0: return False, "部分IP风控"
     if network_error_count > 0: return False, "网络不稳定"
     return False, "任务执行异常"
-def is_task_success(logs):
-    success, _ = analyze_task_result(logs)
-    return success
 def do_execute_all():
     if not sender.isAdmin(): sender.reply("❌ 需要管理员权限"); return
     clear_temp_ip_records()
@@ -1299,7 +1244,7 @@ def show_account_menu(acid):
     menu_items=["[1] 授权账号","[2] 运行任务","[3] 瓜分封紅","[4] 店铺活动","[5] 测试抢单"]
     if is_mon_enabled: menu_items.extend(["[6] 监控抢单","[7] 修改备注","[8] 记录位置","[9] 解除限制","[10] 删除账号"])
     else: menu_items.extend(["[6] 修改备注","[7] 记录位置","[8] 解除限制","[9] 删除账号"])
-    menu=f"=====账号操作=====\n"+"\n".join(menu_items)+"\n------------------\n回复数字选择\n回复\"q\"退出\n"
+    menu="=====账号操作=====\n"+"\n".join(menu_items)+"\n------------------\n回复数字选择\n回复\"q\"退出\n"
     sender.reply(menu);c=get_user_input(None)
     if not c: return
     action_map_mon={"1":sub_auth,"2":sub_run,"3":cmd_manage_hongbaoyu_for_account,"4":sub_activity_list,"5":sub_test_grab,"6":sub_activity_monitor,"7":sub_rename,"8":sub_submit_location,"10":sub_delete,"9":sub_fix_risk}
@@ -1511,7 +1456,7 @@ def sub_activity_monitor(acid):
             sender.reply(f"✅ 店铺[{sid}]删除成功")
         else: sender.reply("❌ 无效指令")
 def sub_rename(acid):
-    sender.reply(f"=====修改备注=====\n请输入新备注\n-----------------\n请在60秒内完成\n回复\"q\"退出")
+    sender.reply("=====修改备注=====\n请输入新备注\n-----------------\n请在60秒内完成\n回复\"q\"退出")
     c2 = get_user_input(None)
     if not c2: return
     sg.bucketSet('yuhua_xcbwc_remark', acid, c2.strip())
@@ -1539,7 +1484,7 @@ def sub_submit_location(acid, ignore_auth=False):
                 if geo_js.get("status") != 0:
                     remaining = max_retries - 1 - attempt
                     if remaining > 0:
-                        current_prompt = f"⚠️ 请尝试更详细的地址:"
+                        current_prompt = "⚠️ 请尝试更详细的地址:"
                         continue
                     else:
                         sender.reply(f"❌ 解析失败: {geo_js.get('message', '未知错误')}"); return False
@@ -1548,7 +1493,7 @@ def sub_submit_location(acid, ignore_auth=False):
                 if not all([la, ln, cc]):
                     remaining = max_retries - 1 - attempt
                     if remaining > 0:
-                        current_prompt = f"⚠️ 请输入完整的地址:"
+                        current_prompt = "⚠️ 请输入完整的地址:"
                         continue
                     else:
                         sender.reply("❌ 地址解析结果不完整"); return False
@@ -1559,7 +1504,7 @@ def sub_submit_location(acid, ignore_auth=False):
             except Exception as e:
                 remaining = max_retries - 1 - attempt
                 if remaining > 0:
-                    current_prompt = f"⚠️ 请重新输入:"
+                    current_prompt = "⚠️ 请重新输入:"
                 else:
                     sender.reply(f"=====记录位置=====\n🤪 账号: {nm}\n💫 结果: {parse_error_reason(str(e))}\n=================="); return False
         return False
@@ -1800,15 +1745,7 @@ def auth_all():
     success, failed = 0, 0
     for u in sg.bucketAllKeys('yuhua_xcbwc_user'):
         for acid in get_accounts(u):
-            try:
-                old_val = '2099-12-31'
-                base = today
-                if old_val:
-                    dt = datetime.strptime(old_val, "%Y-%m-%d").date()
-                    if dt > today: base = dt
-                auth_time = (base + timedelta(days=days)).strftime("%Y-%m-%d")
-                success += 1
-            except: failed += 1
+            success += 1
     sender.reply(f"=====授权完成=====\n✅ 成功: {success}个账号\n❌ 失败: {failed}个账号\n⏰ 时长: {'授权' if days > 0 else '扣除'}{abs(days)}天\n==================")
 def auth_user():
     sender.reply("=====指定授权=====\n请输入目标用户ID\n发送myuid可获取ID\n------------------\n回复\"q\"退出")
@@ -1838,15 +1775,7 @@ def auth_user():
     accounts_to_process = accs if idx == 0 else [accs[idx - 1]]
     success_count, fail_count = 0, 0
     for acid in accounts_to_process:
-        try:
-            old_val = '2099-12-31'
-            base = today
-            if old_val:
-                dt = datetime.strptime(old_val, "%Y-%m-%d").date()
-                if dt > today: base = dt
-            auth_time = (base + timedelta(days=days)).strftime("%Y-%m-%d")
-            success_count += 1
-        except: fail_count += 1
+        success_count += 1
     if idx == 0: sender.reply(f"=====授权完成=====\n✅ 成功: {success_count}个账号\n❌ 失败: {fail_count}个账号\n⏰ 时长: {'授权' if days > 0 else '扣除'}{abs(days)}天\n==================")
     elif success_count == 1:
         acid = accounts_to_process[0]
@@ -1854,7 +1783,7 @@ def auth_user():
         new_date = '2099-12-31'
         sender.reply(f"=====授权成功=====\n🤪 账号: {rm}\n⏰ 时长: {'授权' if days > 0 else '扣除'}{abs(days)}天\n📅 到期: {new_date}\n==================")
 def handle_bulk_authorization(accounts_to_auth, is_admin_flow=False):
-    prompt = f"=====一键授权=====\n" + (f"授权价格: {price}元/月\n" if price > 0 and not is_admin_flow else "") + "请输入授权月数\n------------------\n回复数字设置月数\n回复\"q\"退出"
+    prompt = "=====一键授权=====\n" + (f"授权价格: {price}元/月\n" if price > 0 and not is_admin_flow else "") + "请输入授权月数\n------------------\n回复数字设置月数\n回复\"q\"退出"
     sender.reply(prompt)
     c = get_user_input(None)
     if not c: return
@@ -1895,9 +1824,6 @@ def _get_hb_events():
             if evts := yuhua(acc_info['ck']).fetch_hb_events(acc_info['city_code']): return evts
         except Exception: continue
     return None
-def cmd_get_hb_event():
-    if evts := _get_hb_events():
-        sg.bucketSet('yuhua_xcbwc_hb_eventid', 'events', json.dumps({"date": str(get_china_date()), "events": evts}, ensure_ascii=False))
 def get_current_hb_event():
     today_str = str(get_china_date())
     js = sg.bucketGet('yuhua_xcbwc_hb_eventid', 'events')
@@ -2165,7 +2091,7 @@ def cmd_manage_hongbaoyu_for_account(acid):
                 sender.reply(f"✅ 瓜分状态已{'开启' if user_input == 'on' else '关闭'}")
                 if user_input == 'off' and push_status == 'on':
                     sg.bucketSet(push_bucket, key, 'off')
-                    sender.reply(f"✅ 瓜分推送已自动关闭")
+                    sender.reply("✅ 瓜分推送已自动关闭")
             else:
                 sender.reply(f"✅ 瓜分状态已是{'开启' if user_input == 'on' else '关闭'}状态")
         elif global_push_enabled and feature_status == 'on' and user_input in ('t', 'f'):
@@ -2248,7 +2174,7 @@ def check_maintenance_page() -> bool:
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
         base64.b64encode(nonce + ciphertext).decode('utf-8')
         True
-    except Exception as e:
+    except Exception:
         pass
     return live_status
 def main():

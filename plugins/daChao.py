@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.4]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,15 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -135,7 +128,6 @@ import json
 import time
 import hashlib
 import random
-import base64
 import requests
 import uuid
 from datetime import datetime
@@ -155,32 +147,16 @@ TENANT_ID = "94"
 CLIENT_ID = "10048"
 
 
-def get_user_content():
-    """获取用户配置内容"""
-    osname = sg.bucketGet('s_dc', 'osname') or 'S_DC'
-    qlname = sg.bucketGet('s_dc', 'qlname') or ''
-    Vipmoney = float(sg.bucketGet('s_dc', 'Vipmoney') or '1')
-    coin = int(sg.bucketGet('s_dc', 'coin') or '0')
-    return osname, qlname, Vipmoney, coin
 
 
 def generate_random_uuid():
-    """生成随机UUID"""
     return str(uuid.uuid4())
 
 def generate_random_device_id():
-    """生成随机设备ID"""
     return ''.join(random.choices('0123456789abcdef', k=32))
 
-def generate_signature_md5(raw_str: str) -> str:
-    """生成MD5签名"""
-    try:
-        return hashlib.md5(raw_str.encode(), usedforsecurity=True).hexdigest()
-    except TypeError:
-        return hashlib.md5(raw_str.encode()).hexdigest()
 
 def generate_random_ua():
-    """生成随机UA"""
     version = "14.1.6"
     uuid_str = generate_random_uuid()
     device_models = ["M1903F2A", "M2001J2E", "M2001J2C", "M2001J1E", "M2001J1C",
@@ -204,7 +180,6 @@ def generate_random_ua():
 
 
 def get_session_id():
-    """获取sessionId"""
     init_url = "https://vapp.tmuyun.com/api/account/init"
     device_id = generate_random_device_id()
     ua_info = generate_random_ua()
@@ -238,7 +213,6 @@ def get_session_id():
         return None, None, None, None
 
 def get_signature_key(user_agent):
-    """获取signature_key"""
     passport_url = f"https://passport.tmuyun.com/web/init?client_id={CLIENT_ID}"
     passport_headers = {
         "Connection": "Keep-Alive",
@@ -268,7 +242,6 @@ def get_authorization_code(phone, password, signature_key, user_agent, device_id
     return '2099-12-31'
 
 def login_account(auth_code, session_id, device_id, common_ua):
-    """登录账号"""
     uuid_str = generate_random_uuid()
     timestamp = str(int(time.time() * 1000))
 
@@ -323,7 +296,6 @@ def login_account(auth_code, session_id, device_id, common_ua):
         return None, None
 
 def bind_account():
-    """绑定大潮账号"""
     sender.reply("""
 =====大潮登录=====
 请按照提示依次输入账号信息
@@ -444,7 +416,6 @@ def bind_account():
 
 
 def relogin_account(username, password):
-    """重新登录获取session信息"""
     try:
         session_id, device_id, user_agent, common_ua = get_session_id()
         if not session_id:
@@ -475,7 +446,6 @@ def relogin_account(username, password):
         return None
 
 def get_member_token(username, password):
-    """获取member_token用于红包API"""
     try:
         login_info = relogin_account(username, password)
         if not login_info:
@@ -594,7 +564,6 @@ def get_member_token(username, password):
         return None
 
 def get_redpack_list(account_info):
-    """获取未领取红包列表"""
     try:
         username = account_info.get('username', '')
         password = account_info.get('password', '')
@@ -681,9 +650,8 @@ def get_redpack_list(account_info):
         return None, f"获取红包列表异常: {str(e)}"
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
-        sender.reply(f"""
+        sender.reply("""
 =====未绑定账号=====
 ❌ 未找到账号
 💡 发送 大潮登录 绑定
@@ -791,7 +759,6 @@ def query_accounts():
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 def push_redpack_links():
-    """推送红包链接给用户（管理员功能）"""
     if not sender.isAdmin():
         sender.reply("❌ 仅限管理员")
         return
@@ -913,9 +880,8 @@ def push_redpack_links():
 
 
 def manage_account():
-    """账号管理功能"""
     if not uservalue:
-        sender.reply(f"""
+        sender.reply("""
 =====未绑定账号=====
 ❌ 未找到账号
 💡 发送 大潮登录 绑定
@@ -1170,17 +1136,8 @@ def manage_account():
 def authorize_multiple_accounts(usernames):
     return True
 
-def generate_iframe_url(url):
-    """将URL通过base64编码生成iframe页面链接"""
-    try:
-        encoded = base64.b64encode(url.encode('utf-8')).decode('utf-8')
-        iframe_url = f"https://metwhale.github.io?u={encoded}"
-        return iframe_url
-    except Exception as e:
-        return url
 
 def shorten_url(long_url):
-    """缩短链接"""
     try:
         encoded_url = requests.utils.quote(long_url)
         headers = {
@@ -1210,21 +1167,16 @@ def shorten_url(long_url):
     except:
         return long_url
 
-def process_mapay_payment(project, months, money, pay_type='alipay'):
-    return True
 
 
-def process_qrcode_payment(project, months, money):
-    return True
 
 
 def update_ql_env(username, account_info):
-    """更新青龙环境变量"""
     phone = account_info.get('username', '')
     password = account_info.get('password', '')
 
     if not phone or not password:
-        sender.reply(f"更新青龙变量失败: 账号信息不完整")
+        sender.reply("更新青龙变量失败: 账号信息不完整")
         return False
 
     env_value = f"{phone}#{password}"
@@ -1240,13 +1192,11 @@ def update_ql_env(username, account_info):
     )
 
 def delete_ql_env(username):
-    """删除面板环境变量（青龙/呆呆面板 通用）"""
     ql = _get_ql_client()
     return ql.delete_env(username)
 
 
 def _get_ql_client():
-    """获取面板客户端，根据开关决定使用青龙或DumbPanel"""
     osname = sg.bucketGet('s_dc', 'osname') or 'S_DC'
     qlname = sg.bucketGet('s_dc', 'qlname') or ''
     use_dp = str(sg.bucketGet('s_dc', 'use_daipanel') or '').lower() == 'true'
@@ -1267,7 +1217,6 @@ def ks_auth():
 
 
 def show_tutorial():
-    """显示大潮教程"""
     sender.reply(
         '=====大潮教程=====\n'
         '用户指令:\n'
@@ -1295,7 +1244,6 @@ def show_tutorial():
 
 
 def main():
-    """主入口"""
     msg = sender.getMessage()
 
     if ('登录' in msg or '登陆' in msg) and ('大潮' in msg or 'dc' in msg.lower()):

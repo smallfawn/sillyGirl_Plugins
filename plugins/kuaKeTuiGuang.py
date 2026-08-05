@@ -11,12 +11,12 @@
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 使用方法：发送"我要看XXXX"进行搜索；推广方法：关注公众号"蜂小推"，邀请码：15999112，申请夸克网盘推广项目即可]
 # [depe: ["httpx","requests"]]
-# [staticmethod: def get_pwd_id(share_url: str) -> str:]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -48,15 +48,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -86,35 +77,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'quark_search_cookies': form.string().title('夸克网盘Cookie').default('').description('夸克网盘的Cookie字符串'),
@@ -149,35 +111,24 @@ imtype = sender.getImtype()
 username = sender.getUserName()
 
 def get_timestamp(length: int = 13) -> str:
-    """获取时间戳"""
     timestamp = int(time.time() * 1000)  # 毫秒时间戳
     return str(timestamp)[:length]
 
 
 def generate_random_code(length: int = 4) -> str:
-    """生成随机码"""
     return ''.join([str(random.randint(0, 9)) for _ in range(length)])
 
 
 def generate_qrcode(url):
-    """生成二维码图片
-
-    Args:
-        url: 要生成二维码的URL
-
-    Returns:
-        str: 二维码API的URL
-    """
     try:
         encoded_url = requests.utils.quote(url)
         api_url = f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
         return api_url
-    except Exception as e:
+    except Exception:
         return None
 
 
 def parse_datetime(dt_str: str) -> str:
-    """解析日期时间字符串，返回日期部分"""
     try:
         if dt_str == "0001-01-01T00:00:00Z":
             return "未知"
@@ -188,15 +139,8 @@ def parse_datetime(dt_str: str) -> str:
 
 
 class QuarkAutoSaveAndShare:
-    """夸克网盘自动转存并分享类"""
 
     def __init__(self, cookies: str) -> None:
-        """
-        初始化
-
-        Args:
-            cookies: 夸克网盘的cookie字符串
-        """
         if not cookies or not cookies.strip():
             raise ValueError("cookies不能为空")
         self.cookies: str = cookies.strip()
@@ -211,11 +155,9 @@ class QuarkAutoSaveAndShare:
 
     @staticmethod
     def get_pwd_id(share_url: str) -> str:
-        """从分享链接提取pwd_id"""
         return share_url.split('?')[0].split('/s/')[-1]
 
     async def get_stoken(self, pwd_id: str, password: str = '') -> Tuple[str, str]:
-        """获取stoken，返回(stoken, error_message)"""
         params = {
             'pr': 'ucpro',
             'fr': 'pc',
@@ -238,7 +180,6 @@ class QuarkAutoSaveAndShare:
 
     async def get_detail(self, pwd_id: str, stoken: str, pdir_fid: str = '0') -> Tuple[
         str, List[Dict[str, Union[int, str]]]]:
-        """获取分享文件详情"""
         api = "https://drive-pc.quark.cn/1/clouddrive/share/sharepage/detail"
         page = 1
         file_list: List[Dict[str, Union[int, str]]] = []
@@ -292,7 +233,6 @@ class QuarkAutoSaveAndShare:
                 page += 1
 
     async def create_dir(self, pdir_name: str, pdir_fid: str = '0') -> Union[str, None]:
-        """创建文件夹，返回文件夹ID。如果文件夹已存在，则返回已存在文件夹的ID"""
         params = {
             'pr': 'ucpro',
             'fr': 'pc',
@@ -323,7 +263,6 @@ class QuarkAutoSaveAndShare:
 
     async def get_share_save_task_id(self, pwd_id: str, stoken: str, first_ids: List[str],
                                      share_fid_tokens: List[str], to_pdir_fid: str = '0') -> str:
-        """获取转存任务ID"""
         task_url = "https://drive.quark.cn/1/clouddrive/share/sharepage/save"
         params = {
             "pr": "ucpro",
@@ -352,7 +291,6 @@ class QuarkAutoSaveAndShare:
                 raise Exception(f"获取转存任务ID失败：{json_data.get('message', '未知错误')}")
 
     async def submit_task(self, task_id: str, retry: int = 50) -> Dict[str, Any]:
-        """提交转存任务并等待完成"""
         for i in range(retry):
             await asyncio.sleep(random.randint(500, 1000) / 1000)
             submit_url = (f"https://drive-pc.quark.cn/1/clouddrive/task?pr=ucpro&fr=pc&uc_param_str=&task_id={task_id}"
@@ -376,7 +314,6 @@ class QuarkAutoSaveAndShare:
 
     async def get_sorted_file_list(self, pdir_fid='0', page='1', size='100', fetch_total='false',
                                    sort='') -> Dict[str, Any]:
-        """获取文件列表"""
         params = {
             'pr': 'ucpro',
             'fr': 'pc',
@@ -399,7 +336,6 @@ class QuarkAutoSaveAndShare:
             return json_data
 
     async def find_folder_by_name(self, folder_name: str, parent_fid: str = '0') -> Union[str, None]:
-        """根据文件夹名称查找文件夹ID"""
         page = 1
         while True:
             file_list_data = await self.get_sorted_file_list(pdir_fid=parent_fid, page=str(page),
@@ -424,7 +360,6 @@ class QuarkAutoSaveAndShare:
 
     async def get_share_task_id(self, fid: str, file_name: str, url_type: int = 1,
                                 expired_type: int = 2, password: str = '') -> str:
-        """获取分享任务ID"""
         json_data = {
             "fid_list": [fid],
             "title": file_name,
@@ -454,7 +389,6 @@ class QuarkAutoSaveAndShare:
                 raise Exception(f"获取分享任务ID失败：{json_data.get('message', '未知错误')}")
 
     async def get_share_id(self, task_id: str) -> str:
-        """获取分享ID"""
         params = {
             'pr': 'ucpro',
             'fr': 'pc',
@@ -473,7 +407,6 @@ class QuarkAutoSaveAndShare:
                 raise Exception(f"获取分享ID失败：{json_data.get('message', '未知错误')}")
 
     async def submit_share(self, share_id: str) -> Tuple[str, str]:
-        """提交分享并获取分享链接"""
         params = {
             'pr': 'ucpro',
             'fr': 'pc',
@@ -498,7 +431,6 @@ class QuarkAutoSaveAndShare:
                 raise Exception(f"获取分享链接失败：{json_data.get('message', '未知错误')}")
 
     async def list_all_items_in_folder(self, folder_id: str) -> List[Dict[str, Any]]:
-        """获取指定文件夹内的所有条目（文件和文件夹）"""
         all_items = []
         current_page = 1
         items_per_page = 50
@@ -576,7 +508,6 @@ class QuarkAutoSaveAndShare:
         return all_items
 
     async def delete_items(self, item_fids: List[str]) -> bool:
-        """删除指定的文件或文件夹"""
         if not item_fids:
             return True
 
@@ -605,7 +536,6 @@ class QuarkAutoSaveAndShare:
                 return False
 
     async def clean_expired_items(self, folder_id: str, expire_seconds: int) -> Dict[str, Any]:
-        """清理过期的文件和文件夹"""
         all_items = await self.list_all_items_in_folder(folder_id)
 
         if not all_items:
@@ -663,19 +593,6 @@ class QuarkAutoSaveAndShare:
     async def auto_save_and_share(self, share_url: str, save_folder_name: str = None,
                                   url_type: int = 1, expired_type: int = 2,
                                   password: str = '') -> Tuple[str, str]:
-        """
-        自动转存并分享
-
-        Args:
-            share_url: 输入的分享链接
-            save_folder_name: 保存文件夹名称（如果为None，则使用时间戳）
-            url_type: 分享链接类型 1=公开 2=加密
-            expired_type: 分享有效期 1=永久 2=1天 3=7天 4=30天
-            password: 分享密码（如果url_type=2且password为空，则随机生成）
-
-        Returns:
-            (分享链接, 错误信息)，如果成功则错误信息为空字符串
-        """
         match_password = re.search("pwd=(.*?)(?=$|&)", share_url)
         input_password = match_password.group(1) if match_password else ""
         pwd_id = self.get_pwd_id(share_url).split("#")[0]
@@ -745,15 +662,6 @@ class QuarkAutoSaveAndShare:
 
 
 def search_resources(keyword: str, api_base_url: str) -> List[Dict]:
-    """搜索资源
-
-    Args:
-        keyword: 搜索关键词
-        api_base_url: API基础地址
-
-    Returns:
-        资源列表
-    """
     try:
         url = f"{api_base_url.rstrip('/')}/api/search"
         data = {
@@ -773,10 +681,9 @@ def search_resources(keyword: str, api_base_url: str) -> List[Dict]:
 
 
 def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share_option: str, keyword: str = ''):
-    """重新让用户选择资源"""
     page = 1
     sender.reply(format_resource_list(resources, page))
-    sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+    sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
 
     while True:
         choice = sender.input(60000, 1, False)
@@ -790,7 +697,7 @@ def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share
             if page < total_pages:
                 page += 1
                 sender.reply(format_resource_list(resources, page))
-                sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+                sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
             else:
                 sender.reply('已经是最后一页了')
             continue
@@ -799,7 +706,7 @@ def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share
             if page > 1:
                 page -= 1
                 sender.reply(format_resource_list(resources, page))
-                sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+                sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
             else:
                 sender.reply('已经是第一页了')
             continue
@@ -817,16 +724,6 @@ def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share
 
 
 def format_resource_list(resources: List[Dict], page: int = 1, per_page: int = 10) -> str:
-    """格式化资源列表
-
-    Args:
-        resources: 资源列表
-        page: 页码（从1开始）
-        per_page: 每页数量
-
-    Returns:
-        格式化后的字符串
-    """
     if not resources:
         return "未找到相关资源"
 
@@ -855,7 +752,6 @@ def format_resource_list(resources: List[Dict], page: int = 1, per_page: int = 1
 
 
 def handle_search(keyword: str):
-    """处理搜索请求"""
     cookies = sg.bucketGet('quark_search', 'cookies') or ''
     save_folder = sg.bucketGet('quark_search', 'save_folder') or ''
     share_option = sg.bucketGet('quark_search', 'share_option') or '1'
@@ -888,7 +784,7 @@ def handle_search(keyword: str):
     page = 1
     sender.reply(format_resource_list(resources, page))
 
-    sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+    sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
 
     while True:
         choice = sender.input(60000, 1, False)
@@ -902,7 +798,7 @@ def handle_search(keyword: str):
             if page < total_pages:
                 page += 1
                 sender.reply(format_resource_list(resources, page))
-                sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+                sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
             else:
                 sender.reply('已经是最后一页了')
             continue
@@ -911,7 +807,7 @@ def handle_search(keyword: str):
             if page > 1:
                 page -= 1
                 sender.reply(format_resource_list(resources, page))
-                sender.reply(f'请输入【】中您需要的资源序号: (建议选最新的!)')
+                sender.reply('请输入【】中您需要的资源序号: (建议选最新的!)')
             else:
                 sender.reply('已经是第一页了')
             continue
@@ -929,7 +825,6 @@ def handle_search(keyword: str):
 
 
 def handle_resource(resource: Dict, cookies: str, save_folder: str, share_option: str, keyword: str = '', resources: List[Dict] = None):
-    """处理资源转存和分享"""
     share_url = resource.get('url', '')
     password = resource.get('password', '')
 
@@ -982,7 +877,7 @@ def handle_resource(resource: Dict, cookies: str, save_folder: str, share_option
         if qr_url:
             sender.replyImage(qr_url)
 
-        sender.reply(f'请长摁扫码保存资源到夸克网盘观看 如果资源货不对版、空文件夹 请更换选项!')
+        sender.reply('请长摁扫码保存资源到夸克网盘观看 如果资源货不对版、空文件夹 请更换选项!')
         sender.reply('⚠️ 本服务仅提供搜索，不存储、不上传任何内容，所有资源均来自第三方网盘，请用户自行判断资源真实性和安全性，请勿轻信或点击广告，谨防受骗！')
 
     except Exception as e:
@@ -993,7 +888,6 @@ def handle_resource(resource: Dict, cookies: str, save_folder: str, share_option
 
 
 def handle_clean():
-    """处理清理请求"""
     cookies = sg.bucketGet('quark_search', 'cookies') or ''
     clean_folder_id = sg.bucketGet('quark_search', 'clean_folder_id') or ''
     clean_expire_minutes = sg.bucketGet('quark_search', 'clean_expire_minutes') or '60'
@@ -1033,7 +927,6 @@ def handle_clean():
 
 
 def cookiejar_to_string(cookiejar):
-    """将cookiejar转换为字符串"""
     cookie_string = ""
     for cookie in cookiejar:
         cookie_string += cookie.name + "=" + cookie.value + "; "
@@ -1041,7 +934,6 @@ def cookiejar_to_string(cookiejar):
 
 
 def poll_qrcode_status(token: str, max_wait_seconds: int = 120) -> Union[str, None]:
-    """轮询二维码扫码状态并获取cookie"""
     start_time = time.time()
 
     while True:
@@ -1080,7 +972,7 @@ def poll_qrcode_status(token: str, max_wait_seconds: int = 120) -> Union[str, No
                 time.sleep(2)
                 continue
 
-        except Exception as e:
+        except Exception:
             time.sleep(2)
             continue
 
@@ -1088,7 +980,6 @@ def poll_qrcode_status(token: str, max_wait_seconds: int = 120) -> Union[str, No
 
 
 def handle_login():
-    """处理登录请求"""
     try:
         request_id = str(uuid.uuid4())
         token_url = f'https://uop.quark.cn/cas/ajax/getTokenForQrcodeLogin?client_id=532&v=1.2&request_id={request_id}'

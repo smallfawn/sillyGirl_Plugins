@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 601712460]
-# [version: v0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,12 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 。]
 # [depe: ["pycryptodome","requests"]]
-# [staticmethod: def generate_device_code():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -53,16 +53,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -102,43 +92,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 class QL:
     def __init__(self, ql=None):
@@ -252,7 +205,7 @@ attr_arr =  [
 class ACCOUNT:
     def __init__(self):
         self.bucket =  f"{tool.plugin_pre}conf"
-        self.common_bucket= f"vhook_common"
+        self.common_bucket= "vhook_common"
         self.conf={
             "paid": self.bucketGet(self.bucket, "paid","n"),
             "fee": self.bucketGet(self.bucket, "fee" ,0),
@@ -470,7 +423,7 @@ class ACCOUNT:
             for index,item in enumerate(user_arr):
                 if str(item['userId']) == str(acc['userId']):
                     exit = True
-                    tool.log_info(f"更新---------")
+                    tool.log_info("更新---------")
                     item['token'] = acc['token']
                     tool.log_info(f"更新账号【{tool.hide_phone_number(acc['name'])}】成功✅")
                     tool.bucketSet(bucket, tool.userId, json.dumps(user_arr))
@@ -478,7 +431,7 @@ class ACCOUNT:
                         self.sync_ql(item,env_name)
                     break
             if not exit:
-                tool.log_info(f"新增---------")
+                tool.log_info("新增---------")
                 user_acc = {
                     "userId": str(acc['userId']),
                     "token": acc['token'],
@@ -557,10 +510,10 @@ class ACCOUNT:
 
     def editCount(self, item_arr, no):
         item = item_arr[no]
-        content = f"请在【2分钟】内输入 序号，编辑对应的属性（q：保存并退出）"
-        content += f"\n--------------------"
-        content += f"\n输入数字：0 删除此账号！"
-        content += f"\n--------------------"
+        content = "请在【2分钟】内输入 序号，编辑对应的属性（q：保存并退出）"
+        content += "\n--------------------"
+        content += "\n输入数字：0 删除此账号！"
+        content += "\n--------------------"
         for index, attr in enumerate(attr_arr):
             content += f"\n{index + 1}.【{attr['title']}】：{tool.hide_phone_number(item[attr['key']])}"
         tool.replyMsg(content)
@@ -709,7 +662,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                     "https": f"https://{res.split(':')[0]}:{res.split(':')[1]}"
                     }
         else:
-            self.log_info(f"-------使用直连模式-------")
+            self.log_info("-------使用直连模式-------")
             return None
         return proxy
 
@@ -1015,7 +968,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                 self.accountId = res['data']['session']['account_id']
                 self.sessionId = res['data']['session']['id']
 
-                self.msg += f"\n【登陆状态】：登陆成功✅"
+                self.msg += "\n【登陆状态】：登陆成功✅"
                 self.msg += f"\n【用户昵称】：{res['data']['account']['nick_name']}"
                 self.msg += f"\n【用户编码】：{res['data']['account']['ref_user_code']}"
                 self.msg += f"\n【绑定手机】：{tool.hide_phone_number(res['data']['account']['mobile'])}"
@@ -1026,7 +979,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
         return False
 
     def config(self):
-        res = self.common_get(f"/api/article/channel_list?channel_id=5de768411b011b48a65b772f&isDiFangHao=false&is_new=true&list_count=0&size=30")
+        res = self.common_get("/api/article/channel_list?channel_id=5de768411b011b48a65b772f&isDiFangHao=false&is_new=true&list_count=0&size=30")
         if res:
             article_id = res['data']['focus_list'][0]["channel_article_id"]
             detail_res = self.common_get(f"/api/article/detail?id={article_id}")
@@ -1058,32 +1011,32 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
             item_res = self.jihua_get(f"/api/study/level?id={item['id']}",{"id":item['id']})
             if not item_res or item_res['code'] != 0:
                 continue
-            self.msg += f"\n---------抽奖阅读----------"
+            self.msg += "\n---------抽奖阅读----------"
             if item_res['data']['level']['task_num'] == len(item_res['data']['completedTasks']):
                 self.log_info(f"{item['name']},已完成")
-                self.msg += f"\n今日阅读已全部完成✅"
+                self.msg += "\n今日阅读已全部完成✅"
                 continue
             for task in item_res['data']['tasks']:
-                complete_res = self.jihua_post(f"/api/study/task/complete",{"id":task['id']})
+                complete_res = self.jihua_post("/api/study/task/complete",{"id":task['id']})
                 self.log_info(f'文章阅读结果：{complete_res.get("message","")}')
                 self.msg += f'\n文章[{task["id"]}]：{complete_res.get("message","")}'
-        self.msg += f"\n---------抽奖----------"
-        lotter_res = self.jihua_post(f"/api/lotterybigwheel/_ac_lottery_count",{"id":self.lotteryId,"module":"study"})
+        self.msg += "\n---------抽奖----------"
+        lotter_res = self.jihua_post("/api/lotterybigwheel/_ac_lottery_count",{"id":self.lotteryId,"module":"study"})
         if not lotter_res or lotter_res['code'] != 0:
             return False
         self.log_info(f"当前剩余抽奖次数：{lotter_res['data']['count']}")
         self.msg += f"\n抽奖次数：{lotter_res['data']['count']}"
         for index  in range(lotter_res['data']['count']):
-            ac_res = self.jihua_post(f"/api/lotterybigwheel/_ac_lottery",{"id":self.lotteryId,"app_id":self.jinhuaAppId,"module":"study","optionHash":""})
+            ac_res = self.jihua_post("/api/lotterybigwheel/_ac_lottery",{"id":self.lotteryId,"app_id":self.jinhuaAppId,"module":"study","optionHash":""})
             self.log_info(ac_res)
             if not ac_res:
                 continue
             if ac_res['code'] == 10000:
-                self.log_info(f"本次抽奖遇到滑块，开始自动验证滑块")
-                self.msg += f"本次抽奖遇到滑块，开始自动验证滑块"
+                self.log_info("本次抽奖遇到滑块，开始自动验证滑块")
+                self.msg += "本次抽奖遇到滑块，开始自动验证滑块"
                 if not account.conf['ocr_host']:
-                    self.log_err(f"请搭建dddocr自动滑块！请搭建ddddocr自动滑块！请搭建ddddocr自动滑块！")
-                captcha_res = self.jihua_post(f"/api/captcha/get",{"activity_id":self.lotteryId,"module":"bigWheel"})
+                    self.log_err("请搭建dddocr自动滑块！请搭建ddddocr自动滑块！请搭建ddddocr自动滑块！")
+                captcha_res = self.jihua_post("/api/captcha/get",{"activity_id":self.lotteryId,"module":"bigWheel"})
                 if not captcha_res or captcha_res.get('code',None) !=0:
                     self.log_err(f"第{index+1}次抽奖获取验证码图片失败")
                     continue
@@ -1096,12 +1049,12 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                     self.log_err(f"第{index+1}次抽奖过滑块失败，ddddocr服务异常")
                     continue
                 point = self.aes_encrypt(json.dumps({"x":ocr_res['result'],"y":5}),secretKey)
-                cap_check_res = self.jihua_post(f"/api/captcha/check",{"activity_id":self.lotteryId,"module":"bigWheel","cap_token":captchaToken,"point":point})
+                cap_check_res = self.jihua_post("/api/captcha/check",{"activity_id":self.lotteryId,"module":"bigWheel","cap_token":captchaToken,"point":point})
                 if not cap_check_res:
                     self.log_err(f"第{index+1}次抽奖过滑块check失败")
                 if cap_check_res['message'] == "操作成功":
                     ac_res = None
-                    ac_res = self.jihua_post(f"/api/lotterybigwheel/_ac_lottery",{"id":self.lotteryId,"app_id":self.jinhuaAppId,"module":"study","optionHash":""})
+                    ac_res = self.jihua_post("/api/lotterybigwheel/_ac_lottery",{"id":self.lotteryId,"app_id":self.jinhuaAppId,"module":"study","optionHash":""})
                     if ac_res and ac_res['code'] == 0:
                         self.log_info(f"第{index+1}次抽奖成功，获得{ac_res['data']['title']}")
                         self.msg += f"\n第{index+1}次抽奖成功，获得{ac_res['data']['title']}"
@@ -1147,7 +1100,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                     else:
                         self.log_info(f"文章【{id}】已阅读")
                 if not likeFinish:
-                    like_res = self.common_post(f"/api/favorite/like",{"action":True,"id":id})
+                    like_res = self.common_post("/api/favorite/like",{"action":True,"id":id})
                     self.log_info(f"点赞文章【{id}】：{like_res}")
                     if like_res.get("score_notify"):
                         self.log_info(f"点赞获得：{like_res['data']['score_notify']['integral']}积分")
@@ -1155,7 +1108,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                     else:
                         self.log_info(f"文章【{id}】已点赞")
                 if not shareFinish:
-                    share_res = self.common_post(f"/api/user_mumber/doTask",{"memberType":"3","member_type":"3","target_id":id})
+                    share_res = self.common_post("/api/user_mumber/doTask",{"memberType":"3","member_type":"3","target_id":id})
                     self.log_info(f"分享文章【{id}】：{share_res}")
                     if share_res.get("score_notify"):
                         self.log_info(f"分享获得：{share_res['data']['score_notify']['integral']}积分")
@@ -1164,7 +1117,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
                         self.log_info(f"文章【{id}】已分享")
 
     def account_detail(self):
-        res = self.common_get(f"/api/user_mumber/account_detail")
+        res = self.common_get("/api/user_mumber/account_detail")
         if res:
             self.msg += f"\n【积分余额】：{res['data']['rst']['total_integral']}"
 
@@ -1175,9 +1128,9 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXizPqQeXv68i5vqw9p
             self.config()
             if self.jihua_login():
                 self.jihua_detail()
-            self.msg += f"\n---------积分阅读----------"
+            self.msg += "\n---------积分阅读----------"
             self.task_list()
-            self.msg += f"\n---------查询资产----------"
+            self.msg += "\n---------查询资产----------"
             self.account_detail()
         self.pushMsg(self.msg)
 

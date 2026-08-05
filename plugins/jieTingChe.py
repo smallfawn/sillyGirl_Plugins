@@ -13,7 +13,11 @@
 # [depe: ["requests","user-agent"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
 try: import ast as _sg_ast
@@ -47,15 +51,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,20 +80,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -113,7 +94,6 @@ class QingLongClient:
     envSet=add_envs; envUpdate=update_env; envDel=delete_env
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_JTC_ocr_api': form.string().title('ddddocr API地址').default('').description('验证码识别API地址，默认: http://1.94.118.234:8886/ocr'),
@@ -138,14 +118,11 @@ import re
 import time
 import base64
 import uuid
-import random
 import warnings
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
-from urllib.parse import quote
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 try:
-    from user_agent import generate_user_agent
     HAS_UA_LIB = True
 except:
     HAS_UA_LIB = False
@@ -160,17 +137,7 @@ senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
-def get_random_ua() -> str:
-    if HAS_UA_LIB:
-        try:
-            return generate_user_agent()
-        except:
-            pass
-    uas = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36","Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"]
-    return random.choice(uas)
 
-def get_headers() -> dict:
-    return {"User-Agent": get_random_ua(), "Accept": "application/json", "Content-Type": "application/json"}
 
 def get_config() -> dict:
     ma_pay_switch_raw = '2099-12-31' or 'false'
@@ -223,15 +190,13 @@ def recognize_captcha(image_url: str, ocr_api: str) -> str:
         if result.get("code") == 200 and result.get("data"):
             return result.get("data", "").strip()
         return ""
-    except Exception as e:
+    except Exception:
         return ""
 
 def generate_timestamp() -> str:
-    """生成时间戳（毫秒）"""
     return str(int(time.time() * 1000))
 
 def get_app_headers(uc_id: str) -> dict:
-    """生成APP请求头"""
     return {
         "User-Agent": "okhttp/4.10.0",
         "Connection": "Keep-Alive",
@@ -520,7 +485,7 @@ def query_accounts() -> bool:
                 pass
 
             auth_msg = f"✅ 已授权\n📅 到期时间: 到期: {expire_time}" if is_authorized else "❌ 未授权"
-            msg = f"=====捷停车详情========\n"
+            msg = "=====捷停车详情========\n"
             msg += f"📱 账号: {masked_phone}\n"
             msg += f"🔐 授权状态: {auth_msg}\n"
             msg += f"💰 总币: {total_coin}元，今日币：{today_coin}\n"
@@ -536,7 +501,6 @@ def query_accounts() -> bool:
         return False
 
 def query_balance(account_data: str) -> dict:
-    """查询积分余额，account_data格式: user_id#token"""
     try:
         parts = account_data.split('#')
         if len(parts) < 2:
@@ -550,7 +514,6 @@ def query_balance(account_data: str) -> dict:
         return {"success": False}
 
 def cleanup_expired_data() -> bool:
-    """清理过期账号并推送即将过期通知"""
     try:
         try:
             users = sg.bucketAllKeys(bucket=BUCKET_ACCOUNTS) or []
@@ -562,7 +525,6 @@ def cleanup_expired_data() -> bool:
 
         sender.reply("🔍 正在检查所有用户账号状态...")
         config = get_config()
-        ql_config, ql_envname = config.get('ql_config', ''), config.get('ql_envname', 'G_JTC')
         current_date = datetime.now().date()
         total_accounts, expired_count, warning_count, notified_users = 0, 0, 0, 0
 
@@ -631,13 +593,6 @@ def cleanup_expired_data() -> bool:
         return False
 
 def parse_account_selection(choice_str: str, max_index: int) -> list:
-    """解析账号选择字符串
-    支持格式：
-    - 单个数字: "3"
-    - 范围: "3-6"
-    - 多个选择: "1,4,6"
-    - 混合: "1,3-5,8"
-    """
     if not choice_str or not choice_str.strip():
         return None
     choice_str = choice_str.strip()
@@ -676,7 +631,6 @@ def batch_auth(config: dict) -> bool:
     return True
 
 def batch_manage(config: dict) -> bool:
-    """批量管理账号"""
     try:
         user_accounts = get_user_accounts()
         if not user_accounts:
@@ -802,116 +756,10 @@ def batch_manage(config: dict) -> bool:
 def process_batch_payment(account_ids: list, user_accounts: dict, config: dict) -> bool:
     return True
 
-def _batch_pay_only(account_ids: list, months: int, total_price: Decimal, zsm: str, user_accounts: dict, config: dict) -> bool:
-    """多个账号纯扫在线处理（优化版）"""
-    try:
-        first_phone = user_accounts[account_ids[0]].get('phone', '未知')
-        sender.reply(f"====扫在线处理====\n📱 手机号: {first_phone}{f' 等{len(account_ids)}个账号' if len(account_ids) > 1 else ''}\n⏰ 时长: {months}月\n💰 总金额: ¥{total_price}\n=================\n请扫描下方二维在线处理\n回复q取消支付")
-        sender.replyImage(zsm)
-        payment_result = False
-        if payment_result is None:
-            sender.reply("⏰ 支付超时\n请重新发起支付操作")
-            return False
-        if payment_result == 'q':
-            sender.reply("❌ 支付已取消")
-            return False
 
-        payment_info = extract_payment_info(payment_result)
-        payment_status = verify_payment(payment_info, total_price)
-        if payment_status != "success":
-            if payment_status == "canceled":
-                sender.reply("❌ 支付已取消")
-            elif payment_status == "insufficient":
-                sender.reply(f"❌ 支付金额不足\n💰 需要: ¥{total_price}\n💰 实际: ¥{payment_info.get('money', 0)}")
-            else:
-                sender.reply("❌ 支付验证失败")
-            return False
-
-        panel_success_count = 0
-        pn = get_panel_name(config)
-        for account_id in account_ids:
-            auth_status = user_accounts[account_id].get('auth_status', {})
-            current_expire = auth_status.get('expire_time', '')
-            if current_expire and auth_status.get('is_authorized', False):
-                try:
-                    base_date = datetime.strptime(current_expire, '%Y-%m-%d').date()
-                    if base_date > datetime.now().date():
-                        expire_date = base_date + timedelta(days=30 * months)
-                    else:
-                        expire_date = datetime.now().date() + timedelta(days=30 * months)
-                except:
-                    expire_date = datetime.now().date() + timedelta(days=30 * months)
-            else:
-                expire_date = datetime.now().date() + timedelta(days=30 * months)
-
-            user_accounts[account_id]['auth_status'] = {"is_authorized": True, "expire_time": str(expire_date)}
-            phone = user_accounts[account_id].get('phone', '')
-            if sync_to_panel(account_id, phone, str(expire_date), config):
-                panel_success_count += 1
-        save_user_accounts(user_accounts)
-
-        panel_msg = f"\n🔄 {pn}推送: {panel_success_count}/{len(account_ids)}个" if is_panel_configured(config) else ""
-        sender.reply(f"✅ 支付成功！\n📱 账号数: {len(account_ids)}\n⏰ 时长: {months}月\n💰 金额: ¥{total_price}{panel_msg}")
-        return True
-    except Exception as e:
-        sender.reply(f"❌ 支付异常: {str(e)}")
-        return False
-
-def _batch_coin_only(account_ids: list, months: int, total_coin: Decimal, user_accounts: dict, user_coin: Decimal, config: dict) -> bool:
-    """多个账号纯积分支付（优化版）"""
-    try:
-        if user_coin < total_coin:
-            sender.reply(f"❌ 积分不足！\n🎟️ 需要: {total_coin}积分\n💰 当前: {user_coin}积分\n请「检查配置」充值积分")
-            return False
-
-        first_phone = user_accounts[account_ids[0]].get('phone', '未知')
-        confirm_msg = f"⚠️ 确认使用积分支付吗？\n📱 手机号: {first_phone}{f' 等{len(account_ids)}个账号' if len(account_ids) > 1 else ''}\n⏰ 时长: {months}月\n📊 扣除: {total_coin}积分\n📈 剩余: {user_coin - total_coin}积分\n------------------\n回复 [Y] 确认支付\n回复 [N] 取消"
-        sender.reply(confirm_msg)
-        confirm = sender.listen(60000)
-        if not confirm:
-            sender.reply("感谢使用！")
-            return False
-        confirm = confirm.strip().lower()
-        if confirm != 'y':
-            sender.reply("✅ 已取消")
-            return False
-
-        remaining_coin = user_coin - total_coin
-        sg.bucketSet('dd_sign_points', userid, str(remaining_coin))
-
-        panel_success_count = 0
-        pn = get_panel_name(config)
-        for account_id in account_ids:
-            auth_status = user_accounts[account_id].get('auth_status', {})
-            current_expire = auth_status.get('expire_time', '')
-            if current_expire and auth_status.get('is_authorized', False):
-                try:
-                    base_date = datetime.strptime(current_expire, '%Y-%m-%d').date()
-                    if base_date > datetime.now().date():
-                        expire_date = base_date + timedelta(days=30 * months)
-                    else:
-                        expire_date = datetime.now().date() + timedelta(days=30 * months)
-                except:
-                    expire_date = datetime.now().date() + timedelta(days=30 * months)
-            else:
-                expire_date = datetime.now().date() + timedelta(days=30 * months)
-
-            user_accounts[account_id]['auth_status'] = {"is_authorized": True, "expire_time": str(expire_date)}
-            phone = user_accounts[account_id].get('phone', '')
-            if sync_to_panel(account_id, phone, str(expire_date), config):
-                panel_success_count += 1
-        save_user_accounts(user_accounts)
-
-        panel_msg = f"\n🔄 {pn}推送: {panel_success_count}/{len(account_ids)}个" if is_panel_configured(config) else ""
-        sender.reply(f"✅ 积分支付成功！\n📱 账号数: {len(account_ids)}\n⏰ 时长: {months}月\n🎟️ 扣除: {total_coin}积分\n💰 剩余: {remaining_coin}积分{panel_msg}")
-        return True
-    except Exception as e:
-        sender.reply(f"❌ 积分支付异常: {str(e)}")
-        return False
 
 
 def get_ql_token(host: str, client_id: str, client_secret: str) -> str:
-    """获取青龙访问令牌（修复版 - 使用GET请求）"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         print(f"[DEBUG] 请求青龙token: {url[:80]}...")
@@ -933,18 +781,17 @@ def get_ql_token(host: str, client_id: str, client_secret: str) -> str:
     return ""
 
 def delete_from_qinglong(phone: str, ql_config: str, ql_envname: str) -> bool:
-    """从青龙面板删除指定手机号的变量"""
     if not ql_config or not ql_envname or not phone:
         return False
     try:
         configs = ql_config.split('丨') if '丨' in ql_config else ql_config.split('|')
         if len(configs) < 3:
-            print(f"[ERROR] 青龙配置格式错误")
+            print("[ERROR] 青龙配置格式错误")
             return False
         host, client_id, client_secret = configs[0].strip(), configs[1].strip(), configs[2].strip()
         ql_token = get_ql_token(host, client_id, client_secret)
         if not ql_token:
-            print(f"[ERROR] 获取青龙token失败")
+            print("[ERROR] 获取青龙token失败")
             return False
         headers = {'Authorization': f'Bearer {ql_token}', 'Content-Type': 'application/json'}
         envs_r = requests.get(f'{host}/open/envs', headers=headers, params={'searchValue': ql_envname}, timeout=10, verify=False)
@@ -972,7 +819,6 @@ def delete_from_qinglong(phone: str, ql_config: str, ql_envname: str) -> bool:
         return False
 
 def push_to_qinglong(account_id: str, phone: str, expire_date: str, ql_config: str, ql_envname: str, user_id: str = None) -> bool:
-    """推送账号信息到青龙面板（增强调试版）"""
     if not ql_config or not ql_envname:
         print(f"[ERROR] 青龙配置为空: ql_config={bool(ql_config)}, ql_envname={ql_envname}")
         return False
@@ -1003,7 +849,7 @@ def push_to_qinglong(account_id: str, phone: str, expire_date: str, ql_config: s
 
         ql_token = get_ql_token(host, client_id, client_secret)
         if not ql_token:
-            print(f"[ERROR] 获取青龙token失败")
+            print("[ERROR] 获取青龙token失败")
             return False
         print(f"[DEBUG] 获取token成功: {ql_token[:20]}...")
 
@@ -1069,19 +915,9 @@ def push_to_qinglong(account_id: str, phone: str, expire_date: str, ql_config: s
         print(f"[ERROR] 异常堆栈: {traceback.format_exc()}")
         return False
 
-def parse_ql_token(ql_token_value: str) -> dict:
-    """解析青龙 JT_TOKEN 环境变量，格式: user_id#token"""
-    try:
-        parts = ql_token_value.split('#')
-        if len(parts) >= 2:
-            return {'user_id': parts[0], 'token': parts[1]}
-    except:
-        pass
-    return {}
 
 
 def get_daidai_client(config: dict):
-    """获取呆呆面板客户端"""
     if DadaiPanelClient is None: return None
     daidai_config = config.get('daidai_config', '')
     if not daidai_config: return None
@@ -1094,7 +930,6 @@ def get_daidai_client(config: dict):
         return None
 
 def push_to_daidai(account_id: str, phone: str, expire_date: str, config: dict, user_id: str = None) -> bool:
-    """推送账号信息到呆呆面板"""
     client = get_daidai_client(config)
     if not client: return False
     try:
@@ -1109,7 +944,6 @@ def push_to_daidai(account_id: str, phone: str, expire_date: str, config: dict, 
         return False
 
 def delete_from_daidai(phone: str, config: dict) -> bool:
-    """从呆呆面板删除指定手机号的变量"""
     client = get_daidai_client(config)
     if not client: return False
     try:
@@ -1118,7 +952,6 @@ def delete_from_daidai(phone: str, config: dict) -> bool:
         return False
 
 def sync_to_panel(account_id: str, phone: str, expire_date: str, config: dict, user_id: str = None) -> bool:
-    """根据 use_daidai 开关推送到对应面板（二选一）"""
     if config.get('use_daidai'):
         return push_to_daidai(account_id, phone, expire_date, config, user_id)
     ql_config = config.get('ql_config', '')
@@ -1128,7 +961,6 @@ def sync_to_panel(account_id: str, phone: str, expire_date: str, config: dict, u
     return False
 
 def delete_from_panel(phone: str, config: dict) -> bool:
-    """根据 use_daidai 开关从对应面板删除（二选一）"""
     if config.get('use_daidai'):
         return delete_from_daidai(phone, config)
     ql_config = config.get('ql_config', '')
@@ -1138,169 +970,27 @@ def delete_from_panel(phone: str, config: dict) -> bool:
     return False
 
 def get_panel_name(config: dict) -> str:
-    """返回当前面板名称"""
     return "呆呆" if config.get('use_daidai') else "青龙"
 
 def is_panel_configured(config: dict) -> bool:
-    """检查当前选中的面板是否已配置"""
     if config.get('use_daidai'):
         return bool(config.get('daidai_config'))
     return bool(config.get('ql_config'))
 
 
-def _generate_qrcode(url: str) -> str:
-    """生成二维码图片URL"""
-    if HAS_HUAWEI_LIB and generate_qrcode_url:
-        try:
-            return generate_qrcode_url(url)
-        except:
-            pass
-    try:
-        encoded_url = quote(url, safe='')
-        return f"https://api.qrtool.cn/?text={encoded_url}"
-    except:
-        return None
 
-def ma_pay_sign(params: dict, key: str) -> str:
-    return True
 
-def ma_pay_create_order(config: dict, amount: float, out_trade_no: str, name: str, pay_type: str) -> tuple:
-    return True
 
-def ma_pay_query_order(config: dict, out_trade_no: str) -> tuple:
-    return True
 
-def poll_ma_pay_status(config: dict, out_trade_no: str, max_tries: int = 30) -> tuple:
-    return True
 
-def alipay_direct_flow(account_ids: list, months: int, total_price: Decimal, config: dict, user_accounts: dict) -> bool:
-    return True
 
-def extract_payment_info(payment_result: str) -> dict:
-    return True
 
-def verify_payment(payment_info: dict, expected_amount: Decimal) -> str:
-    return True
-def process_payment_direct(account_id: str, phone: str, months: int, total_price: Decimal, zsm: str, user_accounts: dict, config: dict) -> bool:
-    return True
 
-def process_hybrid_payment(account_id: str, phone: str, price: Decimal, coin_price: str, zsm: str, user_accounts: dict, config: dict) -> bool:
-    return True
 
-def process_coin_auth_direct(account_id: str, phone: str, months: int, total_coin: Decimal, user_accounts: dict, config: dict) -> bool:
-    """直接积分支付（已知月数和总积分）"""
-    try:
-        user_coin = Decimal(sg.bucketGet('dd_sign_points', userid) or '0')
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
 
-        if user_coin < total_coin:
-            sender.reply(f"❌ 积分不足！\n🎟️ 需要: {total_coin}积分\n💰 当前: {user_coin}积分\n请「检查配置」充值积分")
-            return False
 
-        confirm_msg = f"⚠️ 确认使用积分支付吗？\n📱 账号: {masked_phone}\n⏰ 时长: {months}月\n📊 扣除: {total_coin}积分\n📈 剩余: {user_coin - total_coin}积分\n------------------\n回复 [Y] 确认支付\n回复 [N] 取消"
-        sender.reply(confirm_msg)
-        confirm = sender.listen(60000)
-        if not confirm:
-            sender.reply("感谢使用！")
-            return False
-        confirm = confirm.strip().lower()
-        if confirm != 'y':
-            sender.reply("✅ 积分支付已取消")
-            return False
-
-        remaining_coin = user_coin - total_coin
-        sg.bucketSet('dd_sign_points', userid, str(remaining_coin))
-
-        auth_status = user_accounts[account_id].get('auth_status', {})
-        current_expire = auth_status.get('expire_time', '')
-        if current_expire and auth_status.get('is_authorized', False):
-            try:
-                base_date = datetime.strptime(current_expire, '%Y-%m-%d').date()
-                if base_date > datetime.now().date():
-                    expire_date = base_date + timedelta(days=30 * months)
-                else:
-                    expire_date = datetime.now().date() + timedelta(days=30 * months)
-            except:
-                expire_date = datetime.now().date() + timedelta(days=30 * months)
-        else:
-            expire_date = datetime.now().date() + timedelta(days=30 * months)
-
-        user_accounts[account_id]['auth_status'] = {"is_authorized": True, "expire_time": str(expire_date)}
-        panel_ok = sync_to_panel(account_id, phone, str(expire_date), config)
-        save_user_accounts(user_accounts)
-        pn = get_panel_name(config)
-        panel_msg = f"\n🔄 {pn}推送: 成功" if panel_ok else (f"\n⚠️ {pn}推送: 失败" if is_panel_configured(config) else "")
-        sender.reply(f"✅ 积分支付成功！\n📱 账号: {masked_phone}\n⏰ 时长: {months}月\n🎟️ 扣除: {total_coin}积分\n💰 剩余: {remaining_coin}积分\n📅 有效期至: {expire_date}{panel_msg}")
-        return True
-    except Exception as e:
-        sender.reply(f"❌ 兑换失败: {str(e)}")
-        return False
-
-def _single_alipay_flow(account_id: str, phone: str, months: int, total_price: Decimal, user_accounts: dict, config: dict) -> bool:
-    """单个账号支付宝支付流程"""
-    try:
-        if not alipay_direct_flow([account_id], months, total_price, config, user_accounts):
-            return False
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        auth_status = user_accounts[account_id].get('auth_status', {})
-        current_expire = auth_status.get('expire_time', '')
-        if current_expire and auth_status.get('is_authorized', False):
-            try:
-                base_date = datetime.strptime(current_expire, '%Y-%m-%d').date()
-                if base_date > datetime.now().date():
-                    expire_date = base_date + timedelta(days=30 * months)
-                else:
-                    expire_date = datetime.now().date() + timedelta(days=30 * months)
-            except:
-                expire_date = datetime.now().date() + timedelta(days=30 * months)
-        else:
-            expire_date = datetime.now().date() + timedelta(days=30 * months)
-        user_accounts[account_id]['auth_status'] = {"is_authorized": True, "expire_time": str(expire_date)}
-        panel_ok = sync_to_panel(account_id, phone, str(expire_date), config)
-        save_user_accounts(user_accounts)
-        pn = get_panel_name(config)
-        panel_msg = f"\n🔄 {pn}推送: 成功" if panel_ok else (f"\n⚠️ {pn}推送: 失败" if is_panel_configured(config) else "")
-        sender.reply(f"✅ 支付宝支付成功！\n📱 账号: {masked_phone}\n⏰ 时长: {months}月\n💰 金额: ¥{total_price}\n📅 有效期至: {expire_date}{panel_msg}")
-        return True
-    except Exception as e:
-        sender.reply(f"❌ 支付宝支付异常: {str(e)}")
-        return False
-
-def _batch_alipay_only(account_ids: list, months: int, total_price: Decimal, user_accounts: dict, config: dict) -> bool:
-    """多个账号支付宝支付流程"""
-    try:
-        if not alipay_direct_flow(account_ids, months, total_price, config, user_accounts):
-            return False
-        panel_success_count = 0
-        pn = get_panel_name(config)
-        for account_id in account_ids:
-            auth_status = user_accounts[account_id].get('auth_status', {})
-            current_expire = auth_status.get('expire_time', '')
-            if current_expire and auth_status.get('is_authorized', False):
-                try:
-                    base_date = datetime.strptime(current_expire, '%Y-%m-%d').date()
-                    if base_date > datetime.now().date():
-                        expire_date = base_date + timedelta(days=30 * months)
-                    else:
-                        expire_date = datetime.now().date() + timedelta(days=30 * months)
-                except:
-                    expire_date = datetime.now().date() + timedelta(days=30 * months)
-            else:
-                expire_date = datetime.now().date() + timedelta(days=30 * months)
-            user_accounts[account_id]['auth_status'] = {"is_authorized": True, "expire_time": str(expire_date)}
-            phone = user_accounts[account_id].get('phone', '')
-            if sync_to_panel(account_id, phone, str(expire_date), config):
-                panel_success_count += 1
-        save_user_accounts(user_accounts)
-        panel_msg = f"\n🔄 {pn}推送: {panel_success_count}/{len(account_ids)}个" if is_panel_configured(config) else ""
-        sender.reply(f"✅ 支付宝支付成功！\n📱 账号数: {len(account_ids)}\n⏰ 时长: {months}月\n💰 金额: ¥{total_price}{panel_msg}")
-        return True
-    except Exception as e:
-        sender.reply(f"❌ 支付宝批量支付异常: {str(e)}")
-        return False
 
 def upload_all_to_qinglong() -> bool:
-    """上传所有已授权用户数据到面板（根据开关选择青龙/呆呆）"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有管理员权限！")
         return False

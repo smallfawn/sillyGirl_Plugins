@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.2]
+# [version: v1.2.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,13 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 牛卡福货主全能版；1. 支持【本地运行】或【系统对接】双模式切换，已内置任务，增加失效告警、定时汇总推送、修复通知Bug；2. 采用【手机号#Token】登录，防重复防丢数据；3. 内置定时任务，脱离后台也能跑；📞]
 # [depe: ["requests"]]
-# [staticmethod: def get_all_users():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,35 +88,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_nkf_run_mode': form.string().title('运行模式(必选)').default('').description('local=本地内置任务(推荐，无需配置后台)\nsystem=提交到系统后台面板'),
@@ -177,7 +149,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
 
 
 def getusercontent():
-    """获取插件完整配置"""
     run_mode_input = sg.bucketGet('dd_nkf', 'run_mode')
     if run_mode_input and ('system' in run_mode_input.lower() or 'qinglong' in run_mode_input.lower()):
         run_mode = 'system'
@@ -302,11 +273,6 @@ def send_user_notice(user_id, msg, title="牛卡福货主助手通知"):
         logger.warning(f"Push发送失败 {user_id}: {e}")
     return False
 
-def safe_send_message(user_id, msg, log_context=""):
-    ok = send_user_notice(user_id, msg)
-    if not ok:
-        logger.warning(f"消息发送失败 {log_context}")
-    return ok
 
 def empower(empowertime, days):
     try:
@@ -386,7 +352,6 @@ class NiuKaFuClient:
             return {"code": -1, "message": str(e)}
 
     def check_info(self):
-        """查询用户信息"""
         try:
             user_res = self._request("GET", "/api/shippers/user/mine")
             if not user_res or user_res.get("code") != 200:
@@ -417,7 +382,6 @@ class NiuKaFuClient:
             return None
 
     def execute_sign_task(self):
-        """执行签到任务"""
         logs = []
         try:
             status_res = self._request("GET", "/api/campaign/dailySignIn")
@@ -500,7 +464,6 @@ class RemarkManager:
 class AccountManager:
     @staticmethod
     def get_accounts(user_id):
-        """获取用户绑定的账号列表(手机号)"""
         try:
             value = sg.bucketGet(bucket='dd_nkf_user', key=user_id)
             if not value: return []
@@ -516,7 +479,6 @@ class AccountManager:
 
     @staticmethod
     def add_account(user_id, account):
-        """添加账号到用户列表"""
         try:
             accounts = AccountManager.get_accounts(user_id)
             if account not in accounts:
@@ -528,7 +490,6 @@ class AccountManager:
 
     @staticmethod
     def remove_account(user_id, account):
-        """移除账号"""
         try:
             accounts = AccountManager.get_accounts(user_id)
             if account in accounts:
@@ -543,7 +504,6 @@ class AccountManager:
 
     @staticmethod
     def update_account_token(account, token):
-        """更新Token (Key为手机号)"""
         try:
             encrypted_token = encrypt_token(token)
             sg.bucketSet(bucket='dd_nkf_token', key=account, value=encrypted_token)
@@ -552,7 +512,6 @@ class AccountManager:
 
     @staticmethod
     def get_token(account):
-        """获取Token"""
         try:
             enc = sg.bucketGet(bucket='dd_nkf_token', key=account)
             return decrypt_token(enc) if enc else None
@@ -560,7 +519,6 @@ class AccountManager:
 
     @staticmethod
     def get_all_users():
-        """获取所有用户ID"""
         try:
             users = sg.bucketAllKeys(bucket='dd_nkf_user')
             user_list = []
@@ -594,7 +552,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception("获取Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         if not self.enabled: return []
@@ -607,7 +565,6 @@ class SystemAPI:
         except: return []
 
     def find_env(self, phone, token=None):
-        """智能查找: 优先手机号, 其次Token值(防止重复)"""
         if not self.enabled: return None
         try:
             envs = self.get_all_envs()
@@ -638,7 +595,6 @@ class SystemAPI:
         except: return False
 
     def sync_env(self, token, phone, remark="", auth_time="", owner_user_id=None):
-        """同步(新增或更新)"""
         if not self.enabled: return False
         try:
             env_id = self.find_env(phone, token)
@@ -721,7 +677,7 @@ def process_single_account_query(account, index, total_count, account_remarks):
 🔐 【授权状态】 : {'⚠️ 未授权' if not accountVip else '❌ 已过期'}
 ⏰ 【授权时间】 : {auth_time}
 """
-    except Exception as e:
+    except Exception:
         return None
 
 def cxs():
@@ -770,7 +726,6 @@ def get_user_input(timeout=60):
     except: return None
 
 def bindaccount():
-    """绑定账号 (核心逻辑更新: 手机号#Token)"""
     try:
         remark = ""
         if config['enable_remark']:
@@ -850,7 +805,6 @@ def bindaccount():
         sender.reply("❌ 绑定失败: " + str(e))
 
 def process_account_binding(full_token, unique_id, nickname, remark=""):
-    """处理绑定入库与同步"""
     try:
         account = unique_id # 手机号作为唯一标识
 
@@ -1173,7 +1127,6 @@ def batch_delete_all_accounts(accounts):
         sender.reply("✅ 批量删除完成")
 
 def clean_expired_accounts():
-    """定时任务：过期提醒与清理"""
     users = sg.bucketAllKeys(bucket='dd_nkf_user')
     if not users:
         if sender.isAdmin() and usermessage in ['牛卡福货主清理', '清理牛卡福货主']:
@@ -1268,7 +1221,7 @@ def clean_expired_accounts():
                 else:
                     sg.bucketDel(bucket='dd_nkf_user', key=user)
 
-        except Exception as e:
+        except Exception:
             continue
 
     if sender.isAdmin() and usermessage in ['牛卡福货主清理', '清理牛卡福货主']:
@@ -1276,10 +1229,6 @@ def clean_expired_accounts():
 
 
 def admin_auth_options():
-    return True
-def admin_auth_all_users():
-    return True
-def admin_auth_specific_user():
     return True
 def show_tutorial():
     sender.reply(f"""
@@ -1307,7 +1256,6 @@ def show_tutorial():
 ==================""")
 
 def run_task_single_quiet(user, account):
-    """静默运行单个任务（含告警机制）"""
     try:
         auth_date = '2099-12-31'
         if not auth_date or auth_date < str(datetime.now().date()):
@@ -1332,11 +1280,10 @@ def run_task_single_quiet(user, account):
             return f"🔴 {account[-4:]}: 失败"
         else:
             return f"🟢 {account[-4:]}: 成功"
-    except Exception as e:
+    except Exception:
         return f"🔴 {account[-4:]}: 异常"
 
 def batch_run_all_tasks_admin():
-    """管理员全局运行"""
     if not sender.isAdmin(): return
 
     sender.reply("🚀 开始执行牛卡福货主全量任务 (本地模式)...")

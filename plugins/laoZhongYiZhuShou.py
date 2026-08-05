@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.1]
+# [version: v1.1.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,12 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 老中医提交计费版；2. 支持登录验证，防止数据错误也提交；3.]
 # [depe: ["requests"]]
-# [staticmethod: def get_all_users():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -49,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -87,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_lzy_panel_type': form.string().title('对接面板类型').default('').description('qinglong=青龙面板 daidai=呆呆面板'),
@@ -140,7 +102,6 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import requests
 import time
-import json
 import hashlib
 import logging
 import base64
@@ -177,7 +138,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
 
 
 def getusercontent():
-    """获取插件完整配置"""
     panel_type = sg.bucketGet('dd_lzy', 'panel_type') or 'qinglong'
     panel_type = panel_type.lower()
 
@@ -298,11 +258,6 @@ def send_user_notice(user_id, msg, title="老中医助手通知"):
         logger.warning(f"Push发送失败 {user_id}: {e}")
     return False
 
-def safe_send_message(user_id, msg, log_context=""):
-    ok = send_user_notice(user_id, msg)
-    if not ok:
-        logger.warning(f"消息发送失败 {log_context}")
-    return ok
 
 def empower(empowertime, days):
     try:
@@ -354,7 +309,6 @@ class LzyClient:
         return proxies
 
     def check_info(self):
-        """校验登录信息，调用接口组装最终结果"""
         proxies = self._get_proxies()
 
         url = f"https://{self.host}/api/mobile/account/user/overview_my"
@@ -563,7 +517,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception("获取青龙Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def _get_daidai_token(self):
         try:
@@ -573,7 +527,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['access_token']
             raise Exception("获取呆呆Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         if not self.enabled: return []
@@ -767,7 +721,7 @@ def process_single_account_query(account, index, total_count, account_remarks):
 🔐 授权: {'⚠️ 未授权' if not accountVip else ('❌ 已过期' if accountVip < today_time else f'✅ {accountVip}')}
 ⏰ 到期: {auth_time}
 =================="""
-    except Exception as e:
+    except Exception:
         return None
 
 def cxs():
@@ -802,7 +756,7 @@ def cxs():
                 vip_tag = f'✅{vip}'
             remark_disp = f" [{remark}]" if remark else ""
             menu += f"\n[{i}] {safe_acc}{remark_disp} {vip_tag}"
-        menu += f"\n------------------\n[a] 查询全部\n回复数字单独查询\n回复q退出\n=================="
+        menu += "\n------------------\n[a] 查询全部\n回复数字单独查询\n回复q退出\n=================="
         sender.reply(menu)
 
         sel = get_user_input(timeout=60)
@@ -871,7 +825,7 @@ def bindaccount():
             elif remark_input != 'n' and remark_input:
                 remark = remark_input.strip()[:20]
 
-        sender.reply(f"""
+        sender.reply("""
 =====老中医 登录=====
 当前模式: 🌐 提交至面板
 ------------------
@@ -908,20 +862,20 @@ def bindaccount():
                 parts = val.split('#')
 
                 if len(parts) == 1:
-                    sender.reply(f"❌ 格式错误: 缺少 app-sign。请使用 Authorization#app-sign 或 备注#Authorization#app-sign 格式。")
+                    sender.reply("❌ 格式错误: 缺少 app-sign。请使用 Authorization#app-sign 或 备注#Authorization#app-sign 格式。")
                     continue
                 elif len(parts) == 2:
                     if parts[1].startswith('wx') and len(parts[1]) < 30:
                         auth = parts[0]
                         app_sign = parts[1]
                     else:
-                        sender.reply(f"❌ 格式错误: 缺少 app-sign 或 app-sign 格式不正确(应以wx开头)。")
+                        sender.reply("❌ 格式错误: 缺少 app-sign 或 app-sign 格式不正确(应以wx开头)。")
                         continue
                 else:
                     auth = parts[1]
                     app_sign = parts[2]
                     if not app_sign.startswith('wx'):
-                        sender.reply(f"❌ 格式错误: app-sign 格式不正确(应以wx开头)。")
+                        sender.reply("❌ 格式错误: app-sign 格式不正确(应以wx开头)。")
                         continue
 
                 auth = auth.replace('Bearer ', '').strip()
@@ -1399,17 +1353,13 @@ def clean_expired_accounts():
                     try: sg.bucketDel(bucket='dd_lzy_user', key=str(user))
                     except: pass
 
-        except Exception as e:
+        except Exception:
             continue
 
     if sender.isAdmin() and usermessage in ['老中医清理', '清理老中医']:
         sender.reply(f"=====维护完成=====\n✅ 已清理过期: {cleaned_count}个\n📢 发送提醒: {reminded_count}个\n==================")
 
 def admin_auth_options():
-    return True
-def admin_auth_all_users():
-    return True
-def admin_auth_specific_user():
     return True
 def show_tutorial():
     panel_name = '青龙' if config['panel_type'] == 'qinglong' else '呆呆'

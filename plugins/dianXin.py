@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v2.4]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -48,15 +52,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -86,35 +81,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_dx_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -133,7 +99,6 @@ import re
 import os
 import json
 import time
-import datetime
 import requests
 import base64
 import random
@@ -178,7 +143,6 @@ MSG_TEMPLATES = {
 }
 
 def normalize_panel_type(panel_type_value, legacy_use_daidai_value='false'):
-    """统一解析面板类型，兼容新旧配置。"""
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
         return 'daidai'
@@ -193,7 +157,6 @@ def normalize_panel_type(panel_type_value, legacy_use_daidai_value='false'):
     return 'qinglong'
 
 def get_config():
-    """获取配置信息"""
     panel_type = normalize_panel_type(
         sg.bucketGet('dd_dx', 'panel_type') or '',
         sg.bucketGet('dd_dx', 'use_daidai') or 'false'
@@ -219,15 +182,12 @@ def get_config():
     }
 
 def format_msg(template, **kwargs):
-    """格式化消息"""
     return MSG_TEMPLATES.get(template, template).format(**kwargs)
 
 def mask_phone(phone):
-    """手机号脱敏"""
     return phone[:3] + "****" + phone[7:]
 
 def generate_qrcode(url):
-    """将支付链接转为二维码图片URL"""
     try:
         encoded_url = urllib.parse.quote(url, safe='')
         return f"https://api.qrtool.cn/?text={encoded_url}"
@@ -236,7 +196,6 @@ def generate_qrcode(url):
         return None
 
 def send_qrcode_image(pay_sender, qrcode_url, pay_type):
-    """发送二维码图片给用户扫在线处理"""
     pay_type_names = {'alipay': '支付宝', 'wxpay': '微信', 'qqpay': 'QQ钱包'}
     pay_type_name = pay_type_names.get(pay_type, pay_type)
     try:
@@ -254,7 +213,6 @@ def send_qrcode_image(pay_sender, qrcode_url, pay_type):
 
 
 def parse_accounts(uservalue):
-    """解析账号列表"""
     if not uservalue:
         return []
     try:
@@ -266,20 +224,8 @@ def parse_accounts(uservalue):
         pass
     return []
 
-def validate_input(value, max_val, input_type="数字"):
-    """验证输入"""
-    try:
-        value = int(value)
-        if value > max_val or value <= 0:
-            sender.reply(f"❌ 请输入 1-{max_val} 之间的{input_type}")
-            exit(0)
-        return value
-    except ValueError:
-        sender.reply(f"❌ 请输入有效的{input_type}")
-        exit(0)
 
 def confirm_operation():
-    """确认操作"""
     response = sender.input(120000, 1, False)
     if response in ['Y', 'y', '是']:
         return True
@@ -293,7 +239,6 @@ def confirm_operation():
         exit(0)
 
 def encrypt_para(plaintext):
-    """RSA加密参数"""
     if not isinstance(plaintext, str):
         plaintext = json.dumps(plaintext)
     public_key = RSA.import_key(PUBLIC_KEY)
@@ -309,27 +254,23 @@ def encrypt_para(plaintext):
     return binascii.hexlify(ciphertext).decode()
 
 def b64_encrypt(plaintext):
-    """Base64加密"""
     public_key = RSA.import_key(PUBLIC_KEY_B64)
     cipher = PKCS1_v1_5.new(public_key)
     ciphertext = cipher.encrypt(plaintext.encode())
     return base64.b64encode(ciphertext).decode()
 
 def des_encrypt(text):
-    """DES3加密"""
     cipher = DES3.new(DES_KEY, DES3.MODE_CBC, DES_IV)
     ciphertext = cipher.encrypt(pad(text.encode(), DES3.block_size))
     return ciphertext.hex()
 
 def des_decrypt(text):
-    """DES3解密"""
     ciphertext = bytes.fromhex(text)
     cipher = DES3.new(DES_KEY, DES3.MODE_CBC, DES_IV)
     plaintext = unpad(cipher.decrypt(ciphertext), DES3.block_size)
     return plaintext.decode()
 
 def aes_encrypt(data, key="34d7cb0bcdf07523"):
-    """AES加密"""
     if isinstance(data, dict):
         data = json.dumps(data)
     key_bytes = key.encode('utf-8')
@@ -339,11 +280,9 @@ def aes_encrypt(data, key="34d7cb0bcdf07523"):
     return ct_bytes.hex()
 
 def encode_phone(text):
-    """编码手机号"""
     return ''.join(chr(ord(char) + 2) for char in text)
 
 def rsa_encrypt_long(plaintext):
-    """处理超长文本的RSA加密函数 - 用于星播客"""
     key_content = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDIPOHtjs6p4sTlpFvrx+ESsYkEvyT4JB/dcEbU6C8+yclpcmWEvwZFymqlKQq89laSH4IxUsPJHKIOiYAMzNibhED1swzecH5XLKEAJclopJqoO95o8W63Euq6K+AKMzyZt1SEqtZ0mXsN8UPnuN/5aoB3kbPLYpfEwBbhto6yrwIDAQAB"
     res_key = "-----BEGIN PUBLIC KEY-----\n" + key_content + "\n-----END PUBLIC KEY-----"
 
@@ -386,7 +325,6 @@ class QingLongManager:
         self.url, self.token = self._get_connection()
 
     def _get_connection(self):
-        """获取面板连接（支持青龙/呆呆面板）"""
         if self.use_daidai:
             dd_ddname = self.config.get('dd_dx_ddname', '')
             if not dd_ddname:
@@ -450,7 +388,6 @@ class QingLongManager:
                 exit(0)
 
     def _get_headers(self):
-        """获取请求头"""
         return {
             "Authorization": f"Bearer {self.token}",
             "accept": "application/json",
@@ -458,7 +395,6 @@ class QingLongManager:
         }
 
     def get_env_id(self, account):
-        """获取环境变量ID（支持青龙/呆呆面板）"""
         headers = self._get_headers()
 
         if self.use_daidai:
@@ -481,7 +417,6 @@ class QingLongManager:
             return None
 
     def add_or_update_env(self, account, value):
-        """添加或更新环境变量（支持青龙/呆呆面板）"""
         env_id = self.get_env_id(account)
         auth_time = '2099-12-31' or str(datetime.now().date())
         mask_phone(account)
@@ -509,7 +444,6 @@ class QingLongManager:
                 requests.post(f"{self.url}/open/envs", headers=headers, json=[data])
 
     def delete_env(self, env_id):
-        """删除环境变量（支持青龙/呆呆面板）"""
         if env_id:
             headers = self._get_headers()
             if self.use_daidai:
@@ -528,7 +462,6 @@ class TelecomAPI:
         self.session.verify = False
 
     def login(self, phone, password):
-        """账号登录"""
         alphabet = 'abcdef0123456789'
         uuid_parts = [''.join(random.sample(alphabet, 8)), ''.join(random.sample(alphabet, 4)),
                      '4' + ''.join(random.sample(alphabet, 3)), ''.join(random.sample(alphabet, 4)),
@@ -565,7 +498,6 @@ class TelecomAPI:
         return None
 
     def get_ticket(self, phone, user_id, token):
-        """获取ticket"""
         url = 'https://appgologin.189.cn:9031/map/clientXML'
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         target_id = des_encrypt(user_id)
@@ -586,7 +518,6 @@ class TelecomAPI:
         return None
 
     def get_sign(self, ticket):
-        """获取sign"""
         url = f'https://wappark.189.cn/jt-sign/ssoHomLogin?ticket={ticket}'
         try:
             result = self.session.get(url, timeout=15).json()
@@ -597,7 +528,6 @@ class TelecomAPI:
         return None, None
 
     def query_account_info(self, phone, password):
-        """查询账号信息"""
         try:
             login_result = self.login(phone, password)
             if not login_result:
@@ -628,7 +558,6 @@ class TelecomAPI:
             return {"status": "error", "message": str(e)}
 
     def _query_coin(self, phone):
-        """查询金豆"""
         try:
             url = 'https://wappark.189.cn/jt-sign/api/home/userCoinInfo'
             resp = self.session.post(url, json={"para": encrypt_para({"phone": phone})}, timeout=15)
@@ -638,7 +567,6 @@ class TelecomAPI:
             return {"status": "error", "message": str(e), "coin": 0}
 
     def _query_sign_days(self, phone):
-        """查询签到天数"""
         try:
             now = datetime.now()
             value = {"phone": phone, "checkDate": f"{now.year}-{now.month:02d}"}
@@ -653,7 +581,6 @@ class TelecomAPI:
             return {"status": "error", "message": str(e), "days": 0}
 
     def _check_sign_status(self, phone):
-        """检查签到状态"""
         try:
             timestamp = int(time.time() * 1000)
             value = {"phone": phone, "sysType": "", "date": str(timestamp)}
@@ -671,7 +598,6 @@ class TelecomAPI:
             return {"status": "error", "today_signed": False, "message": str(e)}
 
     def _query_pet_info(self, phone):
-        """查询宠物信息"""
         try:
             url = 'https://wappark.189.cn/jt-sign/paradise/getParadiseInfo'
             resp = self.session.post(url, json={'para': encrypt_para({'phone': phone})}, timeout=15)
@@ -689,7 +615,6 @@ class TelecomAPI:
             return {"status": "error", "message": str(e)}
 
     def get_xbk_usercode(self, phone, ticket):
-        """获取星播客usercode"""
         try:
             url = "https://xbk.189.cn/xbkapi/api/auth/jump"
             params = {
@@ -726,7 +651,6 @@ class TelecomAPI:
             return None
 
     def get_xbk_usertoken(self, phone, usercode):
-        """获取星播客usertoken"""
         try:
             url = "https://xbk.189.cn/xbkapi/api/auth/userinfo/codeToken"
             data = {"usercode": usercode}
@@ -748,7 +672,6 @@ class TelecomAPI:
             return None
 
     def get_xbk_win_list(self, phone, token):
-        """查询星播客中奖记录"""
         try:
             url = "https://xbk.189.cn/xbkapi/active/v2/lottery/getMyWinList?page=1&give_status=200&activeCode="
 
@@ -880,7 +803,6 @@ def _517_parse_piece_collection(data):
     }
 
 def query_517_activity_status(phone, password, telecom_api):
-    """查询517活动状态，返回结构化结果"""
     try:
         login_result = telecom_api.login(phone, password)
         if not login_result:
@@ -1079,7 +1001,6 @@ class PaymentHandler:
         return True
 
     def _process_ma_pay(self, total_money, months, account=None, ma_pay_config=None):
-        """在线处理"""
         if not ma_pay_config:
             sender.reply("❌ 在线处理配置异常，请检查配置")
             return False
@@ -1189,8 +1110,7 @@ class TelecomManager:
         self.today = str(datetime.now().date())
 
     def login_account(self):
-        """账号登录"""
-        guide = f"=====电信账号登录=====\n请按格式输入: 手机号#密码\n🔰 支持批量登录，一行一个账号\n回复'q'退出操作\n=================="
+        guide = "=====电信账号登录=====\n请按格式输入: 手机号#密码\n🔰 支持批量登录，一行一个账号\n回复'q'退出操作\n=================="
         sender.reply(guide)
 
         account_info = sender.input(120000, 1, False)
@@ -1239,7 +1159,6 @@ class TelecomManager:
             sender.reply("=====登录失败=====\n❌ 所有账号登录均失败\n==================")
 
     def manage_accounts(self):
-        """账号管理"""
         accounts = parse_accounts(uservalue)
         if not accounts:
             sender.reply(format_msg('no_accounts', cmd='电信登录'))
@@ -1278,7 +1197,6 @@ class TelecomManager:
         return True
 
     def _delete_all_accounts(self, accounts):
-        """删除所有账号"""
         sender.reply("=====危险操作=====\n⚠️ 即将删除所有绑定的账号\n此操作不可恢复！\n确认删除? (Y/N)\n==================")
 
         if confirm_operation():
@@ -1298,7 +1216,6 @@ class TelecomManager:
             sender.reply("✅ 已取消删除")
 
     def _single_account_operation(self, account):
-        """单账号操作"""
         auth_status, auth_time = check_auth_status(account)
         menu = f"=====账号操作菜单=====\n📱 选中账号: {mask_phone(account)}\n🔐 授权状态: {auth_status}\n📅 到期时间: {auth_time}\n[1] 授权续费\n[2] 删除账号\n[3] 查询信息\n选择操作(输入数字):\n=================="
         sender.reply(menu)
@@ -1320,7 +1237,6 @@ class TelecomManager:
         return True
 
     def _delete_single_account(self, account):
-        """删除单账号"""
         sender.reply(f"=====删除账号=====\n⚠️ 即将删除账号: {mask_phone(account)}\n此操作不可恢复！\n确认删除? (Y/N)\n==================")
 
         if confirm_operation():
@@ -1346,7 +1262,6 @@ class TelecomManager:
             sender.reply("✅ 已取消删除")
 
     def _query_single_account(self, account):
-        """查询单账号"""
         auth_status, auth_time = check_auth_status(account)
         if auth_status != "✅ 已授权":
             sender.reply(f"=====账号未授权=====\n📱 账号: {mask_phone(account)}\n🔐 授权: {auth_status}\n⏰ 到期: {auth_time}\n⚠️ 该账号未授权或已过期\n💡 发送 电信管理 进行授权\n==================")
@@ -1510,7 +1425,6 @@ class TelecomManager:
             sender.reply(f"查询出错: {str(e)}")
 
     def query_accounts(self):
-        """账号查询"""
         accounts = parse_accounts(uservalue)
         if not accounts:
             sender.reply(format_msg('no_accounts', cmd='电信登录'))
@@ -1550,7 +1464,6 @@ class TelecomManager:
                 sender.reply("❌ 请输入有效的数字")
 
     def _query_all_accounts(self, accounts):
-        """查询所有账号"""
         total_coin = 0
         for i, account in enumerate(accounts, 1):
             auth_status, auth_time = check_auth_status(account)
@@ -1583,7 +1496,6 @@ class TelecomManager:
             time.sleep(1)  # 每个账号查询间隔1秒，确保数据准确性
 
     def _batch_query_accounts(self, accounts):
-        """批量快速查询"""
         def query_single(account):
             auth_status, auth_time = check_auth_status(account)
             if auth_status != "✅ 已授权":
@@ -1648,7 +1560,6 @@ class TelecomManager:
         sender.reply("\n".join(batch_result))
 
     def _query_517_activity(self, accounts):
-        """批量查询517活动状态"""
         sender.reply("=====517活动批量查询=====\n⏳ 正在查询所有账号的517活动状态...\n==================")
 
         for i, account in enumerate(accounts, 1):
@@ -1706,7 +1617,6 @@ class TelecomManager:
         return True
 
     def _get_coin_mall_records(self, accId):
-        """获取金豆商城兑换记录"""
         try:
             url = 'https://wappark.189.cn/jt-sign/paradise/getCoinMallExchangetRecords'
             params = {'accId': accId, 'page': 0, 'size': 150}
@@ -1718,7 +1628,6 @@ class TelecomManager:
             return []
 
     def _get_rights_records(self, accId, sign=None):
-        """获取权益兑换记录"""
         all_rights_records = []
         try:
             url = 'https://wappark.189.cn/jt-sign/paradise/getRightsExchangetRecords'
@@ -1727,7 +1636,7 @@ class TelecomManager:
 
             headers = {
                 'Content-Type': 'application/json;charset=utf-8',
-                'Referer': f'https://wappark.189.cn/resources/dist/recordsNew.html?ticket=$ticket$&type=2'
+                'Referer': 'https://wappark.189.cn/resources/dist/recordsNew.html?ticket=$ticket$&type=2'
             }
             if sign:
                 headers['sign'] = sign
@@ -1751,7 +1660,6 @@ class TelecomManager:
         return all_rights_records
 
     def _get_prize_records(self, accId, sign):
-        """获取抽奖记录"""
         try:
             self.api.session.headers['sign'] = sign
             url = 'https://wappark.189.cn/jt-sign/webSign/getPrizeRecords'
@@ -1769,7 +1677,6 @@ class TelecomManager:
 def admin_auth():
     return True
 def sync_users():
-    """同步已授权用户到面板"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有权限执行此操作!")
         exit(0)
@@ -1818,8 +1725,7 @@ def sync_users():
 
 
 def show_tutorial():
-    """显示教程"""
-    tutorial = f"""=====电信插件教程=====
+    tutorial = """=====电信插件教程=====
 
 🎯 【基本功能】
 • 金豆余额查询

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: authook]
-# [version: v0.0.1]
+# [version: v1.0.1]
 # [public: true]
 # [disable: false]
 # [admin: true]
@@ -14,9 +14,12 @@
 # [depe: ["beautifulsoup4","colorlog","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -52,16 +55,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -101,43 +94,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -174,7 +130,6 @@ class TOOL:
         self.debug = False
 
     def _configure_logger(self):
-        """配置并返回一个带颜色的 logger 对象"""
         logger = logging.getLogger(self.plugin_pre)
         logger.setLevel(logging.DEBUG)  # 设置日志默认最低级别
 
@@ -187,7 +142,6 @@ class TOOL:
         return logger
 
     def log(self, level, message):
-        """通用日志方法"""
         if level == logging.INFO:
             self.logger.info(message)
         elif level == logging.ERROR:
@@ -289,7 +243,7 @@ class XBH:
                     continue
                 url_list.append(url)
             if not url_list:
-                tool.log_info(f"暂无新线报")
+                tool.log_info("暂无新线报")
                 return
             for url in url_list:
                 sender.bucketSet("xhb_url",url,"1")

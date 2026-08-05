@@ -25,21 +25,6 @@ try:
 except Exception:
     decimal = None
 
-def _sg_literal(value, default=None):
-    if isinstance(value, (list, dict, tuple, set, int, float, bool)) or value is None:
-        return value if value is not None else (default if default is not None else [])
-    text = str(value or '').strip()
-    if not text:
-        return default if default is not None else []
-    _sg_json_module = globals().get("_sg_json") or globals().get("json")
-    for parser in ((_sg_json_module.loads if _sg_json_module else None), (_sg_ast.literal_eval if _sg_ast else None)):
-        if not parser:
-            continue
-        try:
-            return parser(text)
-        except Exception:
-            pass
-    return default if default is not None else []
 
 
 QUOTES = [

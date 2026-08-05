@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.4]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -101,43 +105,7 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
 def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -173,7 +141,6 @@ sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
 def get_config():
-    """获取插件配置"""
     price = Decimal(sg.bucketGet(BUCKET_CONFIG, 'price') or '0')
     coin_price = sg.bucketGet(BUCKET_CONFIG, 'coin') or ''
     zsm = sg.bucketGet(BUCKET_CONFIG, 'zsm') or ''
@@ -184,164 +151,18 @@ def get_config():
     return price, coin_price, zsm, ql_config, ql_envname, captcha_api
 
 
-def set_auth_success(uid, months, total_price):
-    """设置授权成功并显示成功信息"""
-    try:
-        token_info_str = sg.bucketGet(BUCKET_TOKEN, uid)
-        if not token_info_str:
-            sender.reply(f"❌ 未找到账号 {uid} 的Token信息")
-            return False
 
-        token_info = json.loads(token_info_str)
-        alias = token_info.get("Alias", "未知用户")
 
-        auth_time = calculate_auth_time(uid, months)
-        True
 
-        _, _, _, ql_config, ql_envname, _ = get_config()
-        ql_result = False
 
-        if ql_config:
-            ql_result, ql_message = add_to_qinglong(uid, token_info, ql_envname)
 
-        success_msg = f"""
-=====授权成功=====
-👤 用户: {alias}
-📱 UID: {uid}
-💰 支付: {total_price}元
-📅 有效期至: {auth_time}
-------------------
-🔄 青龙同步: {'成功' if ql_result else '失败'}
-=================="""
-
-        sender.reply(success_msg)
-        return True
-
-    except Exception as e:
-        sender.reply(f"❌ 设置授权失败: {str(e)}")
-        return False
-
-def process_payment_zsm(uid):
-    return True
-
-def process_coin_auth(uid):
-    return True
-
-def generate_iframe_url(url):
-    """将URL通过base64编码生成iframe页面链接
-
-    Args:
-        url: 原始支付链接
-
-    Returns:
-        str: iframe页面链接
-    """
-    try:
-        encoded = base64.b64encode(url.encode('utf-8')).decode('utf-8')
-        iframe_url = f"https://metwhale.github.io?u={encoded}"
-        return iframe_url
-    except Exception as e:
-        return url
-
-def generate_qrcode(url):
-    """生成二维码图片
-
-    Args:
-        url: 要生成二维码的URL
-
-    Returns:
-        str: 二维码图片的URL
-    """
-    try:
-        encoded_url = requests.utils.quote(url)
-        api_url = f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
-        return api_url
-    except Exception as e:
-        return None
-
-def handle_mapay_order(project, months, money, pay_type=None):
-    return True
 
 def process_auth(uid):
     return True
 
-def process_payment_zsm_with_months(uid, months):
-    return True
 
-def process_coin_auth_with_months(uid, months):
-    """处理积分兑换授权（已知月数）"""
-    try:
-        _, coin_price, _, _, _, _ = get_config()
-
-        if not coin_price:
-            sender.reply("❌ 积分授权未开启")
-            return False
-
-        token_info_str = sg.bucketGet(BUCKET_TOKEN, uid)
-        if not token_info_str:
-            sender.reply(f"❌ 未找到账号 {uid} 的Token信息")
-            return False
-
-        token_info = json.loads(token_info_str)
-        alias = token_info.get("Alias", "未知用户")
-        user_coin = Decimal(sg.bucketGet('dd_sign_points', userid) or '0')
-        required_coin = Decimal(coin_price) * months
-
-        if user_coin < required_coin:
-            sender.reply(f"❌ 积分不足，当前积分: {user_coin}，需要积分: {required_coin}")
-            return False
-
-        confirm_msg = f"""
-=====兑换确认=====
-👤 用户: {alias}
-📱 UID: {uid}
-💰 当前积分: {user_coin}
-🎟 兑换: {months}个月
-💵 需要积分: {required_coin}
-💰 剩余积分: {user_coin - required_coin}
-------------------
-回复"y"确认兑换
-回复其他取消"""
-
-        sender.reply(confirm_msg)
-        confirm = sender.listen(60000)
-
-        if confirm.lower() != 'y':
-            sender.reply("✅ 已取消兑换")
-            return False
-
-        remaining_coin = user_coin - required_coin
-        sg.bucketSet('dd_sign_points', userid, str(remaining_coin))
-
-        auth_time = calculate_auth_time(uid, months)
-        True
-
-        _, _, _, ql_config, ql_envname, _ = get_config()
-        ql_result = False
-
-        if ql_config:
-            ql_result, _ = add_to_qinglong(uid, token_info, ql_envname)
-
-        success_msg = f"""
-=====兑换成功=====
-👤 用户: {alias}
-📱 UID: {uid}
-🎟️ 兑换: {months}个月授权
-📅 有效期至: {auth_time}
-💰 剩余积分: {remaining_coin}
-------------------
-🔄 青龙同步: {'成功' if ql_result else '失败'}
-=================="""
-
-        sender.reply(success_msg)
-        return True
-
-    except Exception as e:
-        sender.reply(f"❌ 积分兑换失败: {str(e)}")
-        return False
 
 def generate_unique_id():
-    """生成随机的UniqueId，格式类似: Mcb2djFlYjEwMDZmNDc5MmRmNWVkNTAyNDU4YTAwZTA0MGN8fGllbWlfdGx1YWZlZF9tZQ=eb1b="""
     hex_part = ''.join(random.choice('0123456789abcdef') for _ in range(random.randint(32, 40)))
 
     random_str = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(random.randint(20, 30)))
@@ -357,7 +178,6 @@ def generate_unique_id():
     return f"M{hex_part}|{base64_part}{suffix}="
 
 def get_qr_code():
-    """获取微信二维码UUID"""
     url = "https://open.weixin.qq.com/connect/app/qrconnect"
     params = {
         'appid': APPID,
@@ -382,8 +202,7 @@ def get_qr_code():
     return None
 
 def check_scan_status(uuid_str):
-    """检查二维码扫描状态"""
-    url = f"https://long.open.weixin.qq.com/connect/l/qrconnect"
+    url = "https://long.open.weixin.qq.com/connect/l/qrconnect"
     params = {
         'uuid': uuid_str,
         'f': 'url',
@@ -417,7 +236,6 @@ def check_scan_status(uuid_str):
     return {"status": "error"}
 
 def get_token_by_code(code, device_id=None):
-    """通过授权码获取Token（东方财富版本）"""
     if not device_id:
         device_id = generate_device_id()
 
@@ -537,7 +355,6 @@ def get_token_by_code(code, device_id=None):
     return None
 
 def scan_login():
-    """微信扫码登录流程"""
     uuid_str = get_qr_code()
     if not uuid_str:
         sender.reply("❌ 获取登录二维码失败，请稍后再试")
@@ -588,21 +405,13 @@ def scan_login():
     return False
 
 def generate_device_id():
-    """生成随机的设备ID, 格式: 随机32位字符串||iemi_tluafed_me"""
     random_str = ''.join(random.choice('0123456789abcdef') for _ in range(32))
     return f"{random_str}||iemi_tluafed_me"
 
 def md5_encrypt(text):
-    """计算文本的MD5值"""
     return hashlib.md5(text.encode('utf-8')).hexdigest()
 
 def get_gtoken_from_api(uid):
-    """从API获取gtoken
-    Args:
-        uid: 用户ID
-    Returns:
-        gtoken或None
-    """
     try:
         admin_username = userid
         if not admin_username:
@@ -643,20 +452,12 @@ def get_gtoken_from_api(uid):
         return None
 
 def generate_random_code():
-    """生成随机的randomCode，格式类似UUID"""
     return str(uuid.uuid4())
 
 def get_timestamp():
-    """获取当前时间戳（毫秒）"""
     return int(time.time() * 1000)
 
 def send_info_service_request(em_gt=None):
-    """发送信息服务请求
-    Args:
-        em_gt: EM-GT头部值，如果为None则随机生成
-    Returns:
-        响应内容
-    """
     if not em_gt:
         em_gt = 'ceab-' + ''.join(random.choice('0123456789abcdef') for _ in range(32))
 
@@ -722,14 +523,6 @@ def send_info_service_request(em_gt=None):
         return None
 
 def save_user_info(token_result, em_gt, device_id):
-    """保存用户信息到数据桶
-    Args:
-        token_result: 获取token的响应结果
-        em_gt: EM-GT值
-        device_id: 设备ID
-    Returns:
-        是否保存成功
-    """
     try:
         if not token_result or "dfcf_token" not in token_result:
             sender.reply("❌ 无法保存用户信息，数据不完整")
@@ -803,12 +596,6 @@ def save_user_info(token_result, em_gt, device_id):
         sender.reply(f"❌ 保存用户信息失败: {str(e)}")
         return False
 def query_user_info(uid):
-    """查询用户信息
-    Args:
-        uid: 用户UID
-    Returns:
-        查询结果
-    """
     try:
         token_info_str = sg.bucketGet(BUCKET_TOKEN, uid)
         if not token_info_str:
@@ -890,13 +677,12 @@ def query_user_info(uid):
             return query_msg
 
         except json.JSONDecodeError:
-            return f"❌ 解析响应失败: 响应不是有效的JSON格式"
+            return "❌ 解析响应失败: 响应不是有效的JSON格式"
 
     except Exception as e:
         return f"❌ 查询失败: {str(e)}"
 
 def query_all_accounts():
-    """查询用户所有绑定账号的信息"""
     try:
         user_accounts = _sg_literal(sg.bucketGet(BUCKET_USER, userid) or '[]')
         if not user_accounts:
@@ -911,7 +697,6 @@ def query_all_accounts():
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 def manage_eastmoney():
-    """东方财富账号管理"""
     try:
         accounts = _sg_literal(sg.bucketGet(BUCKET_USER, userid) or '[]')
         if not accounts:
@@ -1099,22 +884,14 @@ def manage_eastmoney():
     except Exception as e:
         sender.reply(f"❌ 管理失败: {str(e)}")
 
-def calculate_auth_time_by_days(uid, days):
-    return '2099-12-31'
 
 
 def admin_auth_management():
     return True
 
-def mask_uid(uid):
-    """隐藏UID中间部分"""
-    if not uid or len(uid) < 6:
-        return uid
-    return f"{uid[:3]}***{uid[-3:]}"
 
 
 def get_ql_token(host, client_id, client_secret):
-    """获取青龙面板的访问令牌"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         response = requests.get(url)
@@ -1128,7 +905,6 @@ def get_ql_token(host, client_id, client_secret):
         return None
 
 def add_to_qinglong(uid, token_info, env_name="S_DFCF"):
-    """添加东方财富账号到青龙"""
     try:
         _, _, _, ql_config, ql_envname, _ = get_config()
 
@@ -1213,7 +989,6 @@ def add_to_qinglong(uid, token_info, env_name="S_DFCF"):
         return False, error_msg
 
 def delete_from_qinglong(uid, env_name=None):
-    """从青龙面板删除指定账号的变量"""
     try:
         _, _, _, ql_config, ql_envname, _ = get_config()
 
@@ -1268,13 +1043,6 @@ def delete_from_qinglong(uid, env_name=None):
         return False, error_msg
 
 def account_login(account, password):
-    """账号密码登录东方财富
-    Args:
-        account: 账号（手机号）
-        password: 密码
-    Returns:
-        登录结果，成功返回True，失败返回False
-    """
     try:
         device_id = generate_device_id()
 
@@ -1292,18 +1060,6 @@ def account_login(account, password):
         return False
 
 def account_login_with_verification(account, password_md5, unique_id, device_id, em_gt, vcode="", vcode_context=""):
-    """带验证码处理的账号密码登录流程
-    Args:
-        account: 账号
-        password_md5: MD5加密后的密码
-        unique_id: 唯一ID
-        device_id: 设备ID
-        em_gt: EM-GT值
-        vcode: 图片验证码
-        vcode_context: 验证码上下文
-    Returns:
-        登录结果
-    """
     try:
         em_md = base64.b64encode(device_id.encode()).decode()
 
@@ -1427,7 +1183,6 @@ def account_login_with_verification(account, password_md5, unique_id, device_id,
         return False
 
 def process_login():
-    """处理登录流程"""
     login_options = """
 =====登录方式=====
 [1] 扫码登录
@@ -1466,14 +1221,6 @@ def process_login():
         return False
 
 def get_verify_code_image(account, device_id, em_gt):
-    """获取图片验证码
-    Args:
-        account: 账号
-        device_id: 设备ID
-        em_gt: EM-GT值
-    Returns:
-        验证码图片临时文件路径和验证码cookie值
-    """
     try:
         em_md = base64.b64encode(device_id.encode()).decode()
         em_md_encoded = urllib.parse.quote(em_md)
@@ -1482,7 +1229,7 @@ def get_verify_code_image(account, device_id, em_gt):
 
         rnd = str(int(time.time() * 1000))
 
-        url = f"https://vcode2.eastmoney.com/V2/verifycode2.ashx"
+        url = "https://vcode2.eastmoney.com/V2/verifycode2.ashx"
         params = {
             "rnd": rnd,
             "vcodeTarget": account
@@ -1569,17 +1316,6 @@ def get_verify_code_image(account, device_id, em_gt):
         return None, None
 
 def login_with_sms_code(account, password, api_context, unique_id, device_id, em_gt):
-    """使用短信验证码完成登录流程
-    Args:
-        account: 账号
-        password: MD5加密后的密码
-        api_context: 短信验证码API上下文
-        unique_id: 唯一ID
-        device_id: 设备ID
-        em_gt: EM-GT值
-    Returns:
-        登录结果
-    """
     try:
         sender.reply("请输入收到的短信验证码：")
         sms_code = sender.listen(180000)  # 等待3分钟
@@ -1669,46 +1405,8 @@ def login_with_sms_code(account, password, api_context, unique_id, device_id, em
         return False
 
 
-def recognize_captcha(base64_image, api_url=None):
-    """识别验证码
-    Args:
-        base64_image: base64编码的图片数据
-        api_url: 验证码识别API地址
-    Returns:
-        识别结果或图片链接
-    """
-    try:
-        if api_url:
-            data = {
-                "image": base64_image,
-                "probability": False,
-                "png_fix": False
-            }
-
-            response = requests.post(api_url, data=data)
-
-            result = response.json()
-            if result.get("code") == 200:
-                return result.get("data")
-
-        upload_url = "https://uapis.cn/api/baseimg.php"
-        upload_data = {
-            "imageData": base64_image
-        }
-
-        response = requests.post(upload_url, data=upload_data)
-        result = response.json()
-
-        if result.get("code") == 200 and result.get("img"):
-            return result.get("img")
-
-        return None
-    except Exception as e:
-        print(f"识别验证码异常: {str(e)}")
-        return None
 
 def show_tutorial():
-    """显示东方财富插件使用教程"""
     tutorial = """=====东方教程=====
 📱 用户指令:
 • 东方登录 - 绑定东方财富账号

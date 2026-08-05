@@ -1,21 +1,25 @@
-# [title: 小米钱包]
+# [title: 小米社区钱包]
 # [name: xiaoMiQianBao]
 # [language: python]
 # [class: 任务]
 # [author: linzixuan]
-# [version: v2.7]
+# [version: v1.8.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
 # [rule: ^小米登录$|^登录小米$|^小米查询$|^小米管理$|^小米清理$|^小米一键更新$|^小米$|^小米兑换$|^小米教程$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
-# [description: 小米钱包扫码登录、账号管理和视频会员兑换。]
+# [description: 小米社区钱包扫码登录、签到、账号管理和视频会员兑换。]
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +89,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     's_xiaomi_ql_config': form.string().title('设置对接容器').default('').description('青龙配置,用丨分割'),
@@ -124,7 +99,10 @@ _CONFIG_FIELD_MAP = {
     ('s_xiaomi', 'var_name'): 's_xiaomi_var_name',
 }
 
-import time,json,requests,hashlib,re
+import time
+import json
+import requests
+import re
 from datetime import datetime
 from decimal import Decimal
 import random,string
@@ -132,11 +110,9 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def generate_oaid():
-	"""生成16位随机oaid（数字和小写字母组成）"""
 	return ''.join(random.choices(string.ascii_lowercase + string.digits, k=16))
 
 def get_oaid_for_account(account):
-	"""从账号token中获取或生成oaid"""
 	cookie_str = sg.bucketGet('s_xiaomi_token', account)
 	if not cookie_str:
 		return generate_oaid()
@@ -156,7 +132,6 @@ sender=sg.Sender(senderID)
 userid=sender.getUserID()
 uservalue=sg.bucketGet(bucket='s_xiaomi_user',key=userid)
 PAYMENT_CONFIG={}
-def get_mapay_config():config={};config['ma_pay_switch']='2099-12-31'or'false';config['ma_pay_gateway']='2099-12-31'or'';config['ma_pay_pid']='2099-12-31'or'';config['ma_pay_key']='2099-12-31'or'';config['ma_pay_type']='2099-12-31'or'alipay,wxpay';config['ma_pay_notify_url']='2099-12-31'or'http://localhost/notify';config['ma_pay_return_url']='2099-12-31'or'http://localhost/return';config['pid']=config['ma_pay_pid'];config['key']=config['ma_pay_key'];config['gateway']=config['ma_pay_gateway'];config['notify_url']=config['ma_pay_notify_url'];config['return_url']=config['ma_pay_return_url'];return config
 def is_valid_phone(phone):return True
 def format_phone(phone):
 	try:
@@ -171,8 +146,6 @@ def parse_cookie_string(cookie_str):
 		if'='in item:key,value=item.split('=',1);cookies[key.strip()]=value.strip()
 	return cookies
 def cookie_to_string(cookies):return';'.join([f"{k}={v}"for(k,v)in cookies.items()])
-def sort_dict_by_key(data):return dict(sorted(data.items()))
-def generate_sign(params,key):sign_params={k:v for(k,v)in params.items()if v and k!='sign'and k!='sign_type'};sorted_params=dict(sorted(sign_params.items()));url_string='&'.join(f"{k}={v}"for(k,v)in sorted_params.items());sign_string=url_string+key;md5=hashlib.md5(sign_string.encode('utf-8')).hexdigest().lower();return md5
 def get_config():
 	var_name=sg.bucketGet('s_xiaomi','var_name')or'xiaomick';ql_config=sg.bucketGet('s_xiaomi','ql_config')or'';price=Decimal(sg.bucketGet('s_xiaomi','price')or'1');coin_config=sg.bucketGet('s_xiaomi','coin')
 	try:
@@ -240,7 +213,7 @@ def login():
 		try:
 			index=int(choice)-1
 			if 0<=index<len(accounts):
-				selected_account=accounts[index];temp_id=''.join(random.choices(string.ascii_letters+string.digits,k=10));qr_login(temp_id);return
+				temp_id=''.join(random.choices(string.ascii_letters+string.digits,k=10));qr_login(temp_id);return
 			else:sender.reply('❌ 无效的账号序号');return
 		except ValueError:sender.reply('❌ 无效的输入，请输入账号序号');return
 	else:
@@ -255,10 +228,10 @@ def qr_login(phone,password=None):
 		if response.status_code!=200:return False
 		result=response.text.replace('&&&START&&&','')
 		try:data=json.loads(result)
-		except json.JSONDecodeError as e:return False
+		except json.JSONDecodeError:return False
 		qr_url=data.get('qr');login_url=data.get('loginUrl');check_url=data.get('lp')
 		if not all([qr_url,login_url,check_url]):return False
-		sender.reply(f"\n======扫码登录======\n请扫描二维码登录，有效时长2分钟\n==================")
+		sender.reply("\n======扫码登录======\n请扫描二维码登录，有效时长2分钟\n==================")
 		try:sender.replyImage(qr_url)
 		except Exception:sender.reply(qr_url)
 		max_attempts=10;attempts=0;login_data=None
@@ -269,7 +242,7 @@ def qr_login(phone,password=None):
 				if response.status_code==200 and response.text:
 					result=response.text.replace('&&&START&&&','')
 					try:data=json.loads(result)
-					except json.JSONDecodeError as e:continue
+					except json.JSONDecodeError:continue
 					if data.get('code')==0:
 						pass_token=data.get('passToken');user_id=str(data.get('userId'))
 						if not pass_token or not user_id:continue
@@ -287,7 +260,7 @@ def qr_login(phone,password=None):
 		cookie_str=cookie_to_string(login_data['cookies']);new_cookie_str=f"{login_data['user_id']}#{cookie_str}";sg.bucketSet('s_xiaomi_token',input_phone,new_cookie_str);result=process_login(login_data['cookies'],input_phone,login_data['user_id'])
 		if result:sender.reply('✅ 账号绑定成功');return True
 		else:sender.reply('❌ 账号绑定失败');return False
-	except Exception as e:import traceback;sender.reply(f"❌ 扫码登录过程出错: {str(e)}");return False
+	except Exception as e:sender.reply(f"❌ 扫码登录过程出错: {str(e)}");return False
 def manual_cookie_login():
 	try:
 		global uservalue;sender.reply("""
@@ -334,11 +307,10 @@ def get_cookies_by_passtk(user_id:str,pass_token:str,user_agent:str):
 	except Exception as e:sender.reply(f"❌ 获取Cookie失败: {str(e)}");return{}
 def process_login(cookies,phone,user_id,skip_auth=False,skip_add_account=False):
 	try:
-		global uservalue
 		if not skip_add_account:
 			accounts=_sg_literal(uservalue or'[]')
 			if phone not in accounts:accounts.append(phone);sg.bucketSet('s_xiaomi_user',userid,str(accounts));sender.reply(f"✅ 已将账号 {phone} 添加到您的账号列表")
-		cookie_str=cookie_to_string(cookies);new_cookie_str=f"{user_id}#{cookie_str}";auth_time='2099-12-31';current_date=str(datetime.now().date());is_authorized=auth_time and auth_time>current_date
+		cookie_str=cookie_to_string(cookies);auth_time='2099-12-31';current_date=str(datetime.now().date());is_authorized=auth_time and auth_time>current_date
 		if skip_auth:
 			if is_authorized:
 				if add_to_qinglong(cookie_str,phone,phone):return True
@@ -356,29 +328,9 @@ def process_login(cookies,phone,user_id,skip_auth=False,skip_add_account=False):
 	except Exception as e:sender.reply(f"❌ 处理登录失败: {str(e)}");raise Exception(f"处理登录失败: {str(e)}")
 def process_auth(account):
 	return True
-def process_coin_exchange(account,months):
-	try:
-		total_coins=coin_price*months;user_coins,error=get_user_points(userid)
-		if error:sender.reply(f"❌ {error}");return False
-		sender.reply(f"💰 当前积分: {user_coins}, 所需积分: {total_coins}")
-		if user_coins<total_coins:sender.reply(f"❌ 积分不足\n当前积分: {user_coins}\n所需积分: {total_coins}");return False
-		current_user_coins=int(sg.bucketGet('dd_sign_points',userid)or'0')
-		if current_user_coins<total_coins:sender.reply(f"❌ 积分不足 (尝试扣除时再次检查)\n当前积分: {current_user_coins}\n所需积分: {total_coins}");return False
-		sg.bucketSet('dd_sign_points',userid,str(current_user_coins-total_coins))
-		if process_authorization_xiaomi(account,months):final_user_coins=int(sg.bucketGet('dd_sign_points',userid)or'0');sender.reply(f"=====积分详情=====\n🎯 本次消耗: {total_coins} 积分\n💰 剩余积分: {final_user_coins} 积分");return True
-		else:True;return False
-	except Exception as e:raise Exception(f"积分授权失败: {str(e)}")
-def process_payment_handle(account,months,payment_type):
-	return True
 def pay_with_zsm(project,months,money):
 	return True
-def fh_url(url):
-	pay_url_fh=None;headers={'sec-ch-ua-platform':'Windows','sec-ch-ua':'"Microsoft Edge";v="137", "Chromium";v="137", "Not/A)Brand";v="24"','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','sec-ch-ua-mobile':'?0','Origin':'https://www.mrw.so','Sec-Fetch-Site':'same-site','Sec-Fetch-Mode':'cors','Sec-Fetch-Dest':'empty','Referer':'https://www.mrw.so/','Accept-Language':'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6'};data={'urlStr':url,'domain':'mrw.so','expireType':'1','key':'5d7798c491d2c423c8c33d2d@631d0a6ffd3fbca7c2728bebc6602f98','random':str(int(time.time()*1000))}
-	try:response=requests.post('https://create.mrw.so/pageHome/createBySingle.htm',headers=headers,data=data);pay_url_fh=response.json().get('data');return pay_url_fh
-	except:return
 def handle_mapay_payment(project,months,money,pay_type=None):
-	return True
-def authorize_multiple_accounts(accounts,months=None):
 	return True
 def process_authorization_xiaomi(account,months):
 	return True
@@ -395,7 +347,7 @@ def get_xiaomi_wallet_cookies(cookies):
 		pass_token=cookie_dict.get('passToken');user_id=cookie_dict.get('userId')
 		if not pass_token or not user_id:return
 		session=requests.Session();login_url='https://account.xiaomi.com/pass/serviceLogin?callback=https%3A%2F%2Fapi.jr.airstarfinance.net%2Fsts%3Fsign%3D1dbHuyAmee0NAZ2xsRw5vhdVQQ8%253D%26followup%3Dhttps%253A%252F%252Fm.jr.airstarfinance.net%252Fmp%252Fapi%252Flogin%253Ffrom%253Dmipay_indexicon_TVcard%2526deepLinkEnable%253Dfalse%2526requestUrl%253Dhttps%25253A%25252F%25252Fm.jr.airstarfinance.net%25252Fmp%25252Factivity%25252FvideoActivity%25253Ffrom%25253Dmipay_indexicon_TVcard%252526_noDarkMode%25253Dtrue%252526_transparentNaviBar%25253Dtrue%252526cUserId%25253Dusyxgr5xjumiQLUoAKTOgvi858Q%252526_statusBarHeight%25253D137&sid=jrairstar&_group=DEFAULT&_snsNone=true&_loginType=ticket';headers={'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0','cookie':f"passToken={pass_token}; userId={user_id};"};session.get(url=login_url,headers=headers,verify=False);wallet_cookies=session.cookies.get_dict();return f"cUserId={wallet_cookies.get('cUserId')};jrairstar_serviceToken={wallet_cookies.get('serviceToken')}"
-	except Exception as e:return
+	except Exception:return
 def get_video_days(cookies, account=None):
 	try:
 		wallet_cookies_str=get_xiaomi_wallet_cookies(cookies)
@@ -406,7 +358,7 @@ def get_video_days(cookies, account=None):
 			result=response.json()
 			if result.get('code')==0:total_days=f"{int(result['value'])/100:.2f}"if result.get('value')else'0';return total_days
 		return'未知'
-	except Exception as e:return'获取失败'
+	except Exception:return'获取失败'
 def get_today_video_days(cookies, account=None):
 	try:
 		wallet_cookies_str=get_xiaomi_wallet_cookies(cookies)
@@ -425,7 +377,7 @@ def get_today_video_days(cookies, account=None):
 						except(ValueError,TypeError):continue
 				return f"{today_total:.2f}天"
 		return'0天'
-	except Exception as e:return'获取失败'
+	except Exception:return'获取失败'
 
 def query_single_account(account):
 	try:
@@ -605,13 +557,13 @@ def manage_xiaomi():
 								sender.reply(f"=====批量在线处理授权完成=====\n📱 成功授权: {success_count}个\n❌ 授权失败: {fail_count}个\n💰 总支付: {total_price}元\n⏰ 授权时长: {months}月")
 						else:sender.reply(f"❌ 在线处理不支持的支付类型: {payment_type}，无法批量处理。")
 					elif payment_type=='wxpay':
-						sender.reply(f"ℹ️ 微信赞赏码模式下，需要对 {len(selected_accounts)} 个账号分别进行支付。");success_count=0;fail_count=0;paid_successfully_for_all=True
+						sender.reply(f"ℹ️ 微信赞赏码模式下，需要对 {len(selected_accounts)} 个账号分别进行支付。");success_count=0;fail_count=0
 						for(i,account_to_auth)in enumerate(selected_accounts,1):
 							sender.reply(f"\n=====正在为第 {i}/{len(selected_accounts)} 个账号授权=====\n📱 账号: {account_to_auth}");single_price=price*months
 							if pay_with_zsm(f"小米社区授权-{account_to_auth}",months,single_price):
 								if process_authorization_xiaomi(account_to_auth,months):success_count+=1
 								else:fail_count+=1
-							else:sender.reply(f"❌ 账号 {account_to_auth} 支付失败或取消，跳过此账号。");fail_count+=1;paid_successfully_for_all=False
+							else:sender.reply(f"❌ 账号 {account_to_auth} 支付失败或取消，跳过此账号。");fail_count+=1
 						sender.reply(f"=====批量微信支付授权完成=====\n📱 成功授权: {success_count}个\n❌ 授权失败: {fail_count}个\n⏰ 授权时长: {months}月")
 					else:sender.reply(f"❌ 配置错误或未知的支付类型: {payment_type} (在线处理已关闭)，无法批量处理。")
 		else:
@@ -631,21 +583,17 @@ def manage_xiaomi():
 	except Exception as e:sender.reply(f"❌ 管理失败: {str(e)}");return False
 def admin_authorize():
 	return True
-def single_user_authorize():
-	return True
-def batch_authorize_all():
-	return True
 def get_xiaomi_cookies(user_id,pass_token):
 	session=requests.Session();login_url='https://account.xiaomi.com/pass/serviceLogin?callback=https%3A%2F%2Fapi.jr.airstarfinance.net%2Fsts%3Fsign%3D1dbHuyAmee0NAZ2xsRw5vhdVQQ8%253D%26followup%3Dhttps%253A%252F%252Fm.jr.airstarfinance.net%252Fmp%252Fapi%252Flogin%253Ffrom%253Dmipay_indexicon_TVcard%2526deepLinkEnable%253Dfalse%2526requestUrl%253Dhttps%25253A%25252F%25252Fm.jr.airstarfinance.net%25252Fmp%25252Factivity%25252FvideoActivity%25253Ffrom%25253Dmipay_indexicon_TVcard%252526_noDarkMode%25253Dtrue%252526_transparentNaviBar%25253Dtrue%252526cUserId%25253Dusyxgr5xjumiQLUoAKTOgvi858Q%252526_statusBarHeight%25253D137&sid=jrairstar&_group=DEFAULT&_snsNone=true&_loginType=ticket';headers={'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0','cookie':f"passToken={pass_token}; userId={user_id};"}
 	try:
-		response=session.get(url=login_url,headers=headers,verify=False,timeout=30);cookies=session.cookies.get_dict()
+		session.get(url=login_url,headers=headers,verify=False,timeout=30);cookies=session.cookies.get_dict()
 		if cookies.get('cUserId')and cookies.get('serviceToken'):
 			cookie_str=f"cUserId={cookies.get('cUserId')};jrairstar_serviceToken={cookies.get('serviceToken')}"
 			jrairstar_ph=cookies.get('jrairstar_ph')
 			if jrairstar_ph:cookie_str+=f";jrairstar_ph={jrairstar_ph}"
 			return cookie_str
 		else:
-			sender.reply(f"❌ Cookie获取失败：未获取到必要的Cookie字段")
+			sender.reply("❌ Cookie获取失败：未获取到必要的Cookie字段")
 			return
 	except Exception as e:
 		error_msg=f"获取Cookie失败: {e}"
@@ -783,48 +731,6 @@ def update_all_cookies(accounts,show_result=True):
 			for account in verify_accounts:result_msg+=f"\n- {format_phone(account)}"
 		sender.reply(result_msg)
 	return success_count,fail_count,fail_accounts,verify_accounts
-def sync_to_qinglong():
-	try:
-		if not sender.isAdmin():sender.reply('❌ 需要管理员权限');return
-		global ql_url,ql_token;ql_url,ql_token=init_qinglong();current_date=str(datetime.now().date());all_accounts=[];authorized_accounts=[];users=sg.bucketAllKeys('s_xiaomi_user')
-		if not users:sender.reply('❌ 没有找到任何用户数据');return
-		for user in users:
-			try:
-				accounts=_sg_literal(sg.bucketGet('s_xiaomi_user',user)or'[]')
-				for account in accounts:
-					if account not in all_accounts:
-						all_accounts.append(account);auth_time='2099-12-31'
-						if auth_time and auth_time>current_date:authorized_accounts.append(account)
-			except Exception as e:sender.reply(f"⚠️ 处理用户 {user} 数据时出错: {str(e)}");continue
-		if not authorized_accounts:sender.reply(f"❌ 没有找到有效授权的账号\n总账号数: {len(all_accounts)}\n授权账号数: 0");return
-		sender.reply(f"""
-=====同步统计=====
-📱 总账号数: {len(all_accounts)}
-✅ 授权账号数: {len(authorized_accounts)}
-🔄 开始同步到青龙...
-==================""");success_count=0;fail_count=0;fail_accounts=[]
-		for(i,account)in enumerate(authorized_accounts,1):
-			try:
-				cookie_str=sg.bucketGet('s_xiaomi_token',account)
-				if not cookie_str:fail_accounts.append(f"{format_phone(account)} (无Token)");fail_count+=1;continue
-				parts=cookie_str.split('#')
-				if len(parts)==3:cookie_data=parts[1]  # 修复：parts[1]是cookie，parts[2]是oaid
-				elif len(parts)>=2:cookie_data=parts[1]
-				else:cookie_data=cookie_str
-
-				cookie_data = re.sub(r'(userId=\d+)#[^;]*', r'\1', cookie_data)
-
-				if add_to_qinglong(cookie_data,account,account):success_count+=1
-				else:fail_accounts.append(f"{format_phone(account)} (同步失败)");fail_count+=1
-			except Exception as e:fail_accounts.append(f"{format_phone(account)} ({str(e)})");fail_count+=1;sender.reply(f"❌ 账号 {format_phone(account)} 同步失败: {str(e)}")
-		result_msg=f"\n=====同步完成=====\n✅ 成功同步: {success_count}个\n❌ 同步失败: {fail_count}个\n=================="
-		if fail_accounts:
-			result_msg+='\n\n失败账号详情:'
-			for account in fail_accounts[:10]:result_msg+=f"\n- {account}"
-			if len(fail_accounts)>10:result_msg+=f"\n... 还有{len(fail_accounts)-10}个失败账号"
-		sender.reply(result_msg)
-		if success_count>0:sender.reply('🎉 数据同步完成！现在可以在青龙面板中看到迁移后的账号数据了。')
-	except Exception as e:sender.reply(f"❌ 同步青龙失败: {str(e)}")
 def show_tutorial():
 	tutorial_text="""
 =====📖 小米钱包插件使用教程 =====
@@ -906,33 +812,4 @@ def main():
 		elif message=='小米教程':show_tutorial()
 		else:sender.setContinue()
 	except Exception as e:sender.reply(f"❌ 运行出错: {str(e)}")
-def poll_mapi_payment_status(out_trade_no,order_type=2,max_tries=30):
-	return True
-def generate_qrcode(url):
-	try:encoded_url=requests.utils.quote(url);api_url=f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M";return api_url
-	except Exception as e:return
-class MaPay_Api:
-	def __init__(self,config):self.config=config;self.pay_type_names={'alipay':'支付宝','wxpay':'微信支付','qqpay':'QQ钱包'}
-	def calculate_md5(self,text):return hashlib.md5(text.encode('utf-8')).hexdigest()
-	def sort_dict_by_key(self,data):return dict(sorted(data.items(),key=lambda x:x[0]))
-	def create_payment(self,amount,out_trade_no,name,user_id,pay_type=None,sitename=''):
-		return True
-	def query_order(self,out_trade_no,is_trade_no=False):
-		try:
-			api_url=self.config['gateway']
-			if api_url.endswith('/'):api_url=api_url[:-1]
-			query_url=f"{api_url}/xpay/epay/api.php";params={'act':'order','pid':self.config['pid'],'key':self.config['key']};params['out_trade_no']=out_trade_no;response=requests.get(query_url,params=params,timeout=10)
-			if response.status_code!=200:return False,f"查询订单失败，HTTP状态码: {response.status_code}",None
-			try:result=response.json()
-			except:return False,'查询订单失败，返回数据格式错误',None
-			code=result.get('code',0);msg=result.get('msg','未知状态')
-			if str(code)=='1':
-				status=result.get('status',0)
-				if str(status)=='1':return True,'支付成功',result
-				else:return False,'订单未支付',result
-			else:return False,msg,result
-		except Exception as e:return False,f"查询订单异常: {str(e)}",None
-	def verify_sign(self,params,sign):
-		try:verify_params={k:v for(k,v)in params.items()if v and k!='sign'and k!='sign_type'};sorted_params=self.sort_dict_by_key(verify_params);params_str='&'.join([f"{k}={v}"for(k,v)in sorted_params.items()]);sign_str=params_str+self.config['key'];calculated_sign=self.calculate_md5(sign_str).lower();return calculated_sign==sign.lower()
-		except Exception as e:return False
 if __name__=='__main__':main()

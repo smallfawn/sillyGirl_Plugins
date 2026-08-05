@@ -13,9 +13,12 @@
 # [depe: ["pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,7 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
 def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_SYC_concurrent_count': form.string().title('并发数量').default('3').description('任务执行时的并发线程数量'),
@@ -245,15 +211,14 @@ def is_authorized(phone: str) -> bool:
 
 
 def get_proxy_api() -> str:
-    """获取代理API配置"""
     return get_bucket_config_value("proxy_api", "")
 proxy_url = get_proxy_api()
 IS_PROXY = bool(proxy_url)
 if IS_PROXY:
-    print(f"[INFO] 代理模式: 已启用")
+    print("[INFO] 代理模式: 已启用")
     print(f"[INFO] 代理API: {proxy_url}")
 else:
-    print(f"[INFO] 代理模式: 未启用")
+    print("[INFO] 代理模式: 未启用")
 proxy_cache = {}
 proxy_cache_time = {}
 proxy_lock_dict = threading.Lock()
@@ -276,7 +241,7 @@ def get_proxy(force_new=False, account_key=None):
         if response.status_code == 200:
             ip = response.text.strip()
             if "请先添加白名单" in ip:
-                print(f"[WARNING] 代理服务异常：请先添加白名单")
+                print("[WARNING] 代理服务异常：请先添加白名单")
                 return None
             proxy_dict = {"http": ip, "https": ip}
             if account_key:
@@ -337,15 +302,15 @@ def request_with_retry(method, url, max_retries=3, account_key=None, **kwargs):
                 time.sleep(2)
                 continue
             else:
-                print(f"[ERROR] 代理请求失败，已达最大重试次数")
+                print("[ERROR] 代理请求失败，已达最大重试次数")
                 raise
         except requests.exceptions.Timeout:
-            print(f"[WARNING] 请求超时")
+            print("[WARNING] 请求超时")
             if attempt < max_retries - 1:
                 time.sleep(2)
                 continue
             else:
-                print(f"[ERROR] 请求超时，已达最大重试次数")
+                print("[ERROR] 请求超时，已达最大重试次数")
                 raise
         except Exception as e:
             print(f"[ERROR] 请求异常: {str(e)[:100]}")
@@ -412,307 +377,6 @@ AD_POSITION_PATTERNS = {
     "kuaishou_short": "925300",
 }
 VALID_ADV_ID = "b6286f0d6267aa82"
-class AdSystemClient:
-    def __init__(self):
-        self.base_url = "https://api.wxcjgg.cn"
-        self.session = requests.Session()
-        self.session.headers.update(AD_HEADERS)
-        self.session.headers["User-Agent"] = get_random_user_agent()
-        self.adv_id = VALID_ADV_ID
-        self.max_attempts = 10
-    def generate_single_ad_position(self, user_id: str = "13397537") -> str:
-        import random
-        for attempt in range(self.max_attempts):
-            try:
-                pattern_type = random.choice(list(AD_POSITION_PATTERNS.keys()))
-                pattern = AD_POSITION_PATTERNS[pattern_type]
-                if pattern == "925300":
-                    suffix = random.randint(0, 999)
-                    candidate = f"{pattern}{suffix:03d}"
-                else:
-                    suffix = random.randint(0, 999)
-                    candidate = f"{pattern}{suffix:03d}"
-                if self.test_ad_position(candidate, user_id):
-                    return candidate
-                else:
-                    time.sleep(0.1)
-            except Exception as e:
-                continue
-        return None
-    def test_ad_position(
-        self,
-        position: str,
-        user_id: str = "13397537",
-        device_id: str = "39a40068bc08bfe9",
-    ) -> bool:
-        try:
-            request_data = {
-                "cpm": "2000",
-                "sdk_code": 30303,
-                "system_name": "14",
-                "dev_id": device_id,
-                "ad_id": self.adv_id,
-                "sdk_v": "a.3.3.3",
-                "u_id": user_id,
-                "app_v": "5.7.3",
-                "system_version": 34,
-                "plat": "ks",
-                "app_id": "31123d906f8255c6",
-                "r_id": str(uuid.uuid4()),
-                "oaid": "",
-                "p_id": position,
-                "m_id": 0,
-                "app_code": 5703,
-            }
-            response = self.session.post(
-                f"{self.base_url}/rep/click", json=request_data, timeout=5
-            )
-            return response.text.strip() == "success"
-        except Exception:
-            return False
-    def _generate_sign(self, data: dict) -> str:
-        sign_str = f"{data['adv_id']}{data['request_id']}{data['timestamp']}{data['user_id']}36z6QhAXaCwD"
-        return hashlib.md5(sign_str.encode("utf-8")).hexdigest()
-    def send_rewards_callback(self, user_id: str, device_id: str) -> bool:
-        try:
-            extend_data = {
-                "type": "1216",
-                "loginChannel": "01",
-                "taskNo": "20221231",
-                "content": "顺易充192d96",
-            }
-            timestamp = int(time.time())
-            request_id = str(uuid.uuid4())
-            request_data = {
-                "extend": json.dumps(extend_data, ensure_ascii=False),
-                "user_id": user_id,
-                "adv_id": self.adv_id,
-                "request_id": request_id,
-                "deviceId": device_id,
-                "timestamp": timestamp,
-            }
-            request_data["sign"] = self._generate_sign(request_data)
-            response = self.session.post(
-                f"{self.base_url}/rewards/callback", json=request_data, timeout=10
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("code") == 0
-        except Exception as e:
-            return False
-    def report_ad_click(self, position: str, user_id: str, device_id: str) -> bool:
-        try:
-            request_data = {
-                "cpm": "2000",
-                "sdk_code": 30303,
-                "system_name": "14",
-                "dev_id": device_id,
-                "ad_id": self.adv_id,
-                "sdk_v": "a.3.3.3",
-                "u_id": user_id,
-                "app_v": "5.7.3",
-                "system_version": 34,
-                "plat": "ks",
-                "app_id": "31123d906f8255c6",
-                "r_id": str(uuid.uuid4()),
-                "oaid": "",
-                "p_id": position,
-                "m_id": 0,
-                "app_code": 5703,
-            }
-            response = self.session.post(
-                f"{self.base_url}/rep/click", json=request_data, timeout=10
-            )
-            return response.text.strip() == "success"
-        except Exception:
-            return False
-def extract_user_id_from_token(token: str) -> str:
-    try:
-        if token.startswith("Bearer "):
-            token = token[7:]
-        parts = token.split(".")
-        if len(parts) >= 2:
-            payload = parts[1]
-            missing_padding = len(payload) % 4
-            if missing_padding:
-                payload += "=" * (4 - missing_padding)
-            decoded = base64.b64decode(payload)
-            payload_data = json.loads(decoded.decode("utf-8"))
-            for field in ["custId", "userId", "user_id", "id", "sub"]:
-                if field in payload_data:
-                    return str(payload_data[field])
-    except Exception as e:
-        print(f"    ⚠️ 从token提取用户ID失败: {e}")
-    return "13397537"
-def generate_device_id_from_phone(phone: str) -> str:
-    try:
-        phone_hash = hashlib.md5(phone.encode("utf-8")).hexdigest()
-        return phone_hash[:16]
-    except:
-        return "39a40068bc08bfe9"
-def complete_enhanced_video_task_plugin(headers, phone):
-    try:
-        config = get_config()
-        video_count = config.get("video_count", 6)
-        watch_time = config.get("watch_time", 25)
-        ad_client = AdSystemClient()
-        token = headers.get("authorization", "")
-        user_id = extract_user_id_from_token(token)
-        device_id = generate_device_id_from_phone(phone)
-        account_key = headers.get("_account_key")  # 从 headers 提取账号标识
-        url = "https://app.wodeev.com/bil-front/v2.0/activity/getWelfare"
-        successful_claims = 0
-        attempt_count = 0
-        max_attempts = 10
-        task_status_url = "https://app.wodeev.com/bil-front/v2.0/activity/getWelfareTask?taskNo=20221231"
-        try:
-            status_response = request_with_retry(
-                "GET",
-                task_status_url,
-                headers=headers,
-                timeout=10,
-                verify=False,
-                account_key=account_key,
-            )
-            status_data = status_response.json()
-            if status_data.get("ret") == 200:
-                task_list = status_data.get("taskList", [])
-                for task in task_list:
-                    if task.get("actType") == "1216":
-                        reward_status = task.get("rewardStatus", "00")
-                        status_text = {
-                            "00": "可开始",
-                            "01": "已完成，等待领取",
-                            "02": "已领取完成",
-                        }.get(reward_status, "未知状态")
-                        if reward_status == "02":
-                            return f"视频任务今日已完成 6/6", True
-                        elif reward_status == "01":
-                            claimed_count = (
-                                0  # 初始化计数器，避免循环未执行时变量未定义
-                            )
-                            for direct_claim in range(video_count):
-                                try:
-                                    direct_payload = {
-                                        "type": "1216",
-                                        "taskNo": "20221231",
-                                    }
-                                    direct_resp = request_with_retry(
-                                        "POST",
-                                        url,
-                                        headers=headers,
-                                        json=direct_payload,
-                                        timeout=10,
-                                        verify=False,
-                                        account_key=account_key,
-                                    )
-                                    direct_data = direct_resp.json()
-                                    if direct_data.get("ret") == 200:
-                                        claimed_count = direct_claim + 1
-                                        time.sleep(2)
-                                    else:
-                                        break
-                                except Exception:
-                                    break
-                            return (
-                                f"视频任务直接领取完成 {min(claimed_count, video_count)}/{video_count}",
-                                True,
-                            )
-                        break
-        except Exception:
-            pass
-        while successful_claims < video_count and attempt_count < max_attempts:
-            attempt_count += 1
-            try:
-                direct_payload = {"type": "1216", "taskNo": "20221231"}
-                direct_resp = request_with_retry(
-                    "POST",
-                    url,
-                    headers=headers,
-                    json=direct_payload,
-                    timeout=10,
-                    verify=False,
-                    account_key=account_key,
-                )
-                direct_data = direct_resp.json()
-                if direct_data.get("ret") == 200:
-                    successful_claims += 1
-                    if successful_claims < video_count:
-                        time.sleep(3)
-                    continue
-                elif "该用户已经存在完成的任务,请先领取" in direct_data.get("msg", ""):
-                    successful_claims += 1
-                    if successful_claims < video_count:
-                        time.sleep(3)
-                    continue
-                watch_payload = {
-                    "type": "1216",
-                    "taskStage": "01",
-                    "taskNo": "20221231",
-                }
-                watch_response = request_with_retry(
-                    "POST",
-                    url,
-                    headers=headers,
-                    json=watch_payload,
-                    timeout=10,
-                    verify=False,
-                    account_key=account_key,
-                )
-                watch_data = watch_response.json()
-                if watch_data.get("ret") == 200:
-                    selected_position = ad_client.generate_single_ad_position(user_id)
-                    if selected_position:
-                        for i in range(watch_time):
-                            if i == watch_time // 2:
-                                ad_client.report_ad_click(
-                                    selected_position, user_id, device_id
-                                )
-                            time.sleep(1)
-                        ad_client.send_rewards_callback(user_id, device_id)
-                    else:
-                        time.sleep(watch_time)
-                    for retry in range(3):
-                        try:
-                            reward_payload = {"type": "1216", "taskNo": "20221231"}
-                            reward_response = request_with_retry(
-                                "POST",
-                                url,
-                                headers=headers,
-                                json=reward_payload,
-                                timeout=10,
-                                verify=False,
-                                account_key=account_key,
-                            )
-                            reward_data = reward_response.json()
-                            ret_code = reward_data.get("ret", "未知")
-                            msg = reward_data.get("msg", "无返回信息")
-                            if ret_code == 200:
-                                successful_claims += 1
-                                if successful_claims >= video_count:
-                                    break
-                                time.sleep(3)
-                                break
-                            elif ret_code == 400 and ("超过" in msg or "已完成" in msg):
-                                successful_claims = video_count
-                                break
-                            elif "未找可领取" in msg and retry < 2:
-                                time.sleep(5)
-                                continue
-                            else:
-                                break
-                        except Exception as e:
-                            break
-                else:
-                    time.sleep(5)
-            except Exception as e:
-                time.sleep(5)
-        return (
-            f"完成视频任务 {successful_claims}/{video_count} (增强模式)",
-            successful_claims > 0,
-        )
-    except Exception as e:
-        return "视频任务异常", False
 def get_task_headers():
     return {
         "User-Agent": get_random_user_agent(),
@@ -802,38 +466,6 @@ def is_syc_admin():
         return False
     admin_ids = [aid.strip() for aid in admin_ids_str.split(",") if aid.strip()]
     return userid in admin_ids
-def parse_account_selection(choice_str: str, max_index: int) -> list:
-
-    if not choice_str or not choice_str.strip():
-        return None
-    choice_str = choice_str.strip()
-    selected_indices = set()
-    try:
-        parts = choice_str.split(",")
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            if "-" in part:
-                range_parts = part.split("-")
-                if len(range_parts) != 2:
-                    return None
-                start = int(range_parts[0].strip())
-                end = int(range_parts[1].strip())
-                if start < 1 or end < 1 or start > max_index or end > max_index:
-                    return None
-                if start > end:
-                    return None
-                for i in range(start - 1, end):
-                    selected_indices.add(i)
-            else:
-                num = int(part)
-                if num < 1 or num > max_index:
-                    return None
-                selected_indices.add(num - 1)
-        return sorted(list(selected_indices))
-    except (ValueError, AttributeError):
-        return None
 def md5_encrypt(text: str) -> str:
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 def triple_des_encrypt(data: str, key_base64: str) -> str:
@@ -858,13 +490,6 @@ def build_signed_params(keyword: str, value: str) -> tuple:
     timestamp = str(timestamp_ms) + random_num
     return timestamp, sign, raw, md5_hash
 def send_sms_code(mobile: str) -> dict:
-    """
-    发送短信验证码
-    Args:
-        mobile: 手机号
-    Returns:
-        响应结果字典，失败返回None
-    """
     try:
         account_key = f"acc_{mobile}"
         timestamp, encrypted, _, _ = build_signed_params("mobile", mobile)
@@ -1003,9 +628,6 @@ def login_with_sms_code(mobile: str, code: str) -> dict:
         }
 def get_user_points(user_id=None):
     return 0
-def set_user_points(user_id, points):
-    sg.bucketSet("dd_sign_coin", user_id, str(points["dd_sign_coin"]))
-    sg.bucketSet("dd_sign_points", user_id, str(points["dd_sign_points"]))
 def query_user_points():
     user_accounts = get_user_accounts()
     if not user_accounts:
@@ -1068,7 +690,7 @@ def query_user_points():
         except Exception as e:
             results.append(f"❌ 账号 {account.get('phone', '未知')} 查询异常: {str(e)}")
             fail_count += 1
-    summary = f"=====顺易充账号积分=====\n"
+    summary = "=====顺易充账号积分=====\n"
     summary += f"📱 查询账号: {len(user_accounts)}个\n"
     summary += f"✅ 成功: {success_count}个\n"
     summary += f"❌ 失败: {fail_count}个\n"
@@ -1338,7 +960,7 @@ def check_token_validity(token, phone):
                 if data.get("ret") == 200:
                     return True, "账号有效"
                 else:
-                    print(f"[INFO] 尝试备用验证接口...")
+                    print("[INFO] 尝试备用验证接口...")
                     try:
                         backup_url = "https://app.wodeev.com/bil-front/v2.0/marketing/getScoreRankingShare"
                         backup_response = request_with_retry(
@@ -1361,7 +983,7 @@ def check_token_validity(token, phone):
                 print(f"[ERROR] JSON解析失败: {str(je)}")
                 return False, "响应格式错误"
         else:
-            error_msg = f"网络请求失败"
+            error_msg = "网络请求失败"
             if response:
                 error_msg += f" (HTTP {response.status_code})"
             print(f"[ERROR] {error_msg}")
@@ -1922,36 +1544,8 @@ def handle_auth_days(months_str, account_ids):
         sender.reply(f"❌ 授权处理失败：{str(e)}\n请查看日志")
 
 
-def choose_ma_pay_type(config) -> tuple:
-    items = list((config.get("pay_types") or {}).items())
-    if not items:
-        return None, None
-    if len(items) == 1:
-        return items[0]
-    lines = ["=====选择在线处理方式====="]
-    for index, item in enumerate(items, 1):
-        lines.append(f"[{index}] {item[1]}")
-    lines.append('回复序号选择，回复 "q" 取消')
-    lines.append("==================")
-    sender.reply("\n".join(lines))
-    choice = sender.input(120000, 1, False)
-    if not choice:
-        sender.reply("⏰ 操作超时")
-        return None, None
-    choice = str(choice).strip().lower()
-    if choice == "q" or not choice.isdigit():
-        return None, None
-    idx = int(choice) - 1
-    if idx < 0 or idx >= len(items):
-        return None, None
-    return items[idx]
 
 
-def format_target_label(target_label) -> str:
-    text = str(target_label or "").strip()
-    if re.fullmatch(r"1[3-9]\d{9}$", text):
-        return text[:3] + "****" + text[-4:]
-    return text or "账号"
 
 
 def ma_payment_flow(
@@ -1964,10 +1558,7 @@ def point_payment_flow(account_ids, days, required_points, phone):
     return True
 def wechat_payment_flow(account_ids, days, amount, config, phone):
     return True
-def save_authorized_accounts(phone_expire_data, expire_date=None):
-    return True
 def save_auth_record(phones, expire_date, days, is_renewals=None):
-    """只保留每个手机号的最终授权状态,不累积历史记录"""
     try:
         auth_records_json = '2099-12-31' or "{}"
         auth_records = json.loads(auth_records_json)
@@ -1991,7 +1582,7 @@ def save_auth_record(phones, expire_date, days, is_renewals=None):
                 "user_id": userid,
             }
 
-        print(f"✅ 已更新授权状态(仅保留最终到期时间)")
+        print("✅ 已更新授权状态(仅保留最终到期时间)")
     except Exception as e:
         print(f"❌ 保存授权记录失败: {str(e)}")
 def refresh_access_token(refresh_token: str, account_key=None) -> dict:
@@ -2180,8 +1771,7 @@ def admin_refresh_all_tokens():
         refresh_result = refresh_access_token(refresh_token, account_key=account_key)
         if refresh_result.get("success") and refresh_result.get("token"):
             new_token = refresh_result.get("token", "")
-            new_refresh_token = refresh_result.get("refreshToken") or refresh_token
-            state_data = {"token": new_token, "refreshToken": new_refresh_token, "custInfo": item.get("cust_info"), "updatedAt": int(time.time())}
+            refresh_result.get("refreshToken") or refresh_token
             sg.bucketSet(BUCKET_TOKEN, phone, new_token)
             cache_data = {"valid": True, "status": "正常: ✓", "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data, ensure_ascii=False))
@@ -2519,7 +2109,7 @@ def execute_tasks_for_accounts(valid_accounts, concurrent_count, config):
                         "phone": phone,
                     }
                 )
-    summary = f"=====顺易充任务完成=====\n"
+    summary = "=====顺易充任务完成=====\n"
     summary += f"📱 任务账号: {len(valid_accounts)}个\n"
     summary += f"⚙️ 并发数量: {concurrent_count}\n"
     summary += f"🚀 增强广告系统: {'启用' if config.get('use_enhanced_ads', True) else '禁用'}\n"
@@ -2640,7 +2230,7 @@ def run_all_tasks():
         )
         return
     if not valid_accounts:
-        sender.reply(f"❌ 没有找到授权账号，请先授权账号")
+        sender.reply("❌ 没有找到授权账号，请先授权账号")
         return
     execute_tasks_for_accounts(valid_accounts, concurrent_count, config)
 def perform_daily_sign_in_task(headers):
@@ -2697,7 +2287,7 @@ def check_task_status_task(headers):
             if status == "0" or status == 0:
                 available_tasks.append(task)
         return available_tasks, True
-    except Exception as e:
+    except Exception:
         return [], False
 def claim_task_reward_task(headers, task):
     try:
@@ -2722,7 +2312,7 @@ def claim_task_reward_task(headers, task):
             return True, True
         else:
             return False, False
-    except Exception as e:
+    except Exception:
         return False, False
 def get_score_rank_task(headers):
     try:

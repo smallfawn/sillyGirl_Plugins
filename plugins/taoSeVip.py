@@ -14,9 +14,14 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,34 +92,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     's_taose_wxpusher_app_token': form.string().title('WxPusher AppToken').default('').description('不填则不推送'),
@@ -143,7 +120,6 @@ uservalue = sg.bucketGet(bucket='s_taose_user', key=userid)
 PLUGIN_CONFIG = {'bucket': 's_taose', 'coin_key': 'dd_sign_points', 'name': '桃色VIP'}
 
 def _get_headers(cookies=''):
-    """Build common request headers for taose API"""
     return {
         "Host": "wxapp.lllac.com",
         "Connection": "keep-alive",
@@ -156,7 +132,6 @@ def _get_headers(cookies=''):
     }
 
 def push_notification(title, content):
-    """Push notification via WxPusher"""
     WXPUSHER_APP_TOKEN = sg.bucketGet('s_taose', 'wxpusher_app_token') or ''
     WXPUSHER_UIDS = sg.bucketGet('s_taose', 'wxpusher_uids') or ''
 
@@ -186,7 +161,6 @@ def push_notification(title, content):
 
 
 def push_task_statistics(stats_data):
-    """Push task statistics with HTML table"""
     if not stats_data:
         return False
 
@@ -255,7 +229,6 @@ def push_task_statistics(stats_data):
 
 
 def login_with_account(username, password, skip_auth=False):
-    """Login with username and password, save token"""
     try:
         session_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
 
@@ -293,7 +266,6 @@ def login_with_account(username, password, skip_auth=False):
 
 
 def get_user_info(cookies):
-    """Get user info from taose API"""
     try:
         response = requests.get(
             "https://wxapp.lllac.com/xqw/user_home_v2.php?act=home&channel=tsvip&qudao=normal&cid_most=&gid_most=&version=30&od_count=",
@@ -321,7 +293,6 @@ def get_user_info(cookies):
 
 
 def sign_account(cookies):
-    """Sign in for a single account"""
     try:
         ssid = cookies.split('=')[1] if '=' in cookies else cookies
         response = requests.get(
@@ -338,7 +309,6 @@ def sign_account(cookies):
 
 
 def refresh_account_ssid(account):
-    """Refresh SSID for a single account by re-login"""
     try:
         cookie_str = sg.bucketGet('s_taose_token', account)
         if not cookie_str:
@@ -372,7 +342,6 @@ def refresh_account_ssid(account):
 
 
 def _get_cookies(account):
-    """Extract cookies from stored token string"""
     cookie_str = sg.bucketGet('s_taose_token', account)
     if not cookie_str:
         return None
@@ -381,7 +350,6 @@ def _get_cookies(account):
 
 
 def login():
-    """Login flow with existing account selection or new account"""
     try:
         global uservalue
         uservalue = sg.bucketGet(bucket='s_taose_user', key=userid)
@@ -442,7 +410,6 @@ def login():
 
 
 def process_login(cookies, username, skip_auth=False):
-    """Handle post-login: show info or trigger auth"""
     try:
         auth_time = '2099-12-31'
         current_date = str(datetime.now().date())
@@ -467,7 +434,6 @@ def process_login(cookies, username, skip_auth=False):
 
 
 def query_taose():
-    """Query account info for all bound accounts"""
     try:
         accounts = _sg_literal(uservalue or '[]')
         if not accounts:
@@ -502,16 +468,11 @@ def authorize_accounts(selected_accounts):
     return True
 
 
-def _process_qrcode_payment(project, months, money):
-    return True
 
 
-def _process_mapay_payment(project, months, money, pay_type='alipay'):
-    return True
 
 
 def run_account(account):
-    """Run sign-in task for a single account"""
     try:
         cookies = _get_cookies(account)
         if not cookies:
@@ -544,7 +505,6 @@ def run_account(account):
 
 
 def run_user_accounts():
-    """Run tasks for user's bound accounts (with selection)"""
     try:
         accounts = _sg_literal(uservalue or '[]')
         if not accounts:
@@ -589,7 +549,6 @@ def run_user_accounts():
 
 
 def refresh_all_ssids():
-    """Refresh SSID for all authorized accounts"""
     try:
         auth_accounts = []
         all_users = sg.bucketAllKeys('s_taose_user')
@@ -612,7 +571,6 @@ def refresh_all_ssids():
 
 
 def run_all_accounts():
-    """Admin: run all authorized accounts with stats push"""
     try:
         refresh_result = refresh_all_ssids()
         sender.reply(f"正在刷新所有账号SSID...\n{refresh_result}")
@@ -669,7 +627,6 @@ def run_all_accounts():
 
 
 def refresh_user_accounts():
-    """User: refresh SSID for bound accounts (with selection)"""
     try:
         accounts = _sg_literal(uservalue or '[]')
         if not accounts:
@@ -713,7 +670,6 @@ def refresh_user_accounts():
 
 
 def manage_taose():
-    """Account management: authorize / delete / run"""
     try:
         accounts = _sg_literal(uservalue or '[]')
         if not accounts:
@@ -822,14 +778,10 @@ def ks_auth():
     return True
 
 
-def _cleanup_account(account):
-    """Extra cleanup when account expires: remove password"""
-    sg.bucketDel('s_taose_pwd', account)
 
 
 
 def show_tutorial():
-    """Show plugin tutorial"""
     sender.reply(
         "=====桃色VIP教程=====\n"
         "📱 用户指令:\n"
@@ -859,7 +811,6 @@ def show_tutorial():
 
 
 def main():
-    """Main entry point"""
     try:
         msg = sender.getMessage()
 

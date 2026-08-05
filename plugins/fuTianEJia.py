@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v5.0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_fukuda_config_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -131,7 +106,6 @@ _CONFIG_FIELD_MAP = {
     ('dd_fukuda_config', 'proxy_url'): 'dd_fukuda_config_proxy_url',
 }
 
-import re
 import requests
 import json
 from datetime import datetime, timedelta
@@ -145,7 +119,6 @@ userid = sender.getUserID()  # 消息接收者
 uservalue = sg.bucketGet(bucket='dd_fukuda_user', key=userid) or ''  # 获取用户的值
 
 def normalize_panel_type(panel_type_value):
-    """统一解析面板类型。"""
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
         return 'daidai'
@@ -154,7 +127,6 @@ def normalize_panel_type(panel_type_value):
     return ''
 
 def QLtoken(QLurl, ClientID, ClientSecret):
-    """获取青龙token"""
     try:
         url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
         response = requests.get(url)
@@ -217,7 +189,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         exit(0)
 
 def DDtoken(DDurl, AppKey, AppSecret):
-    """获取呆呆面板Token"""
     try:
         response = requests.post(f'{DDurl}/api/open-api/token', json={"app_key": AppKey, "app_secret": AppSecret})
         if response.status_code != 200:
@@ -241,7 +212,6 @@ def DDtoken(DDurl, AppKey, AppSecret):
         exit(0)
 
 def PluginsData():
-    """获取插件配置数据"""
     panel_type = normalize_panel_type(sg.bucketGet(bucket='dd_fukuda_config', key='panel_type') or '')
     if not panel_type:
         sender.reply("对接面板类型填写无效，请填写：青龙/青龙面板/QL 或 呆呆/呆呆面板/Daidai")
@@ -357,7 +327,6 @@ Host丨AppKey丨AppSecret
     return QLurl, ClientID, ClientSecret, FukudaVipmoney, osname, Fukudacoin, use_ma_pay, proxy_url, panel_type == 'daidai', panel_group
 
 def update_proxy(session, proxy_url):
-    """更新代理配置到给定会话"""
     if not proxy_url:
         return
     try:
@@ -368,20 +337,8 @@ def update_proxy(session, proxy_url):
     except Exception:
         return
 
-def get_proxy() -> dict | None:
-    """获取代理字典{'http': url, 'https': url}，获取失败返回None"""
-    try:
-        if not proxy_url:
-            return None
-        ip = requests.get(proxy_url, timeout=8).text
-        if not ip or '请先添加白名单' in ip:
-            return None
-        return {'http': ip, 'https': ip}
-    except Exception:
-        return None
 
 def create_proxy_session(headers: dict | None=None):
-    """创建携带代理与可选headers的requests会话"""
     session = requests.Session()
     if headers:
         session.headers.update(headers)
@@ -389,7 +346,6 @@ def create_proxy_session(headers: dict | None=None):
     return session
 
 def allenvs(osname, account):
-    """获取青龙环境变量"""
     if use_daidai:
         url = f"{QLurl}/api/envs"
         headers = {
@@ -466,7 +422,6 @@ def allenvs(osname, account):
         exit(0)
 
 def login(name, password):
-    """福田账号登录"""
     url = "https://czyl.foton.com.cn/ehomes-new/homeManager/getLoginMember"
     payload = json.dumps({
         "password": password,
@@ -499,7 +454,6 @@ def login(name, password):
         return f"登录异常: {str(e)}", "登录异常", False
 
 def Addenvs(osname, value, account, phone):
-    """添加或更新青龙变量"""
     phone = phone[:3] + '*' * 4 + phone[7:]
     qlid = allenvs(osname, account)
 
@@ -509,7 +463,6 @@ def Addenvs(osname, value, account, phone):
         QLupdate(osname, value, account, qlid, phone)
 
 def QLzt(osname, value, account, phone):
-    """添加青龙变量"""
     try:
         if use_daidai:
             url = f"{QLurl}/api/envs"
@@ -589,7 +542,6 @@ def QLzt(osname, value, account, phone):
         exit(0)
 
 def QLupdate(osname, value, account, qlid, phone):
-    """更新青龙变量"""
     try:
         if use_daidai:
             url = f"{QLurl}/api/envs/{qlid}"
@@ -680,9 +632,7 @@ def QLupdate(osname, value, account, qlid, phone):
         exit(0)
 
 def bind():
-    """绑定福田账号"""
     def accvip(Newaddition):
-        """处理账号授权状态"""
         status = "添加" if Newaddition else "更新"
         auth_status = "✅ 已授权" if (accountVip and accountVip != '未授权' and accountVip != '授权过期' and accountVip >= today_time) else "⚠️ 未授权"
         next_step = "福田管理" if (accountVip and accountVip != '未授权' and accountVip != '授权过期' and accountVip >= today_time) else "福田管理"
@@ -754,7 +704,6 @@ def bind():
         accvip(False if account in accounts else True)
 
 def batch_bind():
-    """批量绑定福田账号"""
     sender.reply("""
 =====福田批量登录=====
 📝 请输入账号密码信息:
@@ -904,7 +853,6 @@ def batch_bind():
     sender.reply(result_msg)
 
 def ValueErrors(value, count):
-    """验证输入值是否有效"""
     if value is None or value == '':
         sender.reply('输入超时！')
         exit(0)
@@ -1458,7 +1406,6 @@ def yesornos():
         exit(0)
 
 def zf(project, me_as_int, accountVip, token, phone, account):
-    """处理支付流程"""
     try:
         money = Decimal(me_as_int) * Decimal(FukudaVipmoney)
         if money == 0:
@@ -1824,7 +1771,6 @@ def empower(empowertime, me_as_int):
     return str(delayed_date)
 
 def delenvs(id):
-    """删除青龙环境变量"""
     if id is None:
         return
 
@@ -1962,7 +1908,6 @@ def cx(memberID):
         return f"错误: 查询异常({str(e)})", 0
 
 def cxs():
-    """查询账号状态"""
     current_uservalue = sg.bucketGet(bucket='dd_fukuda_user', key=userid) or ''
     if len(current_uservalue) == 0:
         sender.reply("""
@@ -2104,13 +2049,6 @@ def cxs():
 
 
 def push(user, mobile, message):
-    """推送消息到各个平台
-
-    Args:
-        user: 用户ID
-        mobile: 手机号(已脱敏)
-        message: 推送消息内容
-    """
     push_msg = f"""
 ======账号通知======
 📱 账号: {mobile}
@@ -2128,7 +2066,6 @@ def fukuda_auth():
     return True
 
 def clean_expired_accounts():
-    """清理过期的福田账号（删除青龙变量和数据桶内容）"""
     if not sender.isAdmin():
         sender.reply("⛔ 您没有权限执行此操作！")
         exit(0)
@@ -2224,7 +2161,6 @@ def clean_expired_accounts():
     )
 
 def cx_orders(memberID, userId, mobile, stored_token):
-    """查询订单信息"""
     try:
         payload = {
             "memberId": memberID,
@@ -2274,7 +2210,6 @@ def cx_orders(memberID, userId, mobile, stored_token):
         return f"查询异常: {str(e)}", []
 
 def cxdd():
-    """查询订单详情"""
     current_uservalue = sg.bucketGet(bucket='dd_fukuda_user', key=userid) or ''
     if len(current_uservalue) == 0:
         sender.reply("""
@@ -2435,7 +2370,6 @@ elif '福田授权' in usermessage:
 elif '清理福田' in usermessage or '福田清理' in usermessage:
     clean_expired_accounts()
 elif imtype == 'fake':
-    """定时任务处理"""
     users = sg.bucketAllKeys(bucket='dd_fukuda_user')
     if not users:
         exit(0)

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.1]
+# [version: v1.1.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,12 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_fmy_config_ql_config': form.string().title('青龙配置').default(''),
@@ -135,7 +100,6 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def get_config():
-    """获取配置信息"""
     try:
         config = {
             'ql_config': sg.bucketGet('G_fmy_config', 'ql_config') or '',
@@ -160,16 +124,8 @@ def get_config():
 def get_user_points(user_id=None):
     return 0
 
-def set_user_points(user_id, points):
-    """设置用户积分"""
-    sg.bucketSet('dd_sign_coin', user_id, str(points['dd_sign_coin']))
-    sg.bucketSet('dd_sign_points', user_id, str(points['dd_sign_points']))
-    sign_key = f"sign_{user_id}"
-    sg.bucketSet('dd_sign_coin', sign_key, str(points['dd_sign_coin']))
-    return True
 
 def get_user_accounts(user_id=None):
-    """获取用户账号列表"""
     if user_id is None:
         user_id = sg.getSenderID()
 
@@ -184,7 +140,6 @@ def get_user_accounts(user_id=None):
         return []
 
 def verify_token(token):
-    """验证token"""
     headers = {
         "host": "openapp.fmy90.com",
         "device-model": "microsoft",
@@ -264,12 +219,10 @@ def verify_token(token):
         return False, None
 
 def update_qinglong_env(token, account_info):
-    """更新青龙面板环境变量"""
     print("青龙面板上传已禁用，仅保存在数据桶中")
     return True
 
 def is_admin():
-    """检查当前用户是否为管理员"""
     sender_id = sg.getSenderID()
     sender = sg.Sender(sender_id)
     if sender.isAdmin():
@@ -280,7 +233,6 @@ def is_admin():
     return sender_id in admin_list or sender_id == '1603960061'  # 默认作者ID为管理员
 
 def 蚂蚁授权():
-    """管理员授权操作"""
     sender = sg.Sender(sg.getSenderID())
 
     if not is_admin():
@@ -403,7 +355,6 @@ def add_admin():
 def admin_authorize_account(account_id, months, user_id):
     return True
 def delete_account(account_id):
-    """删除账号"""
     sender = sg.Sender(sg.getSenderID())
 
     account_data = sg.bucketGet('G_fmy_accounts', account_id)
@@ -446,7 +397,6 @@ def delete_account(account_id):
         sender.reply(f"❌ 删除失败: {str(e)}")
 
 def 蚂蚁管理():
-    """飞蚂蚁账号管理"""
     sender = sg.Sender(sg.getSenderID())
     userid = sender.getUserID()
     accounts = get_user_accounts(userid)
@@ -533,33 +483,8 @@ def 蚂蚁管理():
 def authorize_account(account_id):
     return True
 
-def show_account_info(account_id):
-    """显示账号详细信息"""
-    sender = sg.Sender(sg.getSenderID())
-    account_data = sg.bucketGet('G_fmy_accounts', account_id)
-    if not account_data:
-        sender.reply("❌ 账号数据无效")
-        return
-
-    account_info = json.loads(account_data)
-    success, user_info = verify_token(account_info['token'])
-
-    beans_info = "获取失败"
-    if success:
-        beans_info = user_info['beans']
-
-    sender.reply(f"""
-=====账号信息=====
-📝 备注：{account_info['phone']}
-💰 豆子数量：{beans_info}
-👤 微信ID：{account_info['wx_id']}
-🕒 绑定时间：{account_info['bind_time']}
-🔑 授权状态：{'已授权' if account_info['auth_status']['is_authorized'] else '未授权'}
-⏰ 到期时间：{account_info['auth_status']['expire_time'] or '未授权'}
-===================""")
 
 def 蚂蚁教程():
-    """飞蚂蚁使用教程"""
     sender = sg.Sender(sg.getSenderID())
     config = get_config()
 
@@ -601,7 +526,6 @@ def 蚂蚁教程():
     sender.reply(tutorial)
 
 def 蚂蚁查询():
-    """查询账号状态"""
     sender = sg.Sender(sg.getSenderID())
     userid = sender.getUserID()
     accounts = get_user_accounts(userid)
@@ -638,17 +562,10 @@ def 蚂蚁查询():
 发送「蚂蚁管理」可管理账号
 ===================""")
 
-def parse_payment_result(raw_data):
-    return True
 
-def point_payment_flow(account_id, months, required_points, remark):
-    return True
 
-def wechat_payment_flow(account_id, months, amount, config, remark):
-    return True
 
 def query_user_points():
-    """查询用户积分"""
     sender = sg.Sender(sg.getSenderID())
     points = get_user_points(sender.getUserID())
     config = get_config()
@@ -660,7 +577,6 @@ def query_user_points():
     )
 
 def show_config():
-    """查看配置"""
     sender = sg.Sender(sg.getSenderID())
     config = get_config()
     admin_list = sg.bucketGet('G_fmy_config', 'admin_list') or '无'
@@ -687,7 +603,6 @@ def show_config():
 ===================""")
 
 def update_account_data(account_id):
-    """更新账号数据"""
     sender = sg.Sender(sg.getSenderID())
 
     account_data = sg.bucketGet('G_fmy_accounts', account_id)
@@ -700,7 +615,7 @@ def update_account_data(account_id):
 
     auth_status = account_info['auth_status']
     if not auth_status['is_authorized']:
-        sender.reply(f"""
+        sender.reply("""
 ⚠️ 此账号未授权
 请先使用「授权账号」功能进行授权
 ===================""")
@@ -762,11 +677,10 @@ def update_account_data(account_id):
 ===================""")
 
 def 蚂蚁登录():
-    """飞蚂蚁账号登录绑定"""
     sender = sg.Sender(sg.getSenderID())
     user_id = sender.getUserID()
 
-    sender.reply(f"""
+    sender.reply("""
 =====飞蚂蚁登录=====
 请输入token：
 ------------------
@@ -834,7 +748,6 @@ def 蚂蚁登录():
 ===================""")
 
 def 蚂蚁一键运行():
-    """执行任务"""
     sender = sg.Sender(sg.getSenderID())
     user_id = sender.getUserID()
 
@@ -896,7 +809,6 @@ def 蚂蚁一键运行():
 ===================""")
 
 def execute_ant_tasks(token, remark):
-    """执行单个账号的任务"""
     if not token.lower().startswith("bearer "):
         token = f"bearer {token}"
 
@@ -1033,7 +945,7 @@ def execute_ant_tasks(token, remark):
             except Exception as e:
                 exchange_results.append(f"第{i}次: ❌ 异常 - {str(e)[:30]}")
 
-        results.append(f"👟 步数兑换:\n" + "\n".join(exchange_results))
+        results.append("👟 步数兑换:\n" + "\n".join(exchange_results))
 
         time.sleep(3)
 
@@ -1043,7 +955,7 @@ def execute_ant_tasks(token, remark):
             beans_data = beans_response.json()
 
             info_url = "https://openapp.fmy90.com/user/info"
-            info_response = session.get(info_url, headers=headers, params=params, timeout=10)
+            session.get(info_url, headers=headers, params=params, timeout=10)
 
             beans_after = beans_before
             if beans_data.get("code") == 200:

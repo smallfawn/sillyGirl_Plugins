@@ -14,7 +14,12 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
 try: import ast as _sg_ast
@@ -86,20 +91,7 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
 def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -114,7 +106,6 @@ class QingLongClient:
     envSet=add_envs; envUpdate=update_env; envDel=delete_env
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_SGPY_ql_config': form.string().title('青龙配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
@@ -780,49 +771,6 @@ def parse_submit_text(raw_text: str) -> List[Dict[str, str]]:
     return result
 
 
-def bind_accounts():
-    sender.reply("=====四个朋友登录=====\n请输入：备注#user_id\n支持换行批量\n回复 \"q\" 退出")
-    raw_text = sender.input(120000, 1, False)
-    if not raw_text:
-        sender.reply("⏰ 操作超时")
-        return
-    raw_text = str(raw_text).strip()
-    if raw_text.lower() == "q":
-        sender.reply("✅ 已取消")
-        return
-    try:
-        items = parse_submit_text(raw_text)
-    except Exception as exc:
-        sender.reply(f"❌ 提交失败\n{exc}")
-        return
-    config = get_config()
-    ok = 0
-    fail = []
-    for item in items:
-        account_key = str(item.get("account_key") or "").strip()
-        note = str(item.get("note") or "").strip()
-        try:
-            validate_account_binding(account_key, config)
-            if find_account_owners(account_key, exclude_uid=userid):
-                raise BindError("该账号已被其他用户绑定")
-            add_user_account(account_key)
-            save_account_info(account_key, note)
-            if is_authorized(account_key):
-                sync_account(account_key, owner_id=userid)
-            ok += 1
-        except Exception as exc:
-            fail.append(f"{note}: {exc}")
-    lines = [
-        "=====四个朋友登录=====",
-        f"📨 提交数量: {len(items)}",
-        f"✅ 成功: {ok}",
-        f"❌ 失败: {len(fail)}",
-        f"📦 当前绑定: {len(get_user_accounts())}个",
-    ]
-    if fail:
-        lines.extend(fail[:10])
-    lines.append("您可以发送「四个朋友管理」查看详情")
-    sender.reply("\n".join(lines))
 
 
 def build_rows(accounts: List[str]) -> List[Dict[str, str]]:
@@ -914,38 +862,6 @@ def bind_accounts():
     sender.reply("\n".join(lines))
 
 
-def build_query_result_message(
-    account_key: str,
-    info: Dict[str, str],
-    snapshot: Optional[Dict[str, Any]] = None,
-    error: Optional[str] = None,
-    index: Optional[int] = None,
-    total: Optional[int] = None,
-) -> str:
-    note = str(info.get("note") or account_key).strip()
-    lines = ["=====四个朋友查询====="]
-    if index is not None and total:
-        lines.append(f"📍 账号序号: {index}/{total}")
-    lines.append(f"🏷 备注: {note}")
-    lines.append(f"🆔 用户ID: {mask_account(account_key)}")
-    if error:
-        lines.append(f"❌ 查询失败: {error}")
-        lines.append("====================")
-        return "\n".join(lines)
-    result = get_result_payload(snapshot)
-    user_info = result.get("userInfo") or {}
-    lines.extend(
-        [
-            f"💰 金币: {user_info.get('goldBalance') or 0}",
-            f"💵 可兑余额: {user_info.get('goldCanChangeBalance') or 0}",
-            f"🛡 {format_status_for_query(get_auth_status(account_key))}",
-            f"📅 签到: {build_sign_text(result)}",
-            f"🎞 广告任务: {build_ad_text(result)}",
-            f"🎁 待领奖励: {build_pending_text(result)}",
-            "====================",
-        ]
-    )
-    return "\n".join(lines)
 
 
 def select_accounts_for_action(accounts: List[str], title: str) -> List[str]:
@@ -1205,88 +1121,6 @@ def authorize_user_accounts():
     return True
 
 
-def manage_accounts():
-    accounts = get_user_accounts()
-    if not accounts:
-        sender.reply("❌ 当前未绑定账号")
-        return
-    sender.reply(build_manage_accounts_message())
-    choice = sender.input(120000, 1, False)
-    if not choice:
-        sender.reply("⏰ 操作超时")
-        return
-    choice = choice.strip().lower()
-    if choice == "q":
-        sender.reply("✅ 已取消")
-        return
-    if choice == "0":
-        handle_authorize_accounts(accounts, force_payment=True)
-        return
-    if choice == "9997":
-        upload_authorized_accounts(accounts, owner_map={account: userid for account in accounts})
-        return
-    if choice == "9998":
-        delete_accounts(accounts, owner_map={account: userid for account in accounts})
-        return
-    if choice == "9999":
-        pending = [account for account in accounts if not is_authorized(account)]
-        if not pending:
-            sender.reply("✅ 当前没有未授权账号")
-            return
-        handle_authorize_accounts(pending, force_payment=True)
-        return
-    indices = parse_selection(choice, len(accounts))
-    if indices is None:
-        sender.reply("❌ 选择格式错误")
-        return
-    selected = [accounts[index] for index in indices]
-    if not selected:
-        sender.reply("❌ 未选择账号")
-        return
-    sender.reply(
-        "=====四个朋友批量操作=====\n"
-        f"📦 数量: {len(selected)}\n"
-        "[1] 查询账号\n"
-        "[2] 授权账号\n"
-        "[3] 删除账号\n"
-        "[4] 上传默认面板\n"
-        "[5] 上传并选择目标\n"
-        "说明：上传时仅同步已授权账号\n"
-        '回复序号选择，回复 "q" 返回\n'
-        "===================="
-    )
-    action = sender.input(120000, 1, False)
-    if not action:
-        sender.reply("⏰ 操作超时")
-        return
-    action = action.strip().lower()
-    if action == "q":
-        sender.reply("✅ 已取消")
-        return
-    if action == "1":
-        config = get_config()
-        total = len(selected)
-        for idx, account_key in enumerate(selected, 1):
-            info = get_account_info(account_key)
-            try:
-                snapshot = fetch_welfare_snapshot(account_key, config)
-                sender.reply(build_query_result_message(account_key, info, snapshot=snapshot, index=idx, total=total))
-            except Exception as exc:
-                sender.reply(build_query_result_message(account_key, info, error=str(exc), index=idx, total=total))
-        return
-    if action == "2":
-        handle_authorize_accounts(selected, force_payment=True)
-        return
-    if action == "3":
-        delete_accounts(selected, owner_map={account: userid for account in selected})
-        return
-    if action == "4":
-        upload_authorized_accounts(selected, owner_map={account: userid for account in selected})
-        return
-    if action == "5":
-        upload_authorized_accounts(selected, owner_map={account: userid for account in selected}, manual_select=True)
-        return
-    sender.reply("❌ 无效选择")
 
 
 def upload_accounts(force_target: Optional[str] = None):
@@ -1295,7 +1129,7 @@ def upload_accounts(force_target: Optional[str] = None):
         return
     if sender.isAdmin():
         sender.reply(
-            f"=====四个朋友上传=====\n"
+            "=====四个朋友上传=====\n"
             + "\n".join(build_panel_status_lines())
             + "\n"
             f"🎯 本次目标: {get_target_name(target)}\n"

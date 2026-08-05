@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 97610325]
-# [version: v1.6]
+# [version: v1.6.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_zajk_config_Qinglong': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖线(直接复制)'),
@@ -126,7 +101,6 @@ _CONFIG_FIELD_MAP = {
 }
 
 import time
-import re
 import random
 import requests
 import http.client
@@ -177,12 +151,10 @@ ZA_BASE_HEADERS = {
 
 
 def clean_cookie(cookie):
-    """清理cookie格式"""
     return cookie.strip('\'" ')
 
 
 def parse_token_cookie(token_cookie_str):
-    """解析Access-Token#Cookie格式，仅支持#分隔符"""
     token_cookie_str = token_cookie_str.strip()
     if '#' not in token_cookie_str:
         return None, None
@@ -195,7 +167,6 @@ def parse_token_cookie(token_cookie_str):
 
 
 def za_get_headers(access_token, use_cookie=False, cookie=''):
-    """生成众安健康请求头"""
     headers = ZA_BASE_HEADERS.copy()
     headers["Access-Token"] = access_token
     if use_cookie and cookie:
@@ -206,7 +177,6 @@ def za_get_headers(access_token, use_cookie=False, cookie=''):
     return headers
 
 def getusercontent():
-    """获取插件配置信息"""
     dd_zajk_osname = sg.bucketGet('dd_zajk_config', 'osname') or 'zajk'
     dd_zajk_qlname = sg.bucketGet('dd_zajk_config', 'Qinglong')
     dd_managecommand = sg.bucketGet('dd_zajk_config', 'dd_managecommand') or '众安管理'
@@ -224,7 +194,6 @@ def getusercontent():
             dd_signcommand, randommanagecommand, randomquerycommand, randomsigncommand, zajkVipmoney, zajkcoin)
 
 def seekql():
-    """连接并验证青龙配置"""
     try:
         if len(dd_zajk_qlname) == 0:
             sender.reply("""=======配置错误=======
@@ -298,7 +267,6 @@ http://ql.example.com丨abcd1234丨efgh5678
         exit(0)
 
 def QLtoken(QLurl, ClientID, ClientSecret):
-    """获取青龙token"""
     try:
         url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
         response = requests.get(url)
@@ -349,7 +317,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         exit(0)
 
 def QLzt(osname, value, account, username):
-    """添加青龙变量"""
     try:
         qlurl = f"{QLurl}/open/envs"
         accountVip = '2099-12-31'
@@ -382,7 +349,6 @@ def QLzt(osname, value, account, username):
         exit(0)
 
 def QLupdate(osname, value, account, qlid, username):
-    """更新青龙变量"""
     try:
         qlurl = f"{QLurl}/open/envs"
         accountVip = '2099-12-31'
@@ -420,7 +386,6 @@ def QLupdate(osname, value, account, qlid, username):
         exit(0)
 
 def Addenvs(osname, value, account, username):
-    """添加或更新青龙变量"""
     url = f"{QLurl}/open/envs"
     headers = {
         "Authorization": "Bearer" + ' ' + qltoken,
@@ -472,7 +437,6 @@ def Addenvs(osname, value, account, username):
         exit(0)
 
 def allenvs(osname, account):
-    """获取青龙环境变量"""
     url = f"{QLurl}/open/envs"
     headers = {
         "Authorization": f"Bearer {qltoken}",
@@ -493,7 +457,6 @@ def allenvs(osname, account):
         return None
 
 def delenvs(id):
-    """删除青龙环境变量"""
     if id is None:
         return
 
@@ -516,7 +479,6 @@ def delenvs(id):
         return
 
 def query_zajk_info(token_cookie):
-    """查询众安健康账号信息（增强版，返回更多数据）"""
     try:
         access_token, cookie = parse_token_cookie(token_cookie)
         if not access_token or not cookie:
@@ -576,7 +538,6 @@ def query_zajk_info(token_cookie):
         return {"success": False, "error": f"查询异常: {str(e)[:50]}"}
 
 def validate_token(token_str):
-    """验证token格式，仅支持#分隔符"""
     if not token_str or token_str.strip() == '':
         return False, ["Token为空"]
 
@@ -596,7 +557,6 @@ def validate_token(token_str):
     return True, []
 
 def mask_name(name):
-    """名称打码：保留首尾，中间用*替代"""
     if not name or name == "未知":
         return name
     if len(name) <= 1:
@@ -607,7 +567,6 @@ def mask_name(name):
 
 
 def check_token_alive(token_cookie):
-    """调用API检测token是否真实有效"""
     try:
         info = query_zajk_info(token_cookie)
         return info.get("success", False), info.get("error", "")
@@ -616,7 +575,6 @@ def check_token_alive(token_cookie):
 
 
 def bind():
-    """绑定账号"""
     def accvip(Newaddition):
         auth_status = '✅ 已授权' if accountVip >= today_time else '⚠️ 未授权'
         next_step = f'发送 {randommanagecommand} 可管理账号' if accountVip >= today_time else f'发送 {randommanagecommand} 可进行授权'
@@ -728,7 +686,6 @@ Access-Token#Cookie
     accvip(True)
 
 def ValueErrors(value, count):
-    """验证输入值"""
     try:
         value = int(value)
         if value > count or value == 0:
@@ -744,7 +701,6 @@ def ValueErrors(value, count):
         exit(0)
 
 def empower(empowertime, me_as_int):
-    """授权时间计算"""
     day = me_as_int * 30
     try:
         if len(empowertime) == 0:
@@ -762,7 +718,6 @@ def empower(empowertime, me_as_int):
         return str(today_date + timedelta(days=day))
 
 def management():
-    """账号管理功能"""
     if len(uservalue) == 0:
         sender.reply(f"""=======未绑定账号=======
 ❌ 未找到任何账号信息
@@ -935,7 +890,6 @@ def management():
         exit(0)
 
 def yesornos():
-    """确认操作"""
     yesorno = sender.input(60000, 1, False)
     if yesorno.lower() in ['y', '是']:
         return True
@@ -952,7 +906,6 @@ def yesornos():
         exit(0)
 
 def zf(project, me_as_int, accountVip, account_str, username, account):
-    """支付处理"""
     try:
         zsm = sg.bucketGet('dd_zajk_config', 'zsm')
         use_ma_pay = '2099-12-31' == 'true'
@@ -1131,7 +1084,6 @@ def zf(project, me_as_int, accountVip, account_str, username, account):
         exit(0)
 
 def cxs():
-    """查询所有账号"""
     if len(uservalue) == 0:
         sender.reply(f"""=======未绑定账号=======
 ❌ 未找到任何账号信息
@@ -1187,7 +1139,6 @@ def zajk_auth():
     return True
 
 def clean_expired_accounts():
-    """清理过期账号"""
     users = sg.bucketAllKeys('dd_zajk_user')
     if not users:
         sender.reply("""=======清理完成=====

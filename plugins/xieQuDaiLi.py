@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: funyhook]
-# [version: v4]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: true]
@@ -14,9 +14,12 @@
 # [depe: ["colorlog","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -52,16 +55,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -101,43 +94,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -282,24 +238,6 @@ class TOOL:
         else:
             return sg.bucketDel(bucket, key)
 
-    def check_ver(self):
-        self.log_info(f"插件名称：{self.plugin_name}===>{self.plugin_ver}")
-        res = requests.get("https://gitlab.com/funyhook/ver/-/raw/main/aut.json")
-        if res.status_code == 200 and res.json():
-            rj = res.json()
-            self.log_info(rj.get(self.plugin_name, ""))
-            if rj.get(self.plugin_name, ""):
-                ver = rj[self.plugin_name]
-                if ver['ver'] > self.plugin_ver:
-                    update_msg = f"**********插件更新提示*********"
-                    update_msg += f"插件：{self.plugin_name}"
-                    update_msg += f"本地{self.plugin_name}"
-                    update_msg += f"ya uun duan{self.plugin_name}"
-                    self.pushMaster(f"发现新版本({ver['ver']})，请升级！")
-                    return False
-                return True
-            return False
-        return False
 
     def check_user_plugin(self, title, cloud_name):
         pass
@@ -340,22 +278,6 @@ class TOOL:
         return None  # Return None if all attempts fail
 
 
-    def check_ver(self):
-        res = requests.get(f"https://gitee.com/aa2128/static/raw/master/{tool.plugin_pre}.json")
-        if res.status_code == 200:
-            rj = res.json()
-            if not rj['open']:
-                tool.pushErr2Master(f"本地版本:{tool.plugin_ver}，已失效，请检查配置更新插件！tg:{res.tg},qq群：{res.qq}")
-                tool.log_err(f"本地版本:{tool.plugin_ver}，已失效，请检查配置更新插件！tg:{res.tg},qq群：{res.qq}")
-                exit()
-            if float(rj['ver'])>float(tool.plugin_ver):
-                tool.pushErr2Master(f"发现新版本{rj['ver']}，请尽快升级！")
-                tool.log_err(f"发现新版本{rj['ver']}，请尽快升级！")
-                exit()
-        else:
-            tool.pushErr2Master(f"出错了，请检查配置！")
-            tool.log_err(f"出错了，请检查配置！")
-            exit()
 
     def edit_conf(self):
         conf = {
@@ -449,10 +371,10 @@ class ACCOUNT:
 
     def editCount(self, item_arr, no):
         item = item_arr[no]
-        content = f"请在【2分钟】内输入 序号，编辑对应的属性（q：保存并退出）"
-        content += f"\n--------------------"
-        content += f"\n输入数字：0 删除此账号！"
-        content += f"\n--------------------"
+        content = "请在【2分钟】内输入 序号，编辑对应的属性（q：保存并退出）"
+        content += "\n--------------------"
+        content += "\n输入数字：0 删除此账号！"
+        content += "\n--------------------"
         for index, attr in enumerate(self.attr_arr):
             content += f"\n{index + 1}.【{attr['title']}】：{tool.hide_phone_number(item[attr['key']])}"
         tool.replyMsg(content)
@@ -612,19 +534,18 @@ class XIEQU:
             self.pushMsg(self.msg)
         else:
             if self.balance>0:
-                self.msg+=f"\n【温馨提示】ip余额充足，执行删白加白"
+                self.msg+="\n【温馨提示】ip余额充足，执行删白加白"
                 self.delAll()
                 self.set_white_ip(ip)
                 self.pushMsg(self.msg)
                 exit(1)
             else:
-                self.msg+=f"\n【温馨提示】，ip用完了，自动删除全部白名单，开始下个账号加白"
+                self.msg+="\n【温馨提示】，ip用完了，自动删除全部白名单，开始下个账号加白"
                 self.delAll()
                 self.pushMsg(self.msg)
 
 if __name__ == "__main__":
     tool = TOOL()
-    tool.check_ver()
     account = ACCOUNT()
     if tool.msg == '携趣配置':
         tool.edit_conf()
@@ -663,7 +584,7 @@ if __name__ == "__main__":
             if xq.balance>0:
                 msg = f"【携趣账号】：{xq.uid}"
                 msg += f"\n【携趣备注】：{xq.name}"
-                msg += f"\n【温馨提示】ip余额充足，执行删白加白"
+                msg += "\n【温馨提示】ip余额充足，执行删白加白"
                 msg += xq.set_white_ip(white_ip)
                 tool.pushMsg(item['push_user_id'],"",item['push_im_type'],"",msg)
                 break

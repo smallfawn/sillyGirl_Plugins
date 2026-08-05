@@ -3,20 +3,26 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.1]
+# [version: v1.2.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(星韵|xyyx)(登录|登陆)$|^登(录|陆)(星韵|xyyx)$|^(星韵|xyyx)(查询|管理|检测|教程)$|^(查询|管理)(星韵|xyyx)$]
+# [rule: ^(星韵|xingyun|xyyx)(登录|登陆)$|^登(录|陆)(星韵|xingyun|xyyx)$|^(星韵|xingyun|xyyx)(查询|管理|检测|教程|清理|上传)$|^(查询|管理)(星韵|xingyun|xyyx)$]
 # [cron: 18 9 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 星韵优选小程序(日0.1)；活动入口：#小程序://星韵优选/kt8xm5WOSI0Z6ri；功能：打卡签到、视频任务]
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -145,17 +138,9 @@ uservalue = sg.bucketGet(bucket='s_xyyx_user', key=userid)
 PLUGIN_CONFIG = {'bucket': 's_xyyx', 'coin_key': 'dd_sign_points', 'name': '星韵优选'}
 
 
-def get_user_content():
-    """获取插件配置"""
-    osname = sg.bucketGet('s_xyyx', 'osname') or 'S_XYYX'
-    qlname = sg.bucketGet('s_xyyx', 'qlname') or ''
-    Vipmoney = float(sg.bucketGet('s_xyyx', 'Vipmoney') or '1')
-    coin = int(sg.bucketGet('s_xyyx', 'coin') or '0')
-    return osname, qlname, Vipmoney, coin
 
 
 def _get_ql_client():
-    """获取面板客户端，根据开关决定使用青龙或呆呆面板"""
     osname = sg.bucketGet('s_xyyx', 'osname') or 'S_XYYX'
     qlname = sg.bucketGet('s_xyyx', 'qlname') or ''
     use_dp = str(sg.bucketGet('s_xyyx', 'use_daipanel') or '').lower() == 'true'
@@ -171,7 +156,6 @@ def _get_ql_client():
 
 
 def update_ql_env(account, account_info):
-    """更新面板环境变量"""
     env_value = account_info.get('token', '')
     if not env_value:
         return False
@@ -187,13 +171,11 @@ def update_ql_env(account, account_info):
 
 
 def delete_ql_env(account):
-    """删除面板环境变量"""
     ql = _get_ql_client()
     return ql.delete_env(account)
 
 
 def verify_token(session_token):
-    """验证3rdsession是否有效"""
     try:
         headers = {
             "Host": "gzpengru.weimbo.com",
@@ -228,7 +210,6 @@ def verify_token(session_token):
 
 
 def bind_account():
-    """绑定账号"""
     sender.reply(
         "=====星韵优选登录=====\n"
         "请输入3rdsession凭证\n"
@@ -261,7 +242,7 @@ def bind_account():
         if is_valid:
             account_id = info.get('user_id', '')
             if not account_id:
-                results.append(f"❌ 获取用户ID失败")
+                results.append("❌ 获取用户ID失败")
                 fail_count += 1
                 continue
 
@@ -310,7 +291,6 @@ def bind_account():
 
 
 def query_accounts():
-    """查询账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n💡 发送 星韵登录 绑定\n==================")
         return
@@ -401,7 +381,7 @@ def query_accounts():
                 sg.bucketSet('s_xyyx_token', account, json.dumps(token_info, ensure_ascii=False))
             else:
                 results.append(f"❌ {mask_account(account)} Token已失效")
-        except Exception as e:
+        except Exception:
             results.append(f"❌ {mask_account(account)} 查询异常")
 
     result_text = "\n------------------\n".join(results)
@@ -414,7 +394,6 @@ def query_accounts():
 
 
 def manage_account():
-    """管理账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n==================")
         return
@@ -452,7 +431,6 @@ def manage_account():
 
 
 def select_accounts_menu(accounts, action_name):
-    """选择账号（通用）"""
     account_list = f"\n========选择{action_name}=======\n[0] 全部账号"
     for i, account in enumerate(accounts, 1):
         auth_time = '2099-12-31'
@@ -498,7 +476,6 @@ def authorize_accounts(accounts):
 
 
 def delete_accounts(accounts):
-    """删除账号"""
     selected = select_accounts_menu(accounts, "删除账号")
     if not selected:
         sender.reply("✅ 已取消")
@@ -532,7 +509,6 @@ def delete_accounts(accounts):
 
 
 def submit_to_qinglong(accounts):
-    """提交到青龙"""
     selected = select_accounts_menu(accounts, "提交青龙")
     if not selected:
         sender.reply("✅ 已取消")
@@ -561,12 +537,8 @@ def submit_to_qinglong(accounts):
     sender.reply(f"✅ 提交完成，成功 {success_count}/{len(valid_accounts)} 个")
 
 
-def process_qrcode_payment(project, months, money):
-    return True
 
 
-def process_mapay_payment(project, months, money, pay_type='alipay'):
-    return True
 
 
 def ks_auth():
@@ -574,7 +546,6 @@ def ks_auth():
 
 
 def show_tutorial():
-    """显示教程"""
     sender.reply(
         "=====星韵优选教程=====\n"
         "📱 活动入口:\n"
@@ -598,7 +569,6 @@ def show_tutorial():
 
 
 def main():
-    """主入口"""
     msg = sender.getMessage()
 
     if '登录' in msg or '登陆' in msg:

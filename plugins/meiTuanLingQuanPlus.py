@@ -3,19 +3,22 @@
 # [language: python]
 # [class: 任务]
 # [author: yuhualhh]
-# [version: v2.1.9]
+# [version: v1.1.9]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^美团领券$|^美团刷白$|^美团充分$|^美团查分$|^美团加分$|^美团减分$|^释放锁$]
+# [rule: ^(美团领券|美团领劵|美团领卷|美团领卷余额查询|美团刷白|美团充分|美团查分|美团加分|美团减分|释放锁)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@628ca207fcc92493bfdc7b376802df13d290a228/2025/04/18/0227ee80f756be5352c84c94d7f9cdf6.png]
 # [description: ❷扫码可查看各项目对应领券详情<img src="https://gcore.jsdelivr.net/gh/lhz03/img@21067eaf2abbb6e545cd04507cbcaba81aa51f66/2025/07/05/a55d418210371f7896545baa970b340a.png">]
 # [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'yuhua_meituan_api_key': form.string().title('API秘钥').default('').description('请前往 http://api.oroe.cn 注册获取'),
@@ -137,14 +102,11 @@ user_locks = {}  # 用户积分操作锁
 lock_manager = threading.Lock()  # 锁管理器
 
 def get_user_lock(user_id):
-    """获取用户专用锁"""
     with lock_manager:
         if user_id not in user_locks:
             user_locks[user_id] = threading.Lock()
         return user_locks[user_id]
 
-def set_payment_lock(user_id, timeout_seconds=300):
-    return True
 
 def get_payment_lock():
     return True
@@ -152,37 +114,11 @@ def get_payment_lock():
 def clear_payment_lock():
     return True
 
-def save_payment_session(user_id, session_id):
-    return True
 
 def remove_payment_session(session_id):
     return True
 
-def cleanup_expired_sessions():
-    """清理过期的支付会话（超过1小时）"""
-    try:
-        sessions_data_str = '2099-12-31'
-        if not sessions_data_str:
-            return
 
-        sessions = json.loads(sessions_data_str)
-        current_time = time.time()
-        expired_sessions = []
-
-        for session_id, session_data in sessions.items():
-            if current_time - session_data.get('timestamp', 0) > 3600:  # 1小时过期
-                expired_sessions.append(session_id)
-
-        for session_id in expired_sessions:
-            del sessions[session_id]
-
-        if expired_sessions:
-            pass
-    except:
-        pass
-
-def is_payment_lock_expired(lock_data, timeout_seconds):
-    return True
 
 def check_and_acquire_payment_lock(user_id, config):
     return True
@@ -191,7 +127,6 @@ def validate_payment_session(user_id, session_id):
     return True
 
 def get_config():
-    """获取插件配置"""
     try:
         payment_mode = '2099-12-31' or '0'
         use_epay = payment_mode == '1'
@@ -223,7 +158,7 @@ def get_config():
             'min_recharge_amount': float(sg.bucketGet(bucket_prefix, 'min_recharge_amount') or '0.01'),
         }
         return config
-    except Exception as e:
+    except Exception:
         return {
             'use_epay': False,
             'payment_mode': '0',
@@ -243,7 +178,6 @@ def get_config():
         }
 
 def parse_prices(price_str):
-    """解析收费价格配置"""
     TOTAL_PROJECTS = 3
     DEFAULT_PRICE = 88.0
     prices = []
@@ -260,7 +194,6 @@ def parse_prices(price_str):
     return prices
 
 def format_price_superscript(price):
-    """将价格转换为角标格式"""
     if price == 0:
         return "ᶠʳᵉᵉ"
 
@@ -286,7 +219,6 @@ def get_user_points(user_id):
     return 0
 
 def set_user_points(user_id, points):
-    """设置用户积分"""
     try:
         rounded_points = round(float(points), 2)
         sg.bucketSet(f'{bucket_prefix}_points', str(user_id), str(rounded_points))
@@ -295,7 +227,6 @@ def set_user_points(user_id, points):
         return False
 
 def add_user_points(user_id, points):
-    """线程安全的增加用户积分"""
     user_lock = get_user_lock(user_id)
     with user_lock:
         try:
@@ -307,7 +238,6 @@ def add_user_points(user_id, points):
             return False
 
 def deduct_user_points(user_id, points):
-    """线程安全的扣除用户积分"""
     user_lock = get_user_lock(user_id)
     with user_lock:
         try:
@@ -320,32 +250,9 @@ def deduct_user_points(user_id, points):
         except:
             return False
 
-def get_public_ip():
-    """获取公网IP地址"""
-    try:
-        sources = [
-            "https://checkip.amazonaws.com",
-            "https://icanhazip.com",
-            "https://ifconfig.me/ip"
-        ]
-        for url in sources:
-            try:
-                response = requests.get(url, timeout=3)
-                if response.status_code == 200:
-                    ip = response.text.strip()
-                    if 6 < len(ip) < 16 and ip.count('.') == 3:
-                        return ip
-            except:
-                continue
-        return "127.0.0.1" # 所有源都失败后返回默认值
-    except Exception:
-        return "127.0.0.1"
 
-def create_epay_sign(params, merchant_key):
-    return True
 
 def call_meituan_api(cookie, project_type):
-    """调用美团领券API - (已优化重试和超时)"""
     config = get_config()
     api_key = config['api_key']
     api_url = config['api_url']
@@ -397,7 +304,6 @@ def call_meituan_api(cookie, project_type):
     return {"code": -1, "msg": "服务暂时无法连接，请稍后再试"}
 
 def call_whitelist_api(shop_link):
-    """调用美团刷白API - (已优化重试和超时)"""
     config = get_config()
     api_key = config['api_key']
     api_url = config['api_url']
@@ -449,40 +355,16 @@ def call_whitelist_api(shop_link):
 
     return {"code": -1, "msg": "刷白服务暂时无法连接，请稍后再试"}
 
-def generate_unique_order_id(user_id):
-    """生成唯一订单ID"""
-    import uuid
-    timestamp = int(time.time() * 1000)  # 毫秒级时间戳
-    random_part = str(uuid.uuid4())[:8]  # UUID前8位
-    user_suffix = user_id[-4:] if len(user_id) >= 4 else user_id
-    return f"MT{timestamp}{user_suffix}{random_part}"
 
-def create_epay_order(config, order_id, amount, payment_method):
-    return True
 
-def _validate_epay_params(config, order_id):
-    return True
 
-def _validate_v1_payment_success(response_data):
-    return True
 
-def _validate_v1_payment_pending(response_data):
-    return True
 
-def _validate_payment_amount(money, min_amount=None):
-    return True
 
-def _validate_payment_response_integrity(response_data, interface_name):
-    return True
 
-def check_epay_order_status(config, order_id):
-    return True
 
-def _try_epay_interface(interface_config, order_id, min_recharge_amount=0.01):
-    return True
 
 def handle_recharge(sender, user_id):
-    """处理美团充分指令"""
     config = get_config()
 
     sender.reply("""=====美团充分=====
@@ -521,7 +403,6 @@ def handle_recharge(sender, user_id):
         handle_traditional_recharge(sender, user_id, amount, config)
 
 def handle_traditional_recharge(sender, user_id, amount, config):
-    """处理传统二维码充值"""
     if not config['zsm']:
         sender.reply("❌ 未配置二维码，请检查配置")
         return
@@ -621,7 +502,6 @@ def handle_release_payment_lock(sender):
     return True
 
 def handle_query_points(sender, user_id):
-    """处理美团查分指令"""
     points = get_user_points(user_id)
     sender.reply(f"""=====积分查询=====
 🤪 用户ID: {user_id}
@@ -629,7 +509,6 @@ def handle_query_points(sender, user_id):
 ==================""")
 
 def handle_admin_add_points(sender):
-    """处理美团加分指令（仅管理员）"""
     if not sender.isAdmin():
         sender.reply("""=====权限不足=====
 ❌ 此功能仅限管理员使用
@@ -693,7 +572,6 @@ def handle_admin_add_points(sender):
         sender.reply("❌ 加分失败，请稍后重试")
 
 def handle_admin_deduct_points(sender):
-    """处理美团减分指令（仅管理员）"""
     if not sender.isAdmin():
         sender.reply("""=====权限不足=====
 ❌ 此功能仅限管理员使用
@@ -768,7 +646,6 @@ def handle_admin_deduct_points(sender):
 
 
 def handle_meituan_coupon(sender, user_id):
-    """处理美团领券主流程"""
     config = get_config()
     all_prices = parse_prices(config['prices'])
     project_names = ["美团大众无门槛", "美团综合类券包", "美团早中晚神券"]
@@ -929,7 +806,6 @@ def handle_meituan_coupon(sender, user_id):
 ==================""")
 
 def handle_whitelist(sender):
-    """处理美团刷白功能"""
     config = get_config()
 
     if not config['api_key'] or not config['api_url']:
@@ -1052,12 +928,11 @@ def check_maintenance_page() -> bool:
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
         base64.b64encode(nonce + ciphertext).decode('utf-8')
         True
-    except Exception as e:
+    except Exception:
         pass
     return live_status
 
 def main():
-    """主函数"""
     sender = sg.Sender(sg.getSenderID())
     user_id = sender.getUserID()
     message = sender.getMessage().strip()

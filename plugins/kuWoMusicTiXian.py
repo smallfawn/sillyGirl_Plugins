@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v3.11]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["ntplib","pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -101,43 +105,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -191,7 +158,6 @@ class ProxyManager:
         self._fatal_proxy_error = False
 
     def _mask_proxy(self, proxy: str) -> str:
-        """隐藏代理账号密码，避免日志泄露。"""
         if '@' not in proxy:
             return proxy
         return f"***@{proxy.rsplit('@', 1)[-1]}"
@@ -200,7 +166,6 @@ class ProxyManager:
         return port.isdigit() and 0 < int(port) <= 65535
 
     def _split_host_port(self, proxy: str) -> Tuple[Optional[str], Optional[int]]:
-        """从标准化后的 user:pass@host:port / host:port 中取验证用地址。"""
         target = proxy.rsplit('@', 1)[-1].strip()
 
         if target.startswith('['):
@@ -220,7 +185,6 @@ class ProxyManager:
         return None, None
 
     def _normalize_proxy(self, raw_proxy: str) -> Optional[str]:
-        """兼容 ip:port、http://ip:port、user:pass@ip:port、ip:port:user:pass。"""
         proxy = (raw_proxy or '').strip().strip('"\' ,;')
         if not proxy:
             return None
@@ -282,7 +246,6 @@ class ProxyManager:
         return candidates
 
     def _proxy_error_from_json(self, data) -> Optional[str]:
-        """识别代理商JSON错误响应，避免把 status:200 误当代理。"""
         if not isinstance(data, dict):
             return None
 
@@ -303,7 +266,6 @@ class ProxyManager:
         return None
 
     def _extract_proxies(self, response_text: str) -> List[str]:
-        """从代理API响应中提取一个或多个可用代理。"""
         proxies = []
         seen = set()
         endpoint_index = {}
@@ -369,7 +331,6 @@ class ProxyManager:
         return brief or '<空响应>'
 
     def _debug_api_response(self, response, prefix: str = "代理API"):
-        """打印代理API原始响应，便于定位代理商返回格式变化。"""
         try:
             body = response.text or ''
         except Exception:
@@ -392,7 +353,6 @@ class ProxyManager:
         return self.last_error or '代理API未返回可用代理'
 
     def validate_proxy(self, proxy: str) -> bool:
-        """轻量级代理验证：TCP connect测试（比HTTP快10倍）"""
         normalized = self._normalize_proxy(proxy)
         if not normalized:
             print(f"[代理] 验证失败: 无法识别代理格式: {self._short_response(proxy)}")
@@ -419,7 +379,6 @@ class ProxyManager:
                 sock.close()
 
     def get_proxy(self) -> Optional[str]:
-        """从代理池获取代理，池空则从API获取"""
         with self.proxy_lock:
             if self._proxy_pool:
                 return self._proxy_pool.pop(0)
@@ -470,7 +429,6 @@ class ProxyManager:
         return None
 
     def prefetch_proxies(self, count: int):
-        """预获取多个代理到代理池（在等待期间调用）"""
         print(f"[代理] 开始预获取 {count} 个代理...")
         fetched = 0
         if not self.proxy_api:
@@ -518,7 +476,6 @@ class ProxyManager:
         print(f"[代理] 预获取完成，共获取 {fetched} 个代理")
 
     def create_warmed_session(self, proxy: str, phone: str = "") -> requests.Session:
-        """创建预热的HTTP Session（提前建立TCP+TLS连接）"""
         session = requests.Session()
         session.verify = False
         session.proxies = {
@@ -545,20 +502,8 @@ class ProxyManager:
 
         return session
 
-def QLtoken(QLurl, ClientID, ClientSecret):
-    """获取青龙token"""
-    try:
-        url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
-        response = requests.get(url)
-        if "token" in response.text:
-            data = response.json()
-            return data['data']['token']
-    except Exception:
-        sender.reply("链接青龙失败,请检查对接容器！")
-        exit(0)
 
 def PluginsData():
-    """获取插件配置数据"""
     global withdraw_delay  # 添加全局变量声明
 
     KuwoTXmoney = sg.bucketGet(bucket='dd_KuwoTX_PluginsData', key='KuwoTXmoney')
@@ -601,19 +546,11 @@ def PluginsData():
 def get_payment_config():
     return {}
 
-def generate_qrcode(url):
-    """生成二维码URL"""
-    try:
-        encoded_url = urllib.parse.quote(url, safe='')
-        return f"https://api.qrtool.cn/?text={encoded_url}"
-    except:
-        return None
 
 def handle_ma_payment(money, project, ma_pay_config, on_success):
     return True
 
 def recognize_captcha(image_base64: str) -> str:
-    """验证码识别"""
     try:
         ocr_url = 'https://ddddocr.linzixuan.work/classification'
 
@@ -636,7 +573,6 @@ def recognize_captcha(image_base64: str) -> str:
         raise
 
 def encrypt_phone(phone: str) -> str:
-    """加密手机号生成phone值"""
     try:
         key = base64.b64decode('eXNpVmtMSkhIbnZNV0NIcQ==')
         iv = base64.b64decode('aWNoWW9vWCtNYjFnUmV0UA==')
@@ -653,7 +589,6 @@ def encrypt_phone(phone: str) -> str:
         return None
 
 def generate_appuid() -> str:
-    """生成10位随机数字的appuid"""
     return ''.join(random.choices('0123456789', k=10))
 
 _ANDROID_DEVICES = [
@@ -676,7 +611,6 @@ _CHROME_VERSIONS = [
 _phone_ua_cache = {}
 
 def generate_kuwo_ua(phone: str) -> str:
-    """为每个手机号生成固定的随机 User-Agent"""
     if phone in _phone_ua_cache:
         return _phone_ua_cache[phone]
     seed = int(hashlib.md5(phone.encode()).hexdigest(), 16)
@@ -690,7 +624,6 @@ def generate_kuwo_ua(phone: str) -> str:
     return ua
 
 def login_for_withdraw(phone, password):
-    """登录获取最新的loginUid和loginSid"""
     try:
         captcha_url = 'http://www.kuwo.cn/api/common/captcha/getcode'
         captcha_params = {
@@ -775,7 +708,6 @@ def login_for_withdraw(phone, password):
         return None, None, str(e)
 
 def login(value):
-    """登录账号"""
     try:
         values = value.split('#')
         if len(values) != 2:
@@ -783,7 +715,6 @@ def login(value):
 
         phone, password = values
 
-        appUid = ''.join(random.choices('0123456789', k=10))
 
         phone_value = encrypt_phone(phone)
         if not phone_value:
@@ -884,7 +815,6 @@ def login(value):
         return f"登录异常: {str(e)}", None, False
 
 def bind():
-    """绑定账号"""
     sender.reply(
         "=====酷我提现=====\n"
         "🎵 请输入登录参数:\n"
@@ -924,7 +854,6 @@ def bind():
             sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我提现]管理账号\n===================")
 
 def migrate_account_counts_to_user():
-    """将账号级别的次数迁移到用户级别"""
     all_binds = sg.bucketAll(bucket='dd_KuwoTX_bind')
     migration_results = []
 
@@ -956,7 +885,6 @@ def migrate_account_counts_to_user():
     return migration_results
 
 def _sync_time_offset():
-    """通过NTP同步时间偏移量，计算本地时间与服务器时间的差值"""
     global _time_offset
 
     ntp_servers = [
@@ -1019,21 +947,16 @@ def _sync_time_offset():
     print("[警告] 所有时间源都失败，使用本地时间（偏移量=0）")
 
 def get_precise_time():
-    """基于偏移量快速获取精确的当前时间（无网络请求）"""
-    global _time_offset
     if _time_offset is None:
         _sync_time_offset()
     return datetime.fromtimestamp(time.time() + _time_offset)
 
 def get_beijing_time():
-    """获取北京时间（兼容原有调用）"""
-    global _time_offset
     if _time_offset is None:
         _sync_time_offset()
     return get_precise_time()
 
 def precision_wait(target_time):
-    """高精度等待到目标时间：先sleep粗等，最后busy-wait精等"""
     now = get_precise_time()
     wait_seconds = (target_time - now).total_seconds()
 
@@ -1061,9 +984,7 @@ def precision_wait(target_time):
     print(f"[等待] 等待完成，实际偏差: {diff_ms:.1f}ms")
 
 def Administration():
-    """管理账号"""
-    global uservalue, withdraw_delay  # 添加withdraw_delay到global声明中
-
+    global uservalue# 添加withdraw_delay到global声明中
     base_message = (
         "=====酷我提现=====\n"
         "1️⃣ 提交账号\n"
@@ -1098,10 +1019,10 @@ def Administration():
             accounts = _sg_literal(uservalue)
             user_withdraw_count = get_user_withdraw_count(userid)
 
-            message = f"=====账号授权=====\n"
+            message = "=====账号授权=====\n"
             message += f"🔢 当前可用次数: {user_withdraw_count}次\n"
             message += f"📱 绑定账号数: {len(accounts)}个\n"
-            message += f"-------------------\n"
+            message += "-------------------\n"
 
             count = 1
             for account in accounts:
@@ -1262,9 +1183,9 @@ def Administration():
                 sender.reply("您当前没有可用的提现次数，请先充值")
                 return
 
-            message = f"=====账号提现=====\n"
+            message = "=====账号提现=====\n"
             message += f"🔢 当前可用次数: {user_withdraw_count}次\n"
-            message += f"-------------------\n"
+            message += "-------------------\n"
             count = 1
             valid_accounts = []
 
@@ -1584,7 +1505,6 @@ def Administration():
                 fail_count = 0
 
                 def process_withdraw(acc_info):
-                    """单次提现处理（只请求一次，避免触发频繁限制）"""
                     session = acc_info.get('session')
 
                     try:
@@ -1920,7 +1840,6 @@ def Administration():
         sender.reply('输入无效')
 
 def zf(project, count, user_id):
-    """支付处理"""
     if KuwoTXmoney == Decimal(0):
         return
 
@@ -2082,7 +2001,6 @@ def zf(project, count, user_id):
         return False
 
 def empower(user_id, count):
-    """更新用户的提现次数"""
     current_count = sg.bucketGet(bucket='dd_KuwoTX_UserCount', key=user_id) or '0'
     try:
         new_count = int(current_count) + count
@@ -2093,7 +2011,6 @@ def empower(user_id, count):
         return count
 
 def yesornos():
-    """确认选择"""
     yesorno = sender.input(60000, 1, False)
     if yesorno.lower() in ['y', '是']:
         return True
@@ -2113,12 +2030,10 @@ def check_authorization():
     return True
 
 def get_user_withdraw_count(user_id):
-    """获取用户的提现次数"""
     count = sg.bucketGet(bucket='dd_KuwoTX_UserCount', key=user_id) or '0'
     return count
 
 def decrease_user_withdraw_count(user_id):
-    """减少用户的提现次数"""
     current_count = sg.bucketGet(bucket='dd_KuwoTX_UserCount', key=user_id) or '0'
     try:
         new_count = max(0, int(current_count) - 1)
@@ -2128,7 +2043,6 @@ def decrease_user_withdraw_count(user_id):
         return 0
 
 def main():
-    """主函数"""
     global today_date, today_time, KuwoTXmoney, KuwoTXcoin, proxy_manager, withdraw_delay
 
     today_date = get_beijing_time().date()

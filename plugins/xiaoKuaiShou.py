@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: linzixuan]
-# [version: v5.2.5]
+# [version: v1.2.5]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_ks_dd_ks_qlname': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割'),
@@ -131,13 +106,11 @@ _CONFIG_FIELD_MAP = {
     ('dd_ks', 'share_rate'): 'dd_ks_share_rate',
 }
 
-import re
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 import requests
 import time
 import json
-import hashlib
 
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
@@ -146,7 +119,6 @@ uservalue = sg.bucketGet(bucket='dd_ks_user', key=userid)
 
 
 def getusercontent():
-    """获取用户配置"""
     dd_ks_qlname = sg.bucketGet('dd_ks', 'dd_ks_qlname') or ''
     ks_fast_varname = sg.bucketGet('dd_ks', 'ks_fast_varname') or 'ksToken_fast'
     ks_normal_varname = sg.bucketGet('dd_ks', 'ks_normal_varname') or 'ksToken'
@@ -177,7 +149,6 @@ def getusercontent():
             payment_mode, ksVipmoney, ksDaymoney, kscoin, use_ma_pay, share_rate, share_allow_coin_pay)
 
 def verify_account_fast(cookie_str):
-    """验证极速版账号有效性"""
     cookie_str = cookie_str.replace('kpn=KUAISHOU', 'kpn=NEBULA')
 
     url = "https://nebula.kuaishou.com/rest/n/nebula/activity/earn/overview/basicInfo?source=bottom_guide_first"
@@ -211,7 +182,6 @@ def verify_account_fast(cookie_str):
         return False, f"请求异常: {str(e)}"
 
 def verify_account_normal(cookie_str, default_nickname='未知'):
-    """验证普通版账号有效性"""
     cookie_str = cookie_str.replace('kpn=NEBULA', 'kpn=KUAISHOU')
 
     url = "https://encourage.kuaishou.com/rest/wd/encourage/account/basicInfo"
@@ -245,7 +215,6 @@ def verify_account_normal(cookie_str, default_nickname='未知'):
         return False, f"请求异常: {str(e)}"
 
 def parse_cookies(cookie_str):
-    """解析Cookie字符串为字典"""
     cookies = {}
     for item in cookie_str.split(';'):
         if '=' in item:
@@ -254,51 +223,15 @@ def parse_cookies(cookie_str):
     return cookies
 
 def msg_box(title, content, footer=""):
-    """生成统一格式的消息框"""
     msg = f"====={title}=====\n{content}"
     if footer:
         msg += f"\n------------------\n{footer}"
     msg += "\n=================="
     return msg
 
-def select_version(prompt="请选择版本"):
-    """通用版本选择，返回 (version_choice, version_name, varname) 或 None"""
-    menu = msg_box("选择快手版本", f"{prompt}\n------------------\n[1] 某手极速版\n[2] 某手普通版", "回复数字选择\n回复 q 退出")
-    sender.reply(menu)
-    choice = sender.input(120000, 1, False)
-    if not choice or choice.lower() == 'q':
-        return None
-    if choice == '1':
-        return ('1', "某手极速版", ks_fast_varname)
-    elif choice == '2':
-        return ('2', "某手普通版", ks_normal_varname)
-    return None
 
-def get_version_accounts(accounts, version_choice):
-    """获取指定版本的账号列表"""
-    result = []
-    for acc in accounts:
-        full_ck = sg.bucketGet('dd_ks_token', acc)
-        if full_ck:
-            info = parse_token(full_ck)
-            if info and info['version'] == version_choice:
-                result.append(acc)
-    return result
 
 def parse_token(full_ck):
-    """
-    解析token字符串
-    新格式: 版本
-    旧格式: 备注
-
-    返回: {
-        'version': '1' or '2',  # 1=极速版, 2=普通版
-        'name': '备注',
-        'cookie': 'cookie字符串',
-        'salt': 'salt',
-        'proxy': '代理信息' or None
-    }
-    """
     if not full_ck:
         return None
 
@@ -322,11 +255,6 @@ def parse_token(full_ck):
         }
 
 def token_to_qinglong_format(full_ck):
-    """
-    将token转换为青龙格式（去掉版本标识）
-    新格式: 版本
-    旧格式: 备注
-    """
     if not full_ck:
         return full_ck
 
@@ -341,15 +269,6 @@ def token_to_qinglong_format(full_ck):
     return result
 
 def parse_proxy_to_url(proxy_str):
-    """
-    解析代理字符串为标准URL格式
-    支持三种格式:
-    1. IP|端口|用户名|密码|过期时间 -> http://用户名:密码@IP:端口
-    2. socks5://账号:密码@ip:端口 -> socks5://账号:密码@ip:端口
-    3. http://账号:密码@ip:端口 -> http://账号:密码@ip:端口
-
-    返回: (proxy_url, proxy_type) 或 (None, error_msg)
-    """
     if not proxy_str:
         return None, "代理信息为空"
 
@@ -406,13 +325,6 @@ def parse_proxy_to_url(proxy_str):
     return None, "格式错误，不支持的代理格式"
 
 def validate_proxy(proxy_str):
-    """
-    验证代理格式和连接
-    支持三种格式:
-    1. IP|端口|用户名|密码|过期时间
-    2. socks5://账号:密码@ip:端口
-    3. http://账号:密码@ip:端口
-    """
     if not proxy_str:
         return False, "代理信息为空"
 
@@ -448,7 +360,6 @@ def validate_proxy(proxy_str):
         return False, f"代理错误: {str(e)}"
 
 def query_account_fast(cookie_str, proxy_str=None):
-    """查询极速版账号详情"""
     cookie_str = cookie_str.replace('kpn=KUAISHOU', 'kpn=NEBULA')
 
     url = "https://nebula.kuaishou.com/rest/n/nebula/account/overview"
@@ -497,14 +408,9 @@ def query_account_fast(cookie_str, proxy_str=None):
     except Exception as e:
         return {'success': False, 'msg': str(e)}
 
-def calculate_today_coins_fast(coin_records):
-    return 0
 
-def calculate_today_coins_normal(coin_records):
-    return 0
 
 def query_account_normal(cookie_str, proxy_str=None):
-    """查询普通版账号详情"""
     cookie_str = cookie_str.replace('kpn=NEBULA', 'kpn=KUAISHOU')
 
     basic_url = "https://encourage.kuaishou.com/rest/wd/encourage/account/basicInfo"
@@ -564,7 +470,6 @@ def query_account_normal(cookie_str, proxy_str=None):
         return {'success': False, 'msg': str(e)}
 
 def query_accounts():
-    """查询用户所有账号"""
     if not uservalue or len(uservalue) == 0:
         sender.reply("❌ 您还没有绑定账号\n请先使用 快手登录 绑定账号")
         return
@@ -701,7 +606,7 @@ def query_accounts():
                             else:
                                 result_msg += f"💳 分成: 待结算(预计{today_share}元)\n"
                         else:
-                            result_msg += f"💳 分成: 待结算(预计0.0元)\n"
+                            result_msg += "💳 分成: 待结算(预计0.0元)\n"
                 else:
                     auth_status = '2099-12-31' or '未授权'
                     result_msg += f"🔐 授权: {auth_status}\n"
@@ -764,7 +669,7 @@ def query_accounts():
                             else:
                                 result_msg += f"💳 分成: 待结算(预计{today_share}元)\n"
                         else:
-                            result_msg += f"💳 分成: 待结算(预计0.0元)\n"
+                            result_msg += "💳 分成: 待结算(预计0.0元)\n"
                 else:
                     auth_status = '2099-12-31' or '未授权'
                     result_msg += f"🔐 授权: {auth_status}\n"
@@ -808,7 +713,6 @@ def query_accounts():
         sender.reply(result_msg)
 
 def bindaccount():
-    """绑定账号 - 支持格式: 备注#cookie#salt 或 备注#cookie#salt#|端口|用户名|密码|过期时间"""
 
     version_menu = """
 =====选择快手版本=====
@@ -976,7 +880,7 @@ def bindaccount():
 
                 if payment_mode == '分成':
                     should_submit_to_qinglong = True
-                    auth_status = f'分成模式'
+                    auth_status = '分成模式'
                 elif payment_mode == '月付':
                     if accountVip and accountVip >= today_time:
                         should_submit_to_qinglong = True
@@ -1029,7 +933,6 @@ def bindaccount():
             exit(0)
 
 def seekql():
-    """连接青龙"""
     if not dd_ks_qlname:
         sender.reply("❌ 未配置青龙信息")
         exit(0)
@@ -1053,7 +956,6 @@ def seekql():
     return QLurl, qltoken
 
 def QLtoken(QLurl, ClientID, ClientSecret):
-    """获取青龙token"""
     try:
         url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
         response = requests.get(url, timeout=10)
@@ -1070,11 +972,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         exit(0)
 
 def extract_base_account(account):
-    """
-    从复合键中提取基础账号ID
-    例如: '123456_1' -> '123456'
-    如果不是复合键格式，直接返回原值
-    """
     if not account:
         return account
 
@@ -1084,14 +981,6 @@ def extract_base_account(account):
     return account
 
 def Addenvs(osname, value, account, phone):
-    """添加/更新环境变量到青龙
-
-    Args:
-        osname: 变量名（如 ksToken_fast 或 ksToken）
-        value: 变量值
-        account: 账号ID（可能是复合键格式，如 123456_1）
-        phone: 备注名称
-    """
     url = f"{QLurl}/open/envs"
     headers = {"Authorization": f"Bearer {qltoken}", "Content-Type": "application/json"}
 
@@ -1136,8 +1025,6 @@ def Addenvs(osname, value, account, phone):
         sender.reply(f"❌ 青龙操作异常: {str(e)}")
         return False
 
-def get_payment_config():
-    return {}
 
 PAY_TYPE_NAMES = {
     'alipay': '支付宝',
@@ -1145,125 +1032,21 @@ PAY_TYPE_NAMES = {
     'qqpay': 'QQ钱包',
 }
 
-def generate_qrcode(url):
-    """生成二维码图片"""
-    try:
-        from urllib.parse import quote
-        encoded_url = quote(url, safe='')
-        api_url = f"https://api.qrtool.cn/?text={encoded_url}"
-        return api_url
-    except:
-        return None
 
-class MaPay_Api:
-    """在线处理API类"""
-    def __init__(self, config):
-        self.config = config
 
-    def calculate_md5(self, text):
-        """计算字符串的MD5值"""
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
 
-    def sort_dict_by_key(self, data):
-        """对字典按照键名排序"""
-        return dict(sorted(data.items(), key=lambda x: x[0]))
 
-    def create_payment(self, amount, out_trade_no, name, user_id, pay_type=None, sitename=""):
-        return True
 
-    def query_order(self, out_trade_no=None, trade_no=None):
-        """查询订单状态"""
-        try:
-            query_url = self.config['gateway']
-            if query_url.endswith('/'):
-                query_url = query_url[:-1]
-
-            if '/xpay/epay/api.php' not in query_url:
-                query_url = f"{query_url}/xpay/epay/api.php"
-
-            params = {
-                "act": "order",
-                "pid": self.config['pid'],
-                "key": self.config['key']
-            }
-
-            if trade_no:
-                params["trade_no"] = trade_no
-            elif out_trade_no:
-                params["out_trade_no"] = out_trade_no
-            else:
-                return False, None, "必须提供商户订单号或系统订单号"
-
-            response = requests.get(query_url, params=params, timeout=10)
-
-            if response.status_code != 200:
-                return False, None, f"查询订单失败，HTTP状态码: {response.status_code}"
-
-            try:
-                result = response.json()
-            except:
-                return False, None, "查询订单失败，返回数据格式错误"
-
-            code = result.get('code', 0)
-            msg = result.get('msg', '未知状态')
-
-            if code == 1:
-                order_status = result.get('status')
-                if order_status == 1:
-                    return True, result, "支付成功"
-                else:
-                    return True, result, "订单未支付"
-            else:
-                return False, None, msg
-
-        except Exception as e:
-            return False, None, f"查询订单异常: {str(e)}"
-
-def poll_payment_status(out_trade_no, payment_config, max_tries=30):
-    return True
-
-def acquire_payment_lock(timeout=30):
-    return True
-
-def release_payment_lock():
-    return True
-
-def check_payment_lock_status():
-    return True
 
 def process_payment(amount, months, account_count=1):
     return True
-def process_ma_pay(amount, months, account_count, payment_config, product_name='快手授权'):
-    return True
 
-def process_normal_pay(amount, months, account_count, payment_config, product_name='快手授权'):
-    return True
 
 def calculate_share_amount(revenue, share_rate):
-    """计算分成金额
-
-    Args:
-        revenue: 收益金额
-        share_rate: 分成比例（0-100）
-
-    Returns:
-        应付分成金额（保留一位小数）
-    """
     result = Decimal(str(revenue)) * Decimal(str(share_rate)) / Decimal('100')
     return float(result.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP))
 
 def detect_manual_cash_exchange(cash_records):
-    """检测手动兑换的现金金额
-
-    当天存在多次"金币兑换现金"记录时，第一次是自动兑换，后续的是手动兑换
-    需要将手动兑换的金额计入分成
-
-    Args:
-        cash_records: 现金明细记录列表
-
-    Returns:
-        manual_exchange_amount: 手动兑换的总金额（元）
-    """
     if not cash_records:
         return 0.0
 
@@ -1311,11 +1094,6 @@ def detect_manual_cash_exchange(cash_records):
     return round(manual_total, 2)
 
 def get_today_share_status(account):
-    """获取今日分成状态
-
-    Returns:
-        (is_paid, revenue, share_amount): 是否已支付、收益、分成金额
-    """
     today = str(datetime.now().date())
     share_key = f"share_{account}_{today}"
     share_data = sg.bucketGet('dd_ks_share', share_key)
@@ -1329,59 +1107,14 @@ def get_today_share_status(account):
     return False, 0, 0
 
 def get_ks_uid_from_account(account):
-    """从账号ID中提取快手userId
-
-    账号格式: {userId}_{version}，例如: 123456_1
-    返回: userId（不含版本号）
-    """
     if not account:
         return None
     parts = account.rsplit('_', 1)
     return parts[0] if len(parts) >= 1 else account
 
-def add_share_debt(account, revenue, share_amount, date=None):
-    """添加分成欠款记录
 
-    使用快手userId作为唯一标识，防止删除账号后重新提交逃避欠款
-    数据桶: dd_ks_debt
-    Key格式: debt_{ks_uid}_{date}
-    """
-    ks_uid = get_ks_uid_from_account(account)
-    if not ks_uid:
-        return
-
-    if date is None:
-        date = str(datetime.now().date())
-
-    debt_key = f"debt_{ks_uid}_{date}"
-    debt_data = {
-        'ks_uid': ks_uid,
-        'account': account,
-        'date': date,
-        'revenue': float(revenue),
-        'share_amount': float(share_amount),
-        'create_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    sg.bucketSet('dd_ks_debt', debt_key, json.dumps(debt_data))
-
-def remove_share_debt(account, date=None):
-    """删除分成欠款记录（用户支付后调用）"""
-    ks_uid = get_ks_uid_from_account(account)
-    if not ks_uid:
-        return
-
-    if date is None:
-        date = str(datetime.now().date())
-
-    debt_key = f"debt_{ks_uid}_{date}"
-    sg.bucketDel('dd_ks_debt', debt_key)
 
 def get_account_debts(account):
-    """获取账号的所有欠款记录
-
-    Returns:
-        list: 欠款记录列表 [{'date': '2025-12-19', 'share_amount': 0.55}, ...]
-    """
     ks_uid = get_ks_uid_from_account(account)
     if not ks_uid:
         return []
@@ -1389,11 +1122,6 @@ def get_account_debts(account):
     return get_uid_debts(ks_uid)
 
 def get_uid_debts(ks_uid):
-    """根据快手userId获取所有欠款记录
-
-    Returns:
-        list: 欠款记录列表
-    """
     if not ks_uid:
         return []
 
@@ -1411,21 +1139,8 @@ def get_uid_debts(ks_uid):
                 pass
     return debts
 
-def get_total_debt_amount(account):
-    """获取账号总欠款金额"""
-    debts = get_account_debts(account)
-    if not debts:
-        return 0
-    total = sum(Decimal(str(d.get('share_amount', 0))) for d in debts)
-    return float(total.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP))
 
 def check_uid_has_debt(ks_uid):
-    """检查快手userId是否有欠款
-
-    用于新账号提交时检查是否有历史欠款
-    Returns:
-        (has_debt, total_amount, debts): 是否有欠款、总金额、欠款列表
-    """
     debts = get_uid_debts(ks_uid)
     if not debts:
         return False, 0, []
@@ -1434,36 +1149,10 @@ def check_uid_has_debt(ks_uid):
     total = float(total.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP))
     return True, total, debts
 
-def save_share_record(account, revenue, share_amount, is_paid=False, coins=None):
-    """保存分成记录"""
-    today = str(datetime.now().date())
-    share_key = f"share_{account}_{today}"
 
-    share_data = {
-        'account': account,
-        'date': today,
-        'coins': float(coins) if coins else 0,  # 今日金币数
-        'revenue': float(revenue),  # 折合现金
-        'share_amount': float(share_amount),
-        'is_paid': is_paid,
-        'pay_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S") if is_paid else None
-    }
 
-    sg.bucketSet('dd_ks_share', share_key, json.dumps(share_data))
-
-    if not is_paid and share_amount > 0:
-        add_share_debt(account, revenue, share_amount, today)
-    elif is_paid:
-        remove_share_debt(account, today)
-
-def process_share_payment(account, revenue, share_rate, coins=None):
-    return True
-
-def check_share_authorization(account, version_choice):
-    return True
 
 def manage_accounts():
-    """账号管理功能"""
     if not uservalue or len(uservalue) == 0:
         sender.reply("❌ 您还没有绑定任何账号\n请先发送 快手登录 进行账号绑定")
         return
@@ -1878,7 +1567,6 @@ def manage_accounts():
             return
 
 def push_notification(user, account, message):
-    """推送消息到各个平台"""
     push_msg = f"""
 =====快手账号通知=====
 🆔 账号: {account}
@@ -1893,7 +1581,6 @@ def push_notification(user, account, message):
             pass
 
 def disable_account_in_qinlong(account, target_varname):
-    """在青龙中禁用账号"""
     try:
         url = f"{QLurl}/open/envs"
         headers = {"Authorization": f"Bearer {qltoken}", "Content-Type": "application/json"}
@@ -1925,7 +1612,6 @@ def disable_account_in_qinlong(account, target_varname):
         return False
 
 def delete_account_in_qinglong(account, target_varname):
-    """在青龙中删除账号变量"""
     try:
         url = f"{QLurl}/open/envs"
         headers = {"Authorization": f"Bearer {qltoken}", "Content-Type": "application/json"}
@@ -1956,7 +1642,6 @@ def delete_account_in_qinglong(account, target_varname):
         return False
 
 def check_auth_expiry():
-    """定时检查授权到期状态（每天10点执行）"""
     if payment_mode not in ['月付', '天付']:
         return
 
@@ -2058,7 +1743,6 @@ def handle_share_payment():
     return True
 
 def handle_withdraw():
-    """快手提现(精简版)"""
     if not uservalue: return sender.reply("❌ 未绑定账号")
     accs = _sg_literal(uservalue)
     fa = [a for a in accs if sg.bucketGet('dd_ks_token', a) and parse_token(sg.bucketGet('dd_ks_token', a)).get('version') == '1']
@@ -2099,7 +1783,6 @@ def handle_withdraw():
     sender.reply(f"提现完成: 成功{sc}个 失败{fc}个")
 
 def withdraw_query(cookie):
-    """查询提现额度信息"""
     url = "https://nebula.kuaishou.com/rest/n/nebula/account/withdraw"
     headers = {
         "Connection": "keep-alive",
@@ -2113,11 +1796,10 @@ def withdraw_query(cookie):
             if resp.get('result') == 1:
                 return resp
         return None
-    except Exception as e:
+    except Exception:
         return None
 
 def withdraw_info(cookie):
-    """绑定信息查询，返回 provider 列表"""
     url = "https://www.kuaishoupay.com/pay/account/h5/withdraw/withdraw_info"
     headers = {
         "cookie": cookie,
@@ -2139,11 +1821,10 @@ def withdraw_info(cookie):
                 ticket = resp.get("ticket", "")
                 return providers, ticket
         return [], ""
-    except Exception as e:
+    except Exception:
         return [], ""
 
 def withdraw_apply(cookie, fen, biz_content, provider="WECHAT", bank_id="", bank_token="", ticket=""):
-    """提现申请"""
     url = "https://www.kuaishoupay.com/pay/account/h5/withdraw/apply"
     headers = {
         "cookie": cookie,
@@ -2187,15 +1868,6 @@ def withdraw_apply(cookie, fen, biz_content, provider="WECHAT", bank_id="", bank
         return False, f"请求异常: {str(e)}"
 
 def auto_withdraw(cookie, target_amount=None):
-    """自动提现
-
-    Args:
-        cookie: 用户cookie
-        target_amount: 目标提现金额，None表示自动匹配最高档位
-
-    Returns:
-        (success, message)
-    """
     withdraw_resp = withdraw_query(cookie)
     if not withdraw_resp:
         return False, "查询提现额度失败"
@@ -2273,7 +1945,6 @@ def auto_withdraw(cookie, target_amount=None):
     return False, "所有可用渠道均提现失败或未绑定"
 
 def admin_panel():
-    """快手后台管理"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有权限访问后台")
         return
@@ -2290,7 +1961,6 @@ def admin_authorization():
     return True
 
 def admin_share_statistics():
-    """分成统计(精简版)"""
     if payment_mode != '分成': return sender.reply("❌ 未启用分成模式")
     today = str(datetime.now().date())
     users = sg.bucketAllKeys('dd_ks_user')
@@ -2314,7 +1984,6 @@ def admin_share_statistics():
     sender.reply(f"📊今日分成统计({today})\n比例:{share_rate}%\n总收益:{tr:.2f}元 总分成:{ts:.2f}元\n已结算:{pc}个 未结算:{uc}个")
 
 def admin_clean_accounts():
-    """清理过期账号(精简版)"""
     users = sg.bucketAllKeys('dd_ks_user')
     if not users: return sender.reply("❌ 无账号")
     sender.reply(f"🔄 清理中...共{len(users)}个用户")
@@ -2338,7 +2007,6 @@ def admin_clean_accounts():
     sender.reply(f"✅清理完成: 已清理{cc}个账号")
 
 def admin_delete_user_account():
-    """管理员删除用户账号(用于处理主动结算未通过插件导致的账号无法删除问题)"""
     sender.reply("请输入用户ID:")
     uid = sender.input(60000, 1, False)
     if not uid or uid.lower() == 'q': return sender.reply("已退出")
@@ -2431,7 +2099,6 @@ def admin_release_payment_lock():
     return True
 
 def main():
-    """主函数"""
     global ks_fast_varname, ks_normal_varname, allow_proxy, dd_ks_qlname, QLurl, qltoken, today_time
     global payment_mode, ksVipmoney, ksDaymoney, kscoin, share_rate, share_allow_coin_pay
 

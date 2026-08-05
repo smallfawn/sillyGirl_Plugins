@@ -14,9 +14,14 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+calculate_auth_time = lambda *args, **kwargs: "2099-12-31"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +91,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'mrconli_huishouyuan_ql_config': form.string().title('对接青龙').default('').description('|'),
@@ -135,12 +111,11 @@ full_scripts_name =  "回收猿"
 bucket_prefix = "mrconli.huishouyuan"
 
 
-from datetime import datetime, timedelta  # 操作日期、时间以及时间间隔
+from datetime import datetime
 from decimal import Decimal  # 处理浮点数
 import requests  # 处理http请求
 import time  # 处理时间
 import json  # 处理json数据
-import re
 import hashlib
 
 import urllib3
@@ -162,7 +137,6 @@ proxy = None  # 初始化全局代理变量
 
 
 def update_proxy():
-    """更新代理IP地址"""
     global proxy
     try:
         if not IS_PROXY or IS_PROXY == "false":
@@ -182,7 +156,6 @@ def update_proxy():
 
 
 def _send_request(method, url, **kwargs):
-    """带代理重试的请求方法"""
     global proxy
     attempts = 0
     while attempts < MAX_RETRIES:
@@ -215,22 +188,10 @@ def _send_request(method, url, **kwargs):
 
 
 def mask_phone(phone):
-    """手机号脱敏处理"""
     if not phone or len(phone) != 11:
         return phone
     return f"{phone[:3]}****{phone[7:]}"
 
-def is_valid_phone(phone):
-    """验证手机号格式是否正确
-    Args:
-        phone: 待验证的手机号字符串
-    Returns:
-        bool: 格式正确返回True，否则返回False
-    """
-    if not phone or not isinstance(phone, str):
-        return False
-    pattern = r'^1[3-9]\d{9}$'    # 中国大陆手机号正则表达式：以1开头，第二位3-9，后面9位数字
-    return re.match(pattern, phone) is not None
 
 
 def get_sign(params):
@@ -238,34 +199,6 @@ def get_sign(params):
     encrypted_str = hashlib.md5(params_str.encode()).hexdigest()
     return encrypted_str
 
-def get_info(username):
-    url = 'https://www.52bjy.com/api/app/user.php'
-    params = {
-        'action': 'userinfo',
-        'app': 'hsywx',
-        'appkey': '1079fb245839e765',
-        'auth': '51db9d390db6c9ef4c544be8ea15b8de',
-        'merchant_id': '2',
-        'username': username
-    }
-    params["sign"] = get_sign(params)
-    headers = {
-        'Host': 'www.52bjy.com',
-        'Connection': 'keep-alive',
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf254101e) XWEB/16389',
-        'Referer': 'https://servicewechat.com/wxadd84841bd31a665/113/page-frame.html'
-    }
-
-    try:
-        response = _send_request('GET', url, params=params, headers=headers).json()
-        mobile = response['data']['mobile']       #  手机号
-        passport = response['data']['passport']    # 昵称
-        print(f"昵称：{passport}，手机号：{mobile}")
-        return True, mobile, passport
-    except Exception as e:
-        print(f'网络请求异常：{e}')
-        return False, None, None
 
 
 def get_user_balance(username):
@@ -296,7 +229,6 @@ def get_user_balance(username):
 
 
 def batch_login():
-    """批量登录函数"""
     global uservalue
     sender.reply(
         f"======={login_cmd}=======\n"
@@ -340,7 +272,7 @@ def batch_login():
             success, msg =  get_user_balance(token)
             if not success:
                 fail_count += 1
-                error_reasons.append(f"❌ 登录认证失败")
+                error_reasons.append("❌ 登录认证失败")
                 continue
             if success:
                 phone = str(token)
@@ -358,11 +290,11 @@ def batch_login():
                     status = f"✅ {remark} 更新成功"
                     accountVip = '2099-12-31'
                     if not accountVip or accountVip < today_time:
-                        sender.reply(f"⚠️ 账号未授权或授权已过期，环境变量未提交青龙...")
+                        sender.reply("⚠️ 账号未授权或授权已过期，环境变量未提交青龙...")
                     else:
                         add_to_qinglong(token, phone, userid)
             else:
-                print(f"登录失败")
+                print("登录失败")
                 fail_count += 1
                 error_reasons.append(f"❌ {account} 登录认证失败")
                 continue
@@ -535,7 +467,6 @@ def query():
 
 
 def cron_task():
-    """定时任务处理"""
     if imtype != 'fake':
         return
     try:
@@ -558,7 +489,6 @@ def cron_task():
 
 
 def notify_user(user, account, message):
-    """发送用户通知"""
     try:
         notify_msg = f"""
 ====={full_scripts_name}账号通知=====
@@ -574,7 +504,6 @@ def notify_user(user, account, message):
         print(f"发送通知失败: {str(e)}")
 
 def get_config():
-    """获取插件配置"""
     try:
         var_name = sg.bucketGet(bucket_prefix, 'var_name') or "hsy_username"
         if not var_name:
@@ -621,7 +550,6 @@ def get_config():
 
 
 def init_qinglong():
-    """初始化青龙连接"""
     try:
         ql_config = sg.bucketGet(bucket_prefix, 'ql_config')
         if not ql_config:
@@ -640,7 +568,6 @@ def init_qinglong():
 
 
 def get_ql_token(url, client_id, client_secret):
-    """获取青龙token"""
     try:
         if not url.endswith('/'):
             url += '/'
@@ -656,7 +583,6 @@ def get_ql_token(url, client_id, client_secret):
 
 
 def add_to_qinglong(token, account, username):
-    """添加变量到青龙"""
     try:
         url = f"{ql_host}/open/envs"
         headers = {
@@ -706,7 +632,6 @@ def add_to_qinglong(token, account, username):
 
 
 def enable_in_qinglong(env_ids):
-    """启用环境变量"""
     try:
         url = f"{ql_url}/open/envs/enable"
         headers = {
@@ -728,31 +653,9 @@ def enable_in_qinglong(env_ids):
         return False
 
 
-def disable_in_qinglong(env_ids):
-    """禁用环境变量"""
-    try:
-        url = f"{ql_url}/open/envs/disable"
-        headers = {
-            "Authorization": f"Bearer {ql_token}",
-            "Content-Type": "application/json"
-        }
-        response = requests.put(url, headers=headers, data=json.dumps(env_ids))
-        if response.status_code == 200:
-            rjson = response.json()
-            if rjson.get('code') == 200:
-                return True
-            else:
-                sender.reply(f"❌ 禁用环境变量失败: {rjson.get('message')}")
-                return False
-        else:
-            raise Exception(f"{response.status_code}")
-    except Exception as e:
-        sender.reply(f"❌ 禁用环境变量失败: {str(e)}")
-        return False
 
 
 def delete_from_qinglong(account):
-    """从青龙删除变量"""
     try:
         url = f"{ql_url}/open/envs"
         headers = {
@@ -783,7 +686,6 @@ def perform_batch_auth(selected_accounts, days=None):
         pass
     return None
 def manage_accounts():
-    """管理账号"""
     accounts = _sg_literal(sg.bucketGet(bucket=f'{bucket_prefix}.user', key=userid))
     if not accounts:
         sender.reply(f"""
@@ -887,7 +789,7 @@ def manage_accounts():
 
                 selected_accounts = [accounts[idx] for idx in selected_indices]
                 if len(selected_indices) == len(accounts):
-                    sender.reply(f"正在为全部账号进行批量授权...")
+                    sender.reply("正在为全部账号进行批量授权...")
                 else:
                     sender.reply(f"正在为选中的{len(selected_accounts)}个账号进行批量授权...")
                 perform_batch_auth(selected_accounts, days=None)
@@ -920,7 +822,7 @@ def manage_accounts():
 
                 selected_accounts = [accounts[idx] for idx in selected_indices]
                 if len(selected_indices) == len(accounts):
-                    sender.reply(f"正在为全部账号进行批量授权...")
+                    sender.reply("正在为全部账号进行批量授权...")
                 else:
                     sender.reply(f"正在为选中的{len(selected_accounts)}个账号进行批量授权...")
                 perform_batch_auth(selected_accounts, days=None)
@@ -941,7 +843,6 @@ def manage_accounts():
 
 
 def show_account_menu(account):
-    """显示账号操作菜单"""
     auth = '2099-12-31'
     remark = sg.bucketGet(f'{bucket_prefix}.remark', account)
     auth_status = "✅ 已授权" if auth and auth > today else "❌ 未授权"
@@ -979,7 +880,6 @@ def show_account_menu(account):
 
 
 def auth_account(account):
-    """账号授权"""
     try:
         price = Decimal(sg.bucketGet(bucket_prefix, 'price') or '1')   #  每月价格
         coin_bucket = sg.bucketGet(bucket_prefix, 'coin_bucket') or 'dd_sign_points'
@@ -1164,22 +1064,9 @@ def clean_expired():
     except Exception:
         pass
     return None
-def retry_on_error(func, retries=3, delay=1):
-    """错误重试装饰器"""
-    def wrapper(*args, **kwargs):
-        for i in range(retries):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if i == retries - 1:
-                    raise e
-                time.sleep(delay)
-        return None
-    return wrapper
 
 
 def log_operation(operation, user, account, status, message=''):
-    """记录操作日志"""
     try:
         log = {
             'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -1204,310 +1091,13 @@ def admin_auth():
     except Exception:
         pass
     return None
-def update_qinglong_env():
-    """更新全部青龙环境变量"""
-    sender.reply("正在更新全部账号的青龙环境变量...")
-    users = sg.bucketAllKeys(f'{bucket_prefix}.user')
-    total_users = len(users)
-    total_accounts = 0
-    success = 0
-    failed = 0
-    for user in users:
-        accounts = _sg_literal(sg.bucketGet(f'{bucket_prefix}.user', user) or '[]')
-        for account in accounts:
-            total_accounts += 1
-            try:
-                token = sg.bucketGet(f'{bucket_prefix}.token', account)
-                if token:
-                    add_to_qinglong(token, account, user)
-                env_ids_str = sg.bucketGet(f'{bucket_prefix}.env_id', account)
-                if env_ids_str:
-                    env_ids = json.loads(env_ids_str)
-                    enable_in_qinglong(env_ids)
-                success += 1
-            except Exception as e:
-                failed += 1
-    sender.reply(f"""
-=====更新青龙完成=====
-共计: {total_users}个用户{total_accounts}个账号
-------------------
-✅ 成功: {success}个账号
-❌ 失败: {failed}个账号
-==================""")
 
 
-def auth_all_users():
-    """一键授权所有用户"""
-    sender.reply("""
-=====批量授权=====
-📝 请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-    try:
-        days = sender.listen(60000)
-        if not days or days == 'q':
-            sender.reply("✅ 已取消授权")
-            return
-        days = int(days)
-        if days <= 0:
-            raise ValueError()
-        users = sg.bucketAllKeys(f'{bucket_prefix}.user')
-        success = 0
-        failed = 0
-        for user in users:
-            accounts = _sg_literal(sg.bucketGet(f'{bucket_prefix}.user', user) or '[]')
-            for account in accounts:
-                try:
-                    calculate_auth_time(account, days / 30)
-                    True
-                    token = sg.bucketGet(f'{bucket_prefix}.token', account)
-                    if token:
-                        add_to_qinglong(token, account, user)
-                    env_ids_str = sg.bucketGet(f'{bucket_prefix}.env_id', account)
-                    if env_ids_str:
-                        env_ids = json.loads(env_ids_str)
-                        enable_in_qinglong(env_ids)
-                    success += 1
-                    log_operation('batch_auth', user, account, 'success')
-                except Exception as e:
-                    failed += 1
-                    log_operation('batch_auth', user, account, 'failed', str(e))
-        sender.reply(f"""
-=====授权完成=====
-✅ 成功: {success}个账号
-❌ 失败: {failed}个账号
-⏰ 授权: {days}天
-==================""")
-    except ValueError:
-        sender.reply("❌ 无效的天数")
-    except Exception as e:
-        sender.reply(f"❌ 授权失败: {str(e)}")
 
 
-def auth_specific_user():
-    """指定用户授权"""
-    sender.reply("""
-=====指定授权=====
-📝 请输入用户ID
-(发送myuid可获取ID)
-------------------
-回复"q"退出""")
-    user_id = sender.listen(60000)
-    if not user_id or user_id == 'q':
-        return
-    accounts = _sg_literal(sg.bucketGet(f'{bucket_prefix}.user', user_id) or '[]')
-    if not accounts:
-        sender.reply("❌ 未找到该用户的账号")
-        return
-    total_pages = (len(accounts) + batch_size - 1) // batch_size
-
-    for page in range(total_pages):
-        start_idx = page * batch_size
-        end_idx = min((page + 1) * batch_size, len(accounts))
-
-        account_list = f"""
-=====账号列表(第{page + 1}/{total_pages}页)=====
-[00] 授权全部账号
-[01] 修改全部账号授权
-----------------"""
-        for i in range(start_idx, end_idx):
-            account = accounts[i]
-            auth = '2099-12-31'
-            remark = sg.bucketGet(f'{bucket_prefix}.remark', account)
-            status = "✅ 已授权" if auth and auth > today else "❌ 未授权"
-            account_list += f"\n[{i + 1}] {mask_phone(remark)}\n    {status}"
-        account_list += """
-------------------
-回复数字选择账号
-回复"1,3,4"多选账号
-回复"1-3,5-8"范围选择
-回复"q"退出"""
-        if total_pages > 1:
-            account_list += f"\n📊 当前页：{start_idx + 1}-{end_idx}，共{len(accounts)}个账号"
-
-        sender.reply(account_list)
-
-    choice = sender.listen(60000)
-
-    if not choice:
-        sender.reply("❌ 操作超时！")
-        return
-    if choice == 'q' or choice == 'Q':
-        sender.reply("❌ 退出操作！")
-        return
-
-    if choice == '00':
-        sender.reply("""
-=====设置授权时间=====
-📝 请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-        days = sender.listen(60000)
-        if not days or days == 'q':
-            return
-        days = int(days)
-        if days <= 0:
-            raise ValueError()
-        for account in accounts:
-            try:
-                auth_time = calculate_auth_time(account, days / 30)
-                True
-                token = sg.bucketGet(f'{bucket_prefix}.token', account)
-                if token:
-                    add_to_qinglong(token, account, user_id)
-                env_ids_str = sg.bucketGet(f'{bucket_prefix}.env_id', account)
-                if env_ids_str:
-                    env_ids = json.loads(env_ids_str)
-                    enable_in_qinglong(env_ids)
-                log_operation('auth', user_id, account, 'success')
-            except Exception as e:
-                log_operation('auth', user_id, account, 'failed', str(e))
-        sender.reply(f"✅ 已授权所有账号 {days}天")
-    elif choice == '01':
-        sender.reply("""=====批量修改授权=====
-📝 请输入授权日期
-格式：2025-01-01
-------------------
-回复"q"退出""")
-        new_auth = sender.listen(60000)
-        if not new_auth:
-            sender.reply("❌ 操作超时！")
-            return
-        if new_auth == 'q' or new_auth == 'Q':
-            sender.reply("❌ 退出操作！")
-            return
-        date_pattern = r'^\d{4}-\d{2}-\d{2}$'
-        if not re.match(date_pattern, new_auth):
-                sender.reply("❌ 日期格式错误！请使用格式：2025-01-01")
-                return
-        try:
-            datetime.strptime(new_auth, '%Y-%m-%d')
-        except ValueError:
-            sender.reply("❌ 无效的日期！请检查输入的日期是否正确")
-            return
-        for account in accounts:
-            True
-            token = sg.bucketGet(f'{bucket_prefix}.token', account)
-            if token:
-                add_to_qinglong(token, account, user_id)
-            env_ids_str = sg.bucketGet(f'{bucket_prefix}.env_id', account)
-            if env_ids_str:
-                env_ids = json.loads(env_ids_str)
-                enable_in_qinglong(env_ids)
-        sender.reply(f"✅ 所有账号授权日期修改为： {new_auth}")
-    else:
-        target_accounts = []
-
-        if '-' in choice:
-            ranges = [r.strip() for r in choice.split(',')]
-
-            for range_str in ranges:
-                if '-' in range_str:
-                    range_parts = range_str.split('-')
-                    if len(range_parts) != 2:
-                        sender.reply('❌ 范围格式错误，请使用如"1-3"的格式')
-                        return
-
-                    start_str, end_str = range_parts[0].strip(), range_parts[1].strip()
-                    if not start_str.isdigit() or not end_str.isdigit():
-                        sender.reply('❌ 范围格式错误，起始和结束必须是数字')
-                        return
-
-                    start_num, end_num = int(start_str), int(end_str)
-                    if start_num < 1 or end_num > len(accounts) or start_num > end_num:
-                        sender.reply(f'❌ 范围超出有效范围：1-{len(accounts)}')
-                        return
-
-                    for i in range(start_num, end_num + 1):
-                        target_accounts.append(accounts[i - 1])
-                else:
-                    if not range_str.isdigit():
-                        sender.reply(f'❌ 输入格式错误："{range_str}"不是有效数字')
-                        return
-
-                    c_num = int(range_str)
-                    if c_num < 1 or c_num > len(accounts):
-                        sender.reply(f'❌ 选择超出范围：{c_num}')
-                        return
-                    target_accounts.append(accounts[c_num - 1])
-
-        elif ',' in choice or '，' in choice:
-            choices = [c.strip() for c in choice.replace('，', ',').split(',')]
-
-            for c in choices:
-                if not c.isdigit():
-                    sender.reply(f'❌ 输入格式错误："{c}"不是有效数字')
-                    return
-
-                c_num = int(c)
-                if c_num < 1 or c_num > len(accounts):
-                    sender.reply(f'❌ 选择超出范围：{c_num}')
-                    return
-                target_accounts.append(accounts[c_num - 1])
-
-        else:
-            if not choice.isdigit():
-                sender.reply('❌ 输入格式错误，请回复数字')
-                return
-
-            choice_num = int(choice)
-            if choice_num < 1 or choice_num > len(accounts):
-                sender.reply('❌ 选择超出范围，已取消查询')
-                return
-            target_accounts = [accounts[choice_num - 1]]
-
-        if not target_accounts:
-            sender.reply("❌ 未选择任何账号")
-            return
-
-        sender.reply("""
-=====设置授权时间=====
-📝 请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-        days = sender.listen(60000)
-        if not days or days == 'q':
-            sender.reply(f"❌ 退出操作！")
-            return
-        days = int(days)
-        if days <= 0:
-            raise ValueError()
-
-        success_count = 0
-        for account in target_accounts:
-            try:
-                auth_time = calculate_auth_time(account, days / 30)
-                True
-                token = sg.bucketGet(f'{bucket_prefix}.token', account)
-                if token:
-                    add_to_qinglong(token, account, user_id)
-                env_ids_str = sg.bucketGet(f'{bucket_prefix}.env_id', account)
-                if env_ids_str:
-                    env_ids = json.loads(env_ids_str)
-                    enable_in_qinglong(env_ids)
-                success_count += 1
-                log_operation('auth', user_id, account, 'success')
-            except Exception as e:
-                sender.reply(f"❌ 账号 {mask_phone(account)} 授权失败: {str(e)}")
-                log_operation('auth', user_id, account, 'failed', str(e))
-
-        if len(target_accounts) == 1:
-            account = target_accounts[0]
-            sender.reply(f"""
-=====授权成功=====
-📱 账号: {mask_phone(account)}
-⏰ 时长: {days}天
-📅 到期: {auth_time}
-==================""")
-        else:
-            sender.reply(f"✅ 已成功授权 {success_count}/{len(target_accounts)} 个账号 {days}天")
 
 
 def delete_account(account):
-    """删除账号"""
     try:
         if not delete_from_qinglong(account):
             raise Exception("从青龙删除变量失败")
@@ -1540,7 +1130,6 @@ def delete_account(account):
         return False
 
 def show_ck(account):
-    """查看账号ck"""
     token = sg.bucketGet(f'{bucket_prefix}.token', account)
     if token:
         sender.reply(f"""
@@ -1576,7 +1165,6 @@ def tutorial():
 
 
 def main():
-    """主函数"""
     message = sender.getMessage()
     if '登录' in message or '登陆' in message or '上车' in message:
         batch_login()

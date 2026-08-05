@@ -11,13 +11,14 @@
 # [icon: https://api.iconify.design/lucide:apple.svg]
 # [description: 卡看 插件，]
 # [depe: ["pycryptodome","requests","urllib3"]]
-# [classmethod: def get_base_url(cls, url: str) -> str:]
-# [staticmethod: def parse_url_params(url: str) -> dict:]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,35 +88,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_kakan_config_Qinglong': form.string().title('青龙面板配置').default('').description('青龙面板地址、应用ID、应用密钥，用中文丨分隔'),
@@ -130,7 +102,6 @@ _CONFIG_FIELD_MAP = {
     ('dd_kakan_config', 'proxy_url'): 'dd_kakan_config_proxy_url',
 }
 
-#!/usr/bin/env python3
 """
 卡看插件 - 青龙面板对接版本
 支持账号管理、授权控制、青龙同步
@@ -179,29 +150,10 @@ DURATION_URL = 'https://kakan-api.zhangyue.com'
 WELFARE_URL = 'https://kakan-welfare.zhangyue.com'
 
 def format_number(num):
-    """格式化数字，添加千分位"""
     return f"{num:,}"
 
-def empower(current_auth: str, days: int) -> str:
-    """计算授权到期时间（按天计算）"""
-    today = datetime.datetime.now()
-
-    if current_auth and current_auth not in ['未授权', '授权过期']:
-        try:
-            expire_date = datetime.datetime.strptime(current_auth, '%Y-%m-%d')
-            if expire_date > today:
-                new_expire = expire_date + datetime.timedelta(days=days)
-            else:
-                new_expire = today + datetime.timedelta(days=days)
-        except:
-            new_expire = today + datetime.timedelta(days=days)
-    else:
-        new_expire = today + datetime.timedelta(days=days)
-
-    return new_expire.strftime('%Y-%m-%d')
 
 class SignatureManager:
-    """签名管理器"""
     _rsa_key = None
 
     X_SIG_VER = "v1.1"
@@ -215,7 +167,6 @@ class SignatureManager:
 
     @staticmethod
     def generate_user_agent(device_info: dict, api_path: str = '', base_url: str = '') -> str:
-        """根据设备信息生成User-Agent"""
         android_ver = device_info.get('p22', '15')
         device_model = device_info.get('p16', 'PHK110')
         build_id = device_info.get('build_id', 'AP3A.240617.008')
@@ -249,7 +200,6 @@ class SignatureManager:
 
     @staticmethod
     def _timestamp_xor_key(timestamp):
-        """从时间戳低4位生成 XOR 密钥（对应 native sub_A150）"""
         tmp = int(timestamp)
         key = []
         for _ in range(4):
@@ -259,7 +209,6 @@ class SignatureManager:
 
     @classmethod
     def make_x_sig_sec(cls, env_info=None, timestamp=None):
-        """动态生成 X-SIG-Sec（对应 native sub_A150）"""
         if timestamp is None:
             timestamp = cls.get_timestamp()
         obj = {}
@@ -275,7 +224,6 @@ class SignatureManager:
 
     @staticmethod
     def build_params_string(params: dict, for_signature: bool = True) -> str:
-        """Java 兼容参数序列化（对应 convertMapToParams）"""
         sorted_params = sorted(params.items(), key=lambda x: x[0])
         parts = []
         for k, v in sorted_params:
@@ -291,7 +239,6 @@ class SignatureManager:
 
     @staticmethod
     def build_origin(post_body: str, query_params, path: str, timestamp: str) -> str:
-        """构建签名原文（对应 MainProviderObj.getSignHeaders）"""
         if isinstance(query_params, str):
             query_string = query_params
         elif query_params:
@@ -302,7 +249,6 @@ class SignatureManager:
 
     @classmethod
     def generate_signature(cls, params: dict, timestamp: str, api_path: str, sig_sec: str) -> str:
-        """生成 X-SIG-Sign"""
         params_str = cls.build_params_string(params, for_signature=True)
         origin = cls.build_origin(params_str, {}, api_path, timestamp)
         sign_input = origin.encode("utf-8") + b"&" + sig_sec.encode("utf-8")
@@ -325,7 +271,6 @@ class SignatureManager:
         return DURATION_URL
 
 class KaKanAPI:
-    """卡看API封装"""
 
     def __init__(self):
         self.session = requests.Session()
@@ -395,7 +340,6 @@ class KaKanAPI:
         return params
 
     def send_sms_code(self, phone: str, device_info: dict) -> tuple:
-        """发送短信验证码"""
         plain_data = json.dumps({'phone': phone}, separators=(',', ':'))
         encrypt_data = SignatureManager.aes_encrypt(plain_data)
 
@@ -420,7 +364,6 @@ class KaKanAPI:
             return False, error_msg, None
 
     def login_by_phone(self, phone: str, code: str, device_info: dict) -> tuple:
-        """手机号验证码登录"""
         plain_data = json.dumps({'phone': phone}, separators=(',', ':'))
         encrypt_data = SignatureManager.aes_encrypt(plain_data)
 
@@ -445,7 +388,6 @@ class KaKanAPI:
             return False, {'error': error_msg}
 
     def get_user_info(self, device_info: dict, session_info: dict, proxy: dict = None) -> tuple:
-        """获取用户信息"""
         params = self._build_common_params(device_info, session_info)
 
         url = f"{BASE_URL}/api/user/info"
@@ -456,7 +398,6 @@ class KaKanAPI:
         return False, None
 
     def get_gold_account(self, device_info: dict, session_info: dict, proxy: dict = None) -> tuple:
-        """获取金币账户信息"""
         params = self._build_common_params(device_info, session_info)
         params['gold_type'] = '3'
 
@@ -468,7 +409,6 @@ class KaKanAPI:
         return False, None
 
     def get_task_user_info(self, device_info: dict, session_info: dict, task_ids: str = '3119,3801,3014') -> tuple:
-        """获取任务用户信息"""
         params = self._build_common_params(device_info, session_info)
         params['act_id'] = '1021'
         params['task_ids'] = task_ids
@@ -481,7 +421,6 @@ class KaKanAPI:
         return False, None
 
     def get_bind_info(self, device_info: dict, session_info: dict) -> tuple:
-        """获取绑定信息"""
         params = self._build_common_params(device_info, session_info)
         params['extract_type'] = '2'
 
@@ -497,7 +436,6 @@ class KaKanAPI:
     def receive_task(self, device_info: dict, session_info: dict, task_id: int,
                      receive_type: str = '4', act_id: int = 1021,
                      sub_task_id: str = None, proxy: dict = None) -> tuple:
-        """领取任务奖励"""
         params = self._build_common_params(device_info, session_info)
         params['task_id'] = str(task_id)
         params['receive_type'] = receive_type
@@ -515,7 +453,6 @@ class KaKanAPI:
             return False, {'error': error_msg}
 
     def complete_ad_task(self, device_info: dict, session_info: dict, task_type: int = 106) -> bool:
-        """完成广告任务（攒进度）"""
         params = self._build_common_params(device_info, session_info)
         params['task_type'] = str(task_type)
 
@@ -527,7 +464,6 @@ class KaKanAPI:
         return False
 
 class DeviceManager:
-    """设备管理器"""
 
     DEVICE_MODELS = [
         ('PHK110', '15', 'OnePlus', 'PHK110'),
@@ -637,7 +573,6 @@ class DeviceManager:
 
     @staticmethod
     def parse_url_params(url: str) -> dict:
-        """从URL解析参数"""
         try:
             parsed = urlparse(url.strip())
             params = parse_qs(parsed.query)
@@ -653,13 +588,6 @@ class DeviceManager:
 _proxy_cache = {'proxy': None, 'expire_time': 0, 'info': '本地'}
 
 def get_proxy(proxy_url: str) -> tuple:
-    """
-    获取代理配置
-    返回: (proxy_dict, proxy_info)
-    - proxy_dict: 代理字典，用于requests
-    - proxy_info: 代理信息字符串，用于显示
-    """
-    global _proxy_cache
 
     if not proxy_url:
         return {}, '本地'
@@ -692,7 +620,6 @@ def get_proxy(proxy_url: str) -> tuple:
     return {}, '本地'
 
 def get_plugin_config():
-    """获取插件配置数据"""
     Qinglong = sg.bucketGet(bucket='dd_kakan_config', key='Qinglong')
     env_name = sg.bucketGet(bucket='dd_kakan_config', key='env_name') or 'kakan'
     coin_price = sg.bucketGet(bucket='dd_kakan_config', key='coin_price')
@@ -773,7 +700,6 @@ Host丨ClientID丨ClientSecret
     return QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url
 
 class QingLongAPI:
-    """青龙面板API封装类"""
 
     def __init__(self, base_url: str, client_id: str, client_secret: str):
         self.base_url = base_url.rstrip('/')
@@ -783,7 +709,6 @@ class QingLongAPI:
         self.token_expire_time = 0
 
     def _get_token(self):
-        """获取访问token（带缓存）"""
         try:
             if self.token and time.time() < self.token_expire_time:
                 return self.token
@@ -810,7 +735,6 @@ class QingLongAPI:
             return None
 
     def _request(self, method: str, endpoint: str, data=None, params=None):
-        """发送HTTP请求"""
         token = self._get_token()
         if not token:
             return None
@@ -842,7 +766,6 @@ class QingLongAPI:
             return None
 
     def get_envs(self, search_value=None):
-        """获取环境变量列表"""
         params = {}
         if search_value:
             params['searchValue'] = search_value
@@ -853,7 +776,6 @@ class QingLongAPI:
         return []
 
     def find_env_by_remark(self, env_name: str, remark: str):
-        """查找指定备注的环境变量"""
         envs = self.get_envs(search_value=env_name)
         for env in envs:
             if env.get('name') == env_name:
@@ -863,7 +785,6 @@ class QingLongAPI:
         return None
 
     def add_env(self, name: str, value: str, remarks: str = '') -> bool:
-        """添加环境变量"""
         data = [{
             'name': name,
             'value': value,
@@ -873,7 +794,6 @@ class QingLongAPI:
         return result is not None
 
     def update_env(self, env_id: int, name: str, value: str, remarks: str = '') -> bool:
-        """更新环境变量"""
         data = {
             'id': env_id,
             'name': name,
@@ -884,22 +804,18 @@ class QingLongAPI:
         return result is not None
 
     def delete_env(self, env_ids: list) -> bool:
-        """删除环境变量"""
         result = self._request('DELETE', 'envs', data=env_ids)
         return result is not None
 
     def disable_env(self, env_ids: list) -> bool:
-        """禁用环境变量"""
         result = self._request('PUT', 'envs/disable', data=env_ids)
         return result is not None
 
     def enable_env(self, env_ids: list) -> bool:
-        """启用环境变量"""
         result = self._request('PUT', 'envs/enable', data=env_ids)
         return result is not None
 
 def get_user_accounts(user_id: str) -> list:
-    """获取用户的账号备注列表"""
     uservalue = sg.bucketGet(bucket='dd_kakan_user', key=user_id)
     if uservalue:
         try:
@@ -909,14 +825,12 @@ def get_user_accounts(user_id: str) -> list:
     return []
 
 def save_user_accounts(user_id: str, accounts: list):
-    """保存用户账号列表"""
     if accounts:
         sg.bucketSet(bucket='dd_kakan_user', key=user_id, value=str(accounts))
     else:
         sg.bucketDel(bucket='dd_kakan_user', key=user_id)
 
 def get_account_data(remark: str) -> dict:
-    """获取账号数据"""
     data = sg.bucketGet(bucket='dd_kakan_token', key=remark)
     if data:
         try:
@@ -926,11 +840,9 @@ def get_account_data(remark: str) -> dict:
     return None
 
 def save_account_data(remark: str, value: dict):
-    """保存账号数据"""
     sg.bucketSet(bucket='dd_kakan_token', key=remark, value=json.dumps(value, ensure_ascii=False))
 
 def delete_account_data(remark: str):
-    """删除账号数据"""
     sg.bucketDel(bucket='dd_kakan_token', key=remark)
     True
 
@@ -942,10 +854,6 @@ def set_account_auth(remark: str, expire_date: str):
 
 
 def get_unique_remark(base_remark: str, user_id: str) -> str:
-    """
-    获取唯一的备注名
-    如果备注已存在且属于其他用户，自动添加序号后缀
-    """
     user_accounts = get_user_accounts(user_id)
 
     if base_remark not in user_accounts:
@@ -965,7 +873,6 @@ def get_unique_remark(base_remark: str, user_id: str) -> str:
             return f"{base_remark}_{int(time.time())}"
 
 def sync_to_qinglong(api: QingLongAPI, env_name: str, remark: str, account_data: dict, expire_date: str, user_id: str):
-    """同步账号到青龙"""
     try:
         remarks = f"卡看:{remark}丨用户:{user_id}"
         if expire_date:
@@ -995,7 +902,6 @@ def sync_to_qinglong(api: QingLongAPI, env_name: str, remark: str, account_data:
         return {'success': False, 'message': str(e)}
 
 def remove_from_qinglong(api: QingLongAPI, env_name: str, remark: str) -> bool:
-    """从青龙删除账号"""
     try:
         existing_env = api.find_env_by_remark(env_name, remark)
         if existing_env:
@@ -1005,28 +911,15 @@ def remove_from_qinglong(api: QingLongAPI, env_name: str, remark: str) -> bool:
     except:
         return False
 
-def get_user_coin(user_id: str, coin_bucket: str) -> int:
-    return 0
 
-def deduct_user_coin(user_id: str, amount: int, coin_bucket: str) -> bool:
-    return True
 
 def handle_authorize(remarks: list, api: QingLongAPI, env_name: str, coin_price: int,
                     money_price: Decimal, zsm: str, coin_bucket: str, wechat_enabled: bool):
     return True
 
-def handle_coin_payment(total_coin: int, coin_bucket: str, days: int, account_count: int, is_batch: bool) -> bool:
-    return True
 
-def execute_authorization(remarks: list, api: QingLongAPI, env_name: str, days: int):
-    return True
 
 def parse_batch_selection(input_str: str, max_count: int) -> list:
-    """
-    解析批量选择输入
-    支持格式: 1,3,5 或 1-5 或 0(全选)
-    返回: 选中的索引列表(从0开始)
-    """
     input_str = input_str.strip()
 
     if input_str == '0':
@@ -1067,7 +960,6 @@ def parse_batch_selection(input_str: str, max_count: int) -> list:
     return sorted(list(indices))
 
 def cmd_help():
-    """显示帮助教程"""
     QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
 
     help_msg = """=====卡看教程=====
@@ -1122,13 +1014,11 @@ def cmd_help():
     sender.reply(help_msg)
 
 def mask_phone(phone: str) -> str:
-    """手机号脱敏处理"""
     if len(phone) == 11:
         return f"{phone[:3]}****{phone[7:]}"
     return phone[:3] + "****" + phone[-4:] if len(phone) > 7 else phone
 
 def cmd_login():
-    """登录账号（短信验证码方式）"""
     sender.reply("""=====卡看登录=====
 
 请输入手机号
@@ -1275,7 +1165,7 @@ def cmd_login():
                 fail_list.append({"name": display_name, "reason": f"发送验证码失败: {result}"})
 
     is_batch = len(lines) > 1
-    msg = f"=====登录结果=====\n"
+    msg = "=====登录结果=====\n"
     msg += f"{'批量' if is_batch else ''}处理: {len(lines)}个账号\n"
     msg += f"✅ 成功: {len(success_list)}个\n"
     msg += f"❌ 失败: {len(fail_list)}个\n"
@@ -1311,7 +1201,6 @@ def cmd_login():
             sender.reply('✅ 已保存账号，稍后可发送"卡看管理"进行授权')
 
 def cmd_manage():
-    """管理账号"""
     user_accounts = get_user_accounts(userid)
 
     if not user_accounts:
@@ -1379,7 +1268,6 @@ def handle_batch_select_authorize(user_accounts: list, api: QingLongAPI, env_nam
 
 def handle_single_account(remark: str, api: QingLongAPI, env_name: str, coin_price: int,
                           money_price: Decimal, zsm: str, coin_bucket: str, wechat_enabled: bool):
-    """处理单个账号"""
     auth_status = get_account_auth(remark)
     status_display, is_valid = check_auth_status(auth_status)
 
@@ -1430,7 +1318,6 @@ def handle_single_account(remark: str, api: QingLongAPI, env_name: str, coin_pri
             sender.reply('✅ 已取消删除')
 
 def handle_update_account(remark: str, api: QingLongAPI, env_name: str):
-    """处理账号更新"""
     sender.reply(f"""=====更新账号=====
 📱 账号备注: {remark}
 ------------------
@@ -1551,7 +1438,6 @@ def handle_update_account(remark: str, api: QingLongAPI, env_name: str):
         sender.reply(f'❌ 发送验证码失败: {result}')
 
 def handle_batch_delete(accounts: list, api: QingLongAPI, env_name: str):
-    """批量删除账号"""
     message = ""
     for idx, remark in enumerate(accounts, 1):
         auth_status = get_account_auth(remark)
@@ -1635,7 +1521,6 @@ def handle_batch_delete(accounts: list, api: QingLongAPI, env_name: str):
 
 def admin_panel(api: QingLongAPI, env_name: str, coin_price: int, money_price: Decimal,
                 zsm: str, coin_bucket: str, admin_ids: list, wechat_enabled: bool):
-    """管理员面板"""
     sender.reply("""=====卡看管理后台=====
 👑 管理员模式
 
@@ -1675,7 +1560,6 @@ def admin_batch_authorize_all(api: QingLongAPI, env_name: str):
     return True
 
 def admin_check_all():
-    """管理员检测所有账号"""
     users = sg.bucketAllKeys('dd_kakan_user')
     if not users:
         sender.reply('❌ 未找到任何绑定的卡看账号')
@@ -1718,7 +1602,6 @@ def admin_check_all():
 ==================""")
 
 def admin_cleanup(api: QingLongAPI, env_name: str):
-    """管理员清理过期账号"""
     users = sg.bucketAllKeys('dd_kakan_user')
     if not users:
         sender.reply('❌ 未找到任何用户数据')
@@ -1791,7 +1674,6 @@ def admin_cleanup(api: QingLongAPI, env_name: str):
         sender.reply('✅ 已取消清理')
 
 def admin_sync_all(api: QingLongAPI, env_name: str):
-    """管理员同步所有账号到青龙"""
     sender.reply('🔄 正在同步账号到青龙面板...')
 
     users = sg.bucketAllKeys('dd_kakan_user')
@@ -1842,7 +1724,6 @@ def admin_sync_all(api: QingLongAPI, env_name: str):
 ==================""")
 
 def cmd_query():
-    """实时查询账号信息"""
     user_accounts = get_user_accounts(userid)
 
     if not user_accounts:
@@ -1959,7 +1840,6 @@ def cmd_query():
     sender.reply(final_msg)
 
 def execute_single_account_progress(kakan_api, remark, count, proxy):
-    """执行单个账号的刷进度任务（攒钱罐提现）"""
     account_data = get_account_data(remark)
     if not account_data:
         return {'remark': remark, 'success': False, 'msg': '账号数据丢失'}
@@ -2027,7 +1907,6 @@ def execute_single_account_progress(kakan_api, remark, count, proxy):
     }
 
 def cmd_progress():
-    """刷进度命令"""
     user_accounts = get_user_accounts(userid)
 
     if not user_accounts:
@@ -2052,7 +1931,7 @@ def cmd_progress():
         return
 
     if len(valid_accounts) > 1:
-        message = f"""=====卡看刷进度=====
+        message = """=====卡看刷进度=====
 📱 已授权账号列表:
 ------------------
 """
@@ -2062,7 +1941,7 @@ def cmd_progress():
             status = "✅" if is_valid else "❌"
             message += f"{idx}. {remark} {status}\n"
 
-        message += f"""------------------
+        message += """------------------
 📝 请选择账号（多选用逗号分隔）
 💡 输入"0"选择全部已授权账号
 ⚠️ 输入"q"退出

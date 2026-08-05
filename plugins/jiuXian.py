@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.7]
+# [version: v1.7.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,14 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +91,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     's_jx_qlname': form.string().title('设置对接容器').default('').description('青龙容器参数用丨分割'),
@@ -142,7 +118,6 @@ import random
 import string
 import re
 import requests
-import base64
 from datetime import datetime
 import urllib3
 
@@ -213,7 +188,6 @@ class JiuxianConfig:
 
 
 def get_ai_config():
-    """获取AI验证码识别配置"""
     ai_switch = sg.bucketGet('s_jx', 'ai_ocr_switch') or 'false'
     ai_url = sg.bucketGet('s_jx', 'ai_api_url') or 'https://api.siliconflow.cn/v1'
     ai_key = sg.bucketGet('s_jx', 'ai_api_key') or ''
@@ -222,15 +196,11 @@ def get_ai_config():
 
 
 def generate_push_token(length=44):
-    """生成随机pushToken，由大小写字母和数字组成"""
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
 
 
 def get_captcha():
-    """获取验证码图片
-    :return: (成功标志, 验证码base64编码)
-    """
     try:
         params = JiuxianConfig.APP_DEVICE_INFO.copy()
         params["pushToken"] = generate_push_token()
@@ -262,10 +232,6 @@ def get_captcha():
 
 
 def recognize_captcha_with_ai(img_base64):
-    """使用AI识别验证码
-    :param img_base64: 验证码图片的base64编码
-    :return: 识别结果，失败返回None
-    """
     ai_switch, ai_url, ai_key, ai_model = get_ai_config()
 
     if not ai_key:
@@ -314,12 +280,11 @@ def recognize_captcha_with_ai(img_base64):
             if code:
                 return code
         return None
-    except Exception as e:
+    except Exception:
         return None
 
 
 def jx_login(username, password, verify_code=None):
-    """酒仙登录（带验证码）"""
     try:
         login_data = JiuxianConfig.APP_DEVICE_INFO.copy()
         login_data["pushToken"] = generate_push_token()
@@ -349,7 +314,6 @@ def jx_login(username, password, verify_code=None):
 
 
 def jx_userinfo(token):
-    """获取酒仙用户信息"""
     try:
         params = JiuxianConfig.MINI_PROGRAM_INFO.copy()
         params["token"] = token
@@ -378,14 +342,6 @@ def jx_userinfo(token):
         return False, str(e)
 
 
-def get_user_content():
-    osname = sg.bucketGet('s_jx', 'osname') or 'S_JIUXIAN'
-    qlname = sg.bucketGet('s_jx', 'qlname') or ''
-    Vipmoney = float(sg.bucketGet('s_jx', 'Vipmoney') or '1')
-    coin = sg.bucketGet(PLUGIN_CONFIG['bucket'], PLUGIN_CONFIG['coin_key'])
-    if not coin:
-        coin = sg.bucketGet('s_jx', 'coin') or '0'
-    return osname, qlname, '酒仙管理', '酒仙查询', '酒仙登录', Vipmoney, int(coin)
 
 
 def mask_account(account):
@@ -397,9 +353,6 @@ def mask_account(account):
 
 
 def login_with_captcha(username, password):
-    """登录流程：支持AI自动识别或手动输入验证码
-    :return: (success, token, result_msg)
-    """
     ai_switch, ai_url, ai_key, ai_model = get_ai_config()
 
     captcha_success, captcha_result = get_captcha()
@@ -412,7 +365,7 @@ def login_with_captcha(username, password):
     if ai_switch and ai_key:
         verify_code = recognize_captcha_with_ai(img_base64)
         if not verify_code:
-            sender.reply(f"❌ AI识别失败，请手动输入")
+            sender.reply("❌ AI识别失败，请手动输入")
 
     if not verify_code:
         sender.reply("请输入验证码（60秒内有效）：")
@@ -451,7 +404,7 @@ def login_with_captcha(username, password):
     success, token, result = jx_login(username, password, verify_code)
 
     if not success and result and "验证码" in result and ai_switch and ai_key:
-        sender.reply(f"⚠️ 验证码错误，正在重试...")
+        sender.reply("⚠️ 验证码错误，正在重试...")
         captcha_success, captcha_result = get_captcha()
         if captcha_success:
             verify_code = recognize_captcha_with_ai(captcha_result)
@@ -462,7 +415,6 @@ def login_with_captcha(username, password):
 
 
 def bind_account():
-    """绑定账号"""
     sender.reply(
         "=====酒仙登录=====\n"
         "支持批量登录，格式如下:\n"
@@ -557,9 +509,8 @@ def bind_account():
 
 
 def query_accounts():
-    """查询账号"""
     if not uservalue:
-        sender.reply(f"=====未绑定账号=====\n❌ 未找到账号\n💡 发送 酒仙登录 绑定\n==================")
+        sender.reply("=====未绑定账号=====\n❌ 未找到账号\n💡 发送 酒仙登录 绑定\n==================")
         return
 
     accounts = _sg_literal(uservalue)
@@ -626,13 +577,12 @@ def query_accounts():
             except Exception as e:
                 sender.reply(f"=====查询失败=====\n❌ 错误: {str(e)}\n==================")
 
-        sender.reply(f"✅ 查询完成")
+        sender.reply("✅ 查询完成")
     except Exception as e:
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 
 def manage_account():
-    """管理账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n==================")
         return
@@ -729,58 +679,18 @@ def authorize_multiple_accounts(usernames):
 
 
 
-def admin_authorization(username, account_info, days):
-    return True
 
 
 
-def generate_iframe_url(url):
-    """将URL通过base64编码生成iframe页面链接"""
-    try:
-        encoded = base64.b64encode(url.encode('utf-8')).decode('utf-8')
-        iframe_url = f"https://metwhale.github.io?u={encoded}"
-        return iframe_url
-    except Exception as e:
-        return url
 
 
-def generate_qrcode(url):
-    """生成二维码图片"""
-    QRCODE_API_URL = "https://qrcode.example.invalid/api/qrcode/generate"
-    QRCODE_API_KEY = ""
-
-    try:
-        response = requests.post(
-            QRCODE_API_URL,
-            json={"content": url},
-            headers={"X-API-Key": QRCODE_API_KEY},
-            timeout=10
-        )
-        if response.status_code == 200:
-            result = response.json()
-            if result.get('success') and result.get('data', {}).get('url'):
-                return result['data']['url']
-    except Exception as e:
-        pass
-
-    try:
-        encoded_url = requests.utils.quote(url)
-        api_url = f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
-        return api_url
-    except Exception as e:
-        return None
 
 
-def handle_mapay_order(project, months, money, pay_type=None):
-    return True
 
 
-def pay_order(project, months, money):
-    return True
 
 
 def get_ql_token(host, client_id, client_secret):
-    """获取青龙Token"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         resp = requests.get(url, timeout=10).json()
@@ -792,7 +702,6 @@ def get_ql_token(host, client_id, client_secret):
 
 
 def update_ql_env(username, account_info):
-    """更新青龙环境变量"""
     account = account_info.get('username', '')
     password = account_info.get('password', '')
     if not account or not password:
@@ -847,7 +756,6 @@ def update_ql_env(username, account_info):
 
 
 def delete_ql_env(username):
-    """删除青龙环境变量"""
     qlconfig = sg.bucketGet('s_jx', 'qlname')
     if not qlconfig:
         return False
@@ -883,7 +791,6 @@ def ks_auth():
 
 
 def show_tutorial():
-    """显示酒仙使用教程"""
     tutorial = (
         "=====酒仙教程=====\n"
         "📱 用户指令:\n"

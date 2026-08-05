@@ -3,21 +3,21 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.7]
+# [version: v1.8.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(【Oo]
+# [rule: ^(OPPO|oppo)商城(登录|登陆|管理|查询|清理|授权|教程)$|^(登录|登陆|管理|查询|清理)(OPPO|oppo)商城$]
 # [cron: 5 10 * * *]
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: OPPO商城提交计费版；2. 支持青龙呆呆面板；4.]
 # [depe: ["requests"]]
-# [staticmethod: def get_all_users():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -49,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -87,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_oppo_panel_type': form.string().title('对接面板类型').default('').description('qinglong=青龙面板 daidai=呆呆面板'),
@@ -173,7 +135,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
     except: pass
 
 def getusercontent():
-    """获取插件完整配置"""
     panel_type = sg.bucketGet('dd_oppo', 'panel_type') or 'qinglong'
     panel_type = panel_type.lower()
 
@@ -447,7 +408,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception("获取青龙Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def _get_daidai_token(self):
         try:
@@ -457,7 +418,7 @@ class SystemAPI:
             if response.status_code == 200:
                 return response.json()['data']['access_token']
             raise Exception("获取呆呆Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         if not self.enabled: return []
@@ -573,21 +534,6 @@ try:
 except:
     sys_api = type('obj', (object,), {'enabled': False, 'sync_env': lambda *a, **k: None, 'delete_env': lambda *a, **k: None})()
 
-def parse_panel_oppo_remark(remarks):
-    info = {"user": "", "account": "", "auth": "", "remark": ""}
-    for part in re.split(r"[丨|,，\s]+", str(remarks or "")):
-        part = part.strip()
-        if not part:
-            continue
-        if part.startswith("用户:"):
-            info["user"] = part.split(":", 1)[1].strip()
-        elif part.startswith("ID:"):
-            info["account"] = part.split(":", 1)[1].strip()
-        elif part.startswith("到期:"):
-            info["auth"] = part.split(":", 1)[1].strip()
-        elif part.startswith("备注:"):
-            info["remark"] = part.split(":", 1)[1].strip()[:20]
-    return info
 
 def sync_local_auth_from_panel():
     return True
@@ -615,7 +561,6 @@ class OPPOClient:
         }
 
     def get_points(self):
-        """实时拉取积分余额"""
         url = f"{self.base_url}/api/mobile/account/user/credits"
         try:
             res = requests.get(url, headers=self.headers, verify=False, timeout=10)
@@ -627,7 +572,7 @@ class OPPOClient:
                 if is_definitive_oppo_auth_failure(msg):
                     return f"失效({msg})"
                 return f"接口异常({msg})"
-        except Exception as e:
+        except Exception:
             return "服务挂机中请自行去小程序查询"
 
 def is_definitive_oppo_auth_failure(message):
@@ -714,7 +659,7 @@ def cxs():
                 vip_tag = f'✅{vip}'
             remark_disp = f" [{remark}]" if remark else ""
             menu += f"\n[{i}] {safe_acc}{remark_disp} {vip_tag}"
-        menu += f"\n------------------\n[a] 查询全部\n回复数字单独查询\n回复q退出\n=================="
+        menu += "\n------------------\n[a] 查询全部\n回复数字单独查询\n回复q退出\n=================="
         sender.reply(menu)
 
         sel = get_user_input(timeout=60)
@@ -772,7 +717,7 @@ def bindaccount():
             if remark_input == 'q': return
             elif remark_input != 'n' and remark_input: remark = remark_input.strip()[:20]
 
-        sender.reply(f"""=====OPPO商城 登录=====
+        sender.reply("""=====OPPO商城 登录=====
 👉 必须带上手机号录入，格式如下：
 ------------------
 格式：手机号#Token
@@ -796,7 +741,7 @@ def bindaccount():
             try:
                 val = line.strip()
                 if '#' not in val:
-                    sender.reply(f"❌ 格式错误: 缺少手机号前缀！请按照 手机号#Token 的格式发送。")
+                    sender.reply("❌ 格式错误: 缺少手机号前缀！请按照 手机号#Token 的格式发送。")
                     continue
 
                 parts = val.split('#')
@@ -804,7 +749,7 @@ def bindaccount():
                 token_val = parts[1].strip()
 
                 if len(phone) < 11:
-                    sender.reply(f"❌ 格式错误: 手机号长度不正确！")
+                    sender.reply("❌ 格式错误: 手机号长度不正确！")
                     continue
 
                 match = re.search(r'(eyJ[a-zA-Z0-9_+=/]+)', token_val)

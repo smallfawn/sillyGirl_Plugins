@@ -12,12 +12,12 @@
 # [icon: https://tg.96218.xyz/file/BQACAgUAAxkDAAIHCmm-LiuIplV2-MijHZDPMGWzMIqcAAIzHAACNG7wVX3FrlyGxlWhOgQ.png]
 # [description: 此插件出自徒弟：huawei；合并版【星妈会】插件，内置飞鹤项目与星妈会项目，插件内置运行；指令：星妈会登录、星妈会查询、星妈会管理、星妈会一键运行、星妈会后台、星妈会教程]
 # [depe: ["requests","urllib3"]]
-# [staticmethod: def _normalize_gateway(gateway):]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -53,16 +53,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -102,43 +92,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -149,8 +102,6 @@ import re
 import time
 import random
 from datetime import datetime
-from decimal import Decimal, InvalidOperation
-from urllib.parse import quote as url_quote
 
 import requests
 import urllib3
@@ -173,12 +124,6 @@ sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
 
-def ensure_bucket_tuple(bucket_or_buckets):
-    if not bucket_or_buckets:
-        return tuple()
-    if isinstance(bucket_or_buckets, (list, tuple, set)):
-        return tuple(item for item in bucket_or_buckets if item)
-    return (bucket_or_buckets,)
 
 
 def has_bucket_value(value):
@@ -231,9 +176,6 @@ def parse_bucket_phone_list(raw):
 
 FEIHE_API_APP_KEY = str(bucket_get_first(BUCKET_CONFIG, "appKey") or "").strip() or "TwUQ01lKS1Km5zlV2f7amsZc5EQYkTbv"
 
-def generate_qrcode_url(content):
-    encoded = url_quote(str(content or ""))
-    return "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={}".format(encoded)
 
 
 
@@ -679,10 +621,6 @@ def run_momclub_account(authorization):
     }
 
 
-def parse_bool(value):
-    if isinstance(value, bool):
-        return value
-    return str(value or "").strip().lower() == "true"
 
 
 def safe_int(value, default=0):
@@ -692,17 +630,8 @@ def safe_int(value, default=0):
         return default
 
 
-def parse_decimal(value, default_value="0"):
-    try:
-        return Decimal(str(value).strip())
-    except (InvalidOperation, ValueError, TypeError):
-        return Decimal(default_value)
 
 
-def format_money(amount):
-    if not isinstance(amount, Decimal):
-        amount = parse_decimal(amount, "0")
-    return "{:.2f}".format(amount)
 
 
 def sanitize_text(value):
@@ -721,11 +650,6 @@ def today_date():
     return datetime.now().date()
 
 
-def parse_date(date_str):
-    try:
-        return datetime.strptime(str(date_str), "%Y-%m-%d").date()
-    except Exception:
-        return None
 
 
 def read_input(prompt="", timeout=120000):
@@ -847,23 +771,8 @@ def has_project_binding(phone, project_name):
     return False
 
 
-def parse_pay_types(raw_value):
-    return {}
 
 
-def get_config():
-    payment_config = get_pay_config()
-    pay_types = payment_config.get("pay_types") or {}
-    zsm = str('2099-12-31' or "").strip()
-    return {
-        "price": parse_decimal(sg.bucketGet(BUCKET_CONFIG, "price") or "0.88", "0.88"),
-        "points_per_month": safe_int(sg.bucketGet(BUCKET_CONFIG, "points_per_month") or 100, 100),
-        "zsm": zsm,
-        "use_ma_pay": parse_bool('2099-12-31' or "false"),
-        "ma_pay_switch": parse_bool(payment_config.get("ma_pay_switch") or '2099-12-31' or "false"),
-        "ma_pay_ready": bool(payment_config.get("ma_pay_ready")),
-        "pay_types": pay_types,
-    }
 
 
 def parse_bind_line(raw_text):
@@ -1100,76 +1009,24 @@ def get_user_points(user_id=None):
     return 0
 
 
-def save_user_points(user_id, sign_coin, sign_points):
-    sg.bucketSet("dd_sign_coin", user_id, str(sign_coin))
-    sg.bucketSet("dd_sign_points", user_id, str(sign_points))
 
 
-def deduct_user_points(user_id, required_points):
-    points = get_user_points(user_id)
-    if points["total"] < required_points:
-        return False, points["total"]
-    sign_coin = points["dd_sign_coin"]
-    sign_points = points["dd_sign_points"]
-    if sign_coin >= required_points:
-        sign_coin -= required_points
-    else:
-        remain = required_points - sign_coin
-        sign_coin = 0
-        sign_points -= remain
-    save_user_points(user_id, sign_coin, sign_points)
-    return True, sign_coin + sign_points
 
 
-def parse_payment_result(raw_data):
-    return True
 
 
-def choose_ma_pay_type(config):
-    items = list((config["pay_types"] or {}).items())
-    if not items:
-        return None, None
-    if len(items) == 1:
-        return items[0]
-    lines = ["=====选择在线处理方式====="]
-    for index, item in enumerate(items, 1):
-        lines.append("[{}] {}".format(index, item[1]))
-    lines.append("回复序号选择，回复 q 取消")
-    lines.append("==================")
-    choice = read_input("\n".join(lines))
-    if not choice or not choice.isdigit():
-        return None, None
-    idx = int(choice) - 1
-    if idx < 0 or idx >= len(items):
-        return None, None
-    return items[idx]
 
 
-def wechat_payment_flow(display_name, months, amount, config):
-    return True
 
 
-def ma_payment_flow(display_name, months, amount, config):
-    return True
 
 
-def format_target_label(target_label):
-    text = str(target_label or "").strip()
-    if text.isdigit():
-        return mask_phone(text)
-    return text or "账号"
 
 
-def point_payment_flow(target_label, months, required_points):
-    return True
 
 
-def handle_authorize_payment(target_label, months, account_count=1):
-    return True
 
 
-def complete_authorization(phone, months, owner_userid=None):
-    return True
 
 
 def authorize_single_account(phone, owner_userid=None, free_mode=False):
@@ -1426,21 +1283,6 @@ def query_accounts():
     sender.reply("\n".join(lines))
 
 
-def choose_account():
-    phones = get_user_phones()
-    if not phones:
-        sender.reply("❌ 您还没有绑定任何账号")
-        return None
-    lines = ["=====选择账号====="]
-    for index, phone in enumerate(phones, 1):
-        lines.append("[{}] {} ({})".format(index, mask_phone(phone), get_auth(phone) or "未授权"))
-    lines.append("回复序号选择，回复 q 取消")
-    lines.append("==================")
-    choice = read_input("\n".join(lines))
-    if not choice or not choice.isdigit():
-        return None
-    idx = int(choice) - 1
-    return phones[idx] if 0 <= idx < len(phones) else None
 
 
 def update_momclub_token(phone):
@@ -1806,7 +1648,6 @@ def cron_run_all():
 
 
 def xmyx_cron_check():
-    """定时检测授权过期推送"""
     users = bucket_all_keys_merged(BUCKET_USER) or []
     today = str(today_date())
     for uid in users:

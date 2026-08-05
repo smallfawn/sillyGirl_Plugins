@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.1]
+# [version: v1.1.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,7 +14,11 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
 try: import ast as _sg_ast
@@ -48,15 +52,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -86,20 +81,7 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
 def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -114,7 +96,6 @@ class QingLongClient:
     envSet=add_envs; envUpdate=update_env; envDel=delete_env
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_NNDJ_ql_config': form.string().title('青龙配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
@@ -135,7 +116,7 @@ import base64
 import json
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -343,8 +324,6 @@ def get_auth(account_key: str) -> str:
     return '2099-12-31'
 
 
-def save_auth(account_key: str, expire_date: str):
-    return True
 
 
 def is_authorized(account_key: str) -> bool:
@@ -551,19 +530,6 @@ def choose_upload_target(include_both: bool = True) -> Optional[str]:
     return None
 
 
-def ensure_upload_target_ready(target: str) -> bool:
-    ql_ready = bool(get_ql_client())
-    daidai_ready = bool(get_daidai_client())
-    if target == "qinglong" and not ql_ready:
-        sender.reply("❌ 未配置青龙面板，无法上传")
-        return False
-    if target == "daidai" and not daidai_ready:
-        sender.reply("❌ 未配置呆呆面板，无法上传")
-        return False
-    if target == "both" and not ql_ready and not daidai_ready:
-        sender.reply("❌ 青龙和呆呆都未配置，无法上传")
-        return False
-    return True
 
 
 def upload_authorized_accounts(
@@ -834,79 +800,17 @@ def get_manage_points(uid: Optional[str] = None) -> int:
     return safe_int(sg.bucketGet("dd_sign_points", current_uid) or "0", 0)
 
 
-def parse_waitpay_amount(result: Any) -> Decimal:
-    if result is None:
-        return Decimal("0")
-    data = result
-    if isinstance(result, str):
-        text = result.strip()
-        try:
-            data = json.loads(text)
-        except Exception:
-            if "收款金额￥" in text:
-                try:
-                    amount_text = text.split("收款金额￥", 1)[1].splitlines()[0].strip()
-                    return safe_decimal(amount_text, "0")
-                except Exception:
-                    return Decimal("0")
-            return Decimal("0")
-    if isinstance(data, dict):
-        amount = data.get("Money")
-        if amount in (None, ""):
-            amount = data.get("money")
-        return safe_decimal(amount, "0")
-    return Decimal("0")
-
-
-def process_qrcode_payment(total_price: Decimal) -> bool:
-    return True
-
-
-def choose_ma_pay_type(config: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
-    items = list((config.get("pay_types") or {}).items())
-    if not items:
-        return None, None
-    if len(items) == 1:
-        return items[0]
-    lines = ["=====选择在线处理方式====="]
-    for index, item in enumerate(items, 1):
-        lines.append(f"[{index}] {item[1]}")
-    lines.append('回复序号选择，回复 "q" 取消')
-    lines.append("====================")
-    sender.reply("\n".join(lines))
-    choice = sender.input(120000, 1, False)
-    if not choice:
-        sender.reply("⏰ 操作超时")
-        return None, None
-    choice = choice.strip().lower()
-    if choice == "q" or not choice.isdigit():
-        return None, None
-    idx = int(choice) - 1
-    if idx < 0 or idx >= len(items):
-        return None, None
-    return items[idx]
-
-
-def ma_payment_flow(
-    target_label: str,
-    months: int,
-    amount: Decimal,
-    config: Dict[str, Any],
-    pay_type_key: Optional[str] = None,
-    pay_type_name: Optional[str] = None,
-) -> bool:
-    return True
 
 
 
-def calc_new_expire(account_key: str, months: int) -> str:
-    expire = parse_date(get_auth(account_key))
-    base_date = expire if expire and expire >= datetime.now().date() else datetime.now().date()
-    return (base_date + timedelta(days=30 * months)).strftime("%Y-%m-%d")
 
 
-def apply_authorization(accounts: List[str], months: int, owner_map: Optional[Dict[str, str]] = None):
-    return True
+
+
+
+
+
+
 
 
 def handle_authorize_accounts(accounts: List[str], owner_map: Optional[Dict[str, str]] = None, force_payment: bool = False):
@@ -1115,7 +1019,7 @@ def upload_accounts(force_target: Optional[str] = None):
         return
     if sender.isAdmin():
         sender.reply(
-            f"=====牛牛上传=====\n"
+            "=====牛牛上传=====\n"
             + "\n".join(build_panel_status_lines())
             + "\n"
             f"🎯 本次目标: {get_target_name(target)}\n"

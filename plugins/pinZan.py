@@ -14,9 +14,13 @@
 # [depe: ["pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_pz_superior_account': form.string().title('上级账号').default('').description('填写上级账号信息，格式：账号#密码，用于判断下级关系'),
@@ -158,7 +133,6 @@ def mask_phone(phone):
     return phone[:3] + "****" + phone[7:]
 
 def parse_accounts(raw):
-    """安全解析账号列表字符串"""
     if not raw:
         return []
     try:
@@ -168,7 +142,6 @@ def parse_accounts(raw):
         return []
 
 def parse_token_info(token_info):
-    """解析 token_info 字符串，返回 (phone, password, remark, token)"""
     if '|' in token_info:
         account_info, token = token_info.split('|', 1)
     else:
@@ -179,7 +152,6 @@ def parse_token_info(token_info):
     return parts[0], parts[1], parts[2], token
 
 def parse_batch_selection(input_str, max_count):
-    """解析批量选择输入，支持逗号分隔和范围，返回 (valid_indices, invalid_indices)"""
     selected = []
     for part in input_str.split(','):
         part = part.strip()
@@ -232,7 +204,6 @@ def _pz_encode(phone, password):
             encoded[8:20] + rand[200:300] + encoded[20:] + rand[300:400])
 
 def pz_do_login(phone, password):
-    """登录，返回 (success, message, token)"""
     try:
         headers = {**PZ_HEADERS_BASE, 'User-Agent': _pz_ua()}
         resp = requests.post(
@@ -249,14 +220,12 @@ def pz_do_login(phone, password):
         return False, f"登录异常: {str(e)}", None
 
 def _pz_session(token):
-    """构建带 token 的 session"""
     s = requests.Session()
     s.verify = False
     s.headers.update({**PZ_HEADERS_BASE, 'User-Agent': _pz_ua(), 'authorization': f'Bearer {token}'})
     return s
 
 def _ensure_token(token_info):
-    """确保 token 有效，过期则重新登录；返回 (phone, password, remark, token, new_token_info)"""
     phone, password, remark, token = parse_token_info(token_info)
     if not phone:
         return None, None, None, None, None
@@ -270,7 +239,6 @@ def _ensure_token(token_info):
     return phone, password, remark, token, token_info
 
 def pz_checkin(token_info):
-    """执行签到，返回 (success, message, new_token_info)"""
     phone, password, remark, token, token_info = _ensure_token(token_info)
     if not token:
         return False, "获取token失败", token_info
@@ -297,7 +265,6 @@ def pz_checkin(token_info):
         return False, f"签到异常: {str(e)}", token_info
 
 def pz_query_info(token_info):
-    """查询用户信息，返回 (success, message, user_id, popularize_id, balance)"""
     phone, password, remark, token, token_info = _ensure_token(token_info)
     if not token:
         return False, "获取token失败", None, None, None
@@ -320,22 +287,8 @@ def pz_query_info(token_info):
     except Exception as e:
         return False, f"查询异常: {str(e)}", None, None, None
 
-def pz_query_subordinates(token_info):
-    """查询下级列表，返回 (success, message, list)"""
-    phone, password, remark, token, token_info = _ensure_token(token_info)
-    if not token:
-        return False, "获取token失败", None
-    try:
-        r = _pz_session(token).get(f"{PZ_BASE}/home/popularize-list", timeout=30)
-        result = r.json()
-        if result.get('code') != 0:
-            return False, result.get('message', ''), None
-        return True, "查询成功", result.get('data', [])
-    except Exception as e:
-        return False, f"查询异常: {str(e)}", None
 
 def pz_get_superior_subordinates():
-    """登录上级账号并获取其下级列表，返回 (success, message, list)"""
     cfg = sg.bucketGet('dd_pz', 'superior_account') or ''
     if not cfg or '#' not in cfg:
         return False, "未配置上级账号", None
@@ -355,7 +308,6 @@ def pz_get_superior_subordinates():
         return False, f"获取异常: {str(e)}", None
 
 def _is_subordinate(user_id):
-    """判断 user_id 是否在上级下级列表中"""
     if not user_id:
         return False
     ok, _, subs = pz_get_superior_subordinates()
@@ -364,28 +316,11 @@ def _is_subordinate(user_id):
     return any(s.get('invitees_id') == user_id for s in subs)
 
 
-def _get_ma_pay_config():
-    return {}
 
-def _parse_wechat_pay_result(pay_result):
-    try:
-        if isinstance(pay_result, dict):
-            money = pay_result.get('Money') or pay_result.get('money')
-            name = pay_result.get('FromName') or pay_result.get('fromName', '')
-            return float(money), name
-        if isinstance(pay_result, str):
-            pay_json = json.loads(pay_result)
-            money = pay_json.get('Money') or pay_json.get('money', 0)
-            name = pay_json.get('FromName') or pay_json.get('fromName', '')
-            return float(money), name
-    except Exception:
-        pass
-    return None, None
 
 def process_payment(months, account_count=1):
     return True
 def _grant_auth(account, months):
-    """写入授权到期时间，返回到期日期字符串"""
     expire = datetime.now() + timedelta(days=30 * months)
     expire_str = expire.strftime('%Y-%m-%d')
     True
@@ -430,7 +365,6 @@ def _build_display_accounts(accounts):
     return display
 
 def _pick_accounts_for_whitelist(action_name):
-    """通用：展示账号列表让用户选一个，返回 (phone, password, remark, token) 或 None"""
     accounts = parse_accounts(uservalue)
     display = []
     for acc in accounts:
@@ -523,7 +457,7 @@ def pz_login():
 def pz_manage():
     accounts = parse_accounts(uservalue)
     if not accounts:
-        sender.reply(f"=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 品赞登录 绑定\n=================="); return
+        sender.reply("=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 品赞登录 绑定\n=================="); return
 
     display = _build_display_accounts(accounts)
     page_size, current_page = 10, 1
@@ -567,7 +501,7 @@ def pz_manage():
             except ValueError as e:
                 sender.reply(f'❌ {str(e)}'); continue
 
-            sender.reply(f"=====设置授权时长=====\n请输入授权月数(如:1)\n回复\"q\"退出\n==================")
+            sender.reply("=====设置授权时长=====\n请输入授权月数(如:1)\n回复\"q\"退出\n==================")
             mes_inp = sender.input(120000, 1, False)
             if not mes_inp or mes_inp.lower() == 'q':
                 continue
@@ -586,7 +520,6 @@ def pz_manage():
         sel = display[me - 1]
         acc = sel['account']
         masked = mask_phone(acc)
-        ti = sg.bucketGet(bucket='dd_pz_token', key=acc) or ''
         sender.reply(f"=====账号详情=====\n📱 账号: {masked}\n🔐 授权: {sel['vip_status']}\n------------------\n[1] 授权账号\n[2] 删除账号\n[q] 返回上级\n------------------\n请选择操作\n==================")
 
         choice = sender.input(120000, 1, False)
@@ -619,7 +552,7 @@ def pz_manage():
 def pz_query():
     accounts = parse_accounts(uservalue)
     if not accounts:
-        sender.reply(f"=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 品赞登录 绑定\n=================="); return
+        sender.reply("=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 品赞登录 绑定\n=================="); return
 
     msg = "=====品赞账号查询====="
     for i, acc in enumerate(accounts, 1):
@@ -635,13 +568,12 @@ def pz_query():
         if ok:
             msg += f"\n🆔 用户ID: {user_id}\n🎫 邀请码ID: {popularize_id}\n💰 金币: {balance}"
         else:
-            msg += f"\n⚠️ 信息查询失败"
+            msg += "\n⚠️ 信息查询失败"
         msg += "\n------------------"
     msg += "\n=================="
     sender.reply(msg)
 
 def execute_tasks():
-    """手动/定时任务执行（遍历当前用户账号）"""
     accounts = parse_accounts(uservalue)
     if not accounts:
         return "未绑定任何账号"
@@ -834,18 +766,8 @@ def pz_admin_auth():
         sender.reply("❌ 请输入1或2")
 
 
-def _get_pz_token_or_relogin(token_info, phone, password, remark):
-    """获取签名密钥时若token过期则自动重登，返回 (headers, token, new_token_info)"""
-    _, _, _, token = parse_token_info(token_info)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Authorization': f'Bearer {token}',
-    }
-    return headers, token, token_info
 
 def _refresh_token_if_needed(resp_json, phone, password, remark, acc):
-    """检测登录过期并重新登录，返回 (ok, new_token, new_token_info)"""
     msg = resp_json.get('message', '')
     if '登录已过期' in msg or '未登录' in msg or 'token' in msg.lower():
         sender.reply("⚠️ 登录已过期，正在自动重新登录...")
@@ -855,13 +777,12 @@ def _refresh_token_if_needed(resp_json, phone, password, remark, acc):
             sg.bucketSet(bucket='dd_pz_token', key=acc, value=new_info)
             sender.reply("✅ 重新登录成功，继续执行...")
             return True, new_token, new_info
-        sender.reply(f"❌ 重新登录失败")
+        sender.reply("❌ 重新登录失败")
         return False, None, None
     return False, None, None
 
 def _do_whitelist_for_account(item, ip):
-    """对单个账号执行加白，返回 (success, message)"""
-    phone, password, remark, token, token_info = item['phone'], item['password'], item['remark'], item['token'], item['token_info']
+    phone, password, remark, token = item['phone'], item['password'], item['remark'], item['token']
     acc = item['acc']
     if not token:
         return False, "未保存token，请重新登录"
@@ -955,7 +876,6 @@ def pz_admin_add_whitelist():
 
 
 def pz_auto_whitelist():
-    """管理员自动加白：自动获取公网IP，为管理员名下所有账号批量加白"""
     if not (hasattr(sender, 'isAdmin') and sender.isAdmin()):
         sender.reply("❌ 仅管理员可使用品赞自动加白指令"); return
 
@@ -1098,7 +1018,6 @@ def _push(user, message):
         print(f"推送失败: {str(e)}")
 
 def run_cron():
-    """定时任务：遍历所有用户执行签到"""
     all_users = sg.bucketAllKeys(bucket='dd_pz_user')
     for user in all_users or []:
         raw = sg.bucketGet(bucket='dd_pz_user', key=user)

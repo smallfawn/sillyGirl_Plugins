@@ -3,20 +3,24 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v2.3]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(望潮管理|管理望潮|望潮查询|查询望潮|望潮登录|望潮登陆|登录望潮|登陆望潮|望潮望潮|望潮教程|望潮检测|望潮通知|通知望潮|望潮对接测试|望潮清理|清理望潮|望潮同步|同步望潮)$]
+# [rule: ^(望潮管理|管理望潮|望潮查询|查询望潮|望潮登录|望潮登陆|登录望潮|登陆望潮|望潮望潮|望潮教程|望潮检测|望潮通知|通知望潮|望潮删除|删除望潮|望潮对接测试|望潮清理|清理望潮|望潮同步|同步望潮|望潮云端同步)$]
 # [cron: 56 8,15 * * *]
 # [icon: https://pp.myapp.com/ma_icon/0/icon_42259219_1711261436/256]
 # [description: 望潮插件；1.1更新了WXPUSH通知，现在可以把每个人登录的账户收益通知全部单独发给用户；1.6更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置]
 # [depe: ["cryptography","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_wcconfig_PanelType': form.string().title('面板类型').default('').description('对接面板：qinglong=青龙，daidai=呆呆（DaiDaiPanel），不填默认为青龙'),
@@ -268,7 +243,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         raise Exception(f"系统错误: {str(e)}")
 
 def _get_panel_config():
-    """返回 (panel_type, p1, p2, p3)：panel_type 为 'qinglong' 或 'daidai'，呆呆时为 host, app_key, app_secret，青龙时为 QLurl, ClientID, ClientSecret。"""
     if not dd_wc_qlname:
         raise Exception("未配置对接容器信息，请先在插件配置中设置")
     parts = [p.strip() for p in dd_wc_qlname.split('丨') if p.strip()]
@@ -280,7 +254,6 @@ def _get_panel_config():
 
 
 def _get_ql_config():
-    """青龙面板：返回 (QLurl, ClientID, ClientSecret)，仅用于青龙。"""
     panel_type, p1, p2, p3 = _get_panel_config()
     if panel_type != "qinglong":
         raise Exception("当前为呆呆面板，此操作仅支持青龙")
@@ -288,7 +261,6 @@ def _get_ql_config():
 
 
 def _daidai_get_token(host: str, app_key: str, app_secret: str) -> str:
-    """呆呆面板：通过 Open API 获取 access_token。"""
     url = f"{host}/api/open-api/token"
     payload = {"app_key": app_key, "app_secret": app_secret}
     resp = requests.post(url, json=payload, timeout=10)
@@ -301,7 +273,6 @@ def _daidai_get_token(host: str, app_key: str, app_secret: str) -> str:
 
 
 def _daidai_request(host: str, app_key: str, app_secret: str, method: str, path: str, json_data=None, token=None):
-    """呆呆面板统一请求：自动带 Authorization，401 时重新取 Token 再试一次。"""
     if token is None:
         token = _daidai_get_token(host, app_key, app_secret)
     url = f"{host}{path}" if path.startswith("/") else f"{host}/{path}"
@@ -319,7 +290,6 @@ def _daidai_request(host: str, app_key: str, app_secret: str, method: str, path:
 
 
 def _daidai_find_env(host: str, app_key: str, app_secret: str, name: str, keyword: str = ""):
-    """呆呆：按变量名和 remarks 关键字查找环境变量，返回 id 或 None。"""
     path = f"/api/envs?keyword={name}&page_size=100"
     resp = _daidai_request(host, app_key, app_secret, "get", path)
     if resp.status_code != 200:
@@ -351,7 +321,6 @@ def _daidai_delete_env(host: str, app_key: str, app_secret: str, env_id) -> bool
 
 
 def _daidai_list_envs(host: str, app_key: str, app_secret: str, keyword: str):
-    """按 keyword 查询环境变量，返回与青龙一致的格式：[{"id", "name", "value", "remarks"}, ...]"""
     path = f"/api/envs?keyword={keyword}&page_size=100"
     resp = _daidai_request(host, app_key, app_secret, "get", path)
     if resp.status_code != 200:
@@ -401,11 +370,6 @@ def QLupdate(osname, value, account, qlid, name, auth_time=None, user_id=None):
     _ql_request('put', '/open/envs', {"value": value, "name": osname, "remarks": remarks, "id": qlid})
 
 def Addenvs(osname, value, account, name, auth_time=None, user_id=None):
-    """
-    向当前配置的面板（青龙或呆呆）添加/更新环境变量。
-    - 成功时返回 True
-    - 失败时抛出异常（由上层根据需要捕获并提示）
-    """
     auth_time = auth_time or today_time
     owner_uid = user_id or userid
     remarks = f'望潮:{name}丨账户:{account}丨用户:{owner_uid}丨授权时间:{auth_time}丨望潮管理'
@@ -632,8 +596,6 @@ def _api_request(method, url, authorization="", body=None, x_token=None, proxies
     resp.raise_for_status()
     return resp.json() or {}
 
-def signin_get(path: str, authorization: str, proxies=None):
-    return _api_request('GET', f"https://act.tmlyun.com/activity-api/signin/h5{path}", authorization, None, None, proxies)
 
 def signin_post(path: str, body: dict, authorization: str = "", proxies=None):
     return _api_request('POST', f"https://act.tmlyun.com/activity-api/signin/h5{path}", authorization, body, None, proxies)
@@ -644,43 +606,6 @@ def lottery_get(path: str, authorization: str, x_token: str = None, proxies=None
 def lottery_post(path: str, authorization: str, body_dict: dict, proxies=None):
     return _api_request('POST', f"https://act.tmlyun.com/activity-api/lottery{path}", authorization, body_dict, None, proxies)
 
-def ts_qb(data, wxpusher_alluid, name, arg1, arg2):
-    api_url = 'https://wxpusher.zjiecode.com/api/send/message'
-    app_token = sg.bucketGet('dd_wcconfig', 'wxpusher_app_token') or ''
-    if not app_token:
-        return False
-
-    sorted_data = sorted(data, key=lambda x: x['序号'])
-
-    table_content = ''
-    for row in sorted_data:
-        table_content += f"<tr><td style='border: 1px solid #ccc; padding: 6px;'>{row['序号']}</td><td style='border: 1px solid #ccc; padding: 6px;'>{row['用户']}</td><td style='border: 1px solid #ccc; padding: 6px;'>{row['arg1']}</td><td style='border: 1px solid #ccc; padding: 6px;'>{row['arg2']}</td></tr>"
-
-    table_html = f"<table style='border-collapse: collapse;'><tr style='background-color: #f2f2f2;'><th style='border: 1px solid #ccc; padding: 8px;'>🆔</th><th style='border: 1px solid #ccc; padding: 8px;'>{name}</th><th style='border: 1px solid #ccc; padding: 8px;'>{arg1}</th><th style='border: 1px solid #ccc; padding: 8px;'>{arg2}</th></tr>{table_content}</table>"
-
-    params = {
-        "appToken": app_token,
-        'content': table_html,
-        'contentType': 3,  # 表格类型
-        'topicIds': [],  # 接收消息的用户ID列表，为空表示发送给所有用户
-        "summary": f'望潮日志推送',
-        "uids": [wxpusher_alluid],
-    }
-
-    response = requests.post(api_url, json=params)
-
-    notify = sg.bucketGet('dd_wcconfig', 'notify')
-
-    def _notify(msg):
-        if notify:
-            sg.notifyMasters(msg, notify.split(','))
-        sender.reply(msg)
-
-    if response.status_code == 200:
-        result = response.json()
-        _notify(f"🎉wxpusher望潮日志推送成功" if result.get('code') == 1000 else f'💔wxpusher望潮日志推送失败，错误信息：{result.get("msg", "未知错误")}')
-    else:
-        _notify('⛔️wxpusher望潮日志推送请求失败')
 
 
 class ATM_WC:
@@ -969,8 +894,8 @@ class ATM_WC:
             id_dict = {}
             zhszt = {}
             msg = '========望潮管理========\n'
-            msg += f'[0] 🎯 一键批量授权所有账号\n'
-            msg += f'[00] 🆕 一键批量授权过期账号\n'
+            msg += '[0] 🎯 一键批量授权所有账号\n'
+            msg += '[00] 🆕 一键批量授权过期账号\n'
             batch_size = 20
             batch_count = 0
             current_batch_msg = ''
@@ -1006,7 +931,7 @@ class ATM_WC:
             if xz == 'q' or xz == 'Q':
                 self.sender.reply("退出！")
             elif xz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             elif xz == '00':
                 self.batch_auth_expired_accounts(ts)
             else:
@@ -1022,9 +947,9 @@ class ATM_WC:
                         self.sqsj = zh['sqsj']
                         self.gl_zh()
                     else:
-                        self.sender.reply(f'输入有误，退出！')
+                        self.sender.reply('输入有误，退出！')
                 except:
-                    self.sender.reply(f'输入有误，退出！')
+                    self.sender.reply('输入有误，退出！')
 
     def gl_zh(self):
         msg = f'========账号管理========\n账号: {self.name}\n1、账号授权\n2、删除账号\n=====================\n回复序号,退出【q】！'
@@ -1033,13 +958,13 @@ class ATM_WC:
         if zh == 'q' or zh == 'Q':
             self.sender.reply("退出！")
         elif zh is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
         elif zh == '1':
             self.dssq()
         elif zh == '2':
             self.del_zh()
         else:
-            self.sender.reply(f'输入有误!!')
+            self.sender.reply('输入有误!!')
 
     def batch_user_auth(self, ts):
         return True
@@ -1107,7 +1032,6 @@ class ATM_WC:
                 return
 
             total_money = float(sqje) * months * len(expired_accounts)
-            total_money_str = f"{total_money:.2f}"
             total_days = int(sqsj) * months
 
             if float(sqje) == 0:
@@ -1134,7 +1058,7 @@ class ATM_WC:
                                 auth_time=new_sqsj,
                                 user_id=self.user
                             )
-                        except Exception as e:
+                        except Exception:
                             pass
 
                         success_count += 1
@@ -1256,7 +1180,7 @@ class ATM_WC:
                             try:
                                 Addenvs(osname=dd_wc_osname, value=acc['ql_value'], account=acc['account'],
                                        name=acc['name'], auth_time=new_sqsj)
-                            except Exception as e:
+                            except Exception:
                                 pass
 
                             success_count += 1
@@ -1455,7 +1379,7 @@ class ATM_WC:
                                 auth_time=new_sqsj,
                                 user_id=self.user
                             )
-                        except Exception as e:
+                        except Exception:
                             pass
 
                         success_count += 1
@@ -1563,7 +1487,7 @@ class ATM_WC:
 💰 总金额: {total_money}元
 ------------------"""
 
-            pay_menu = confirm_msg + f"""
+            pay_menu = confirm_msg + """
 =====选择支付方式===="""
 
             option_num = 1
@@ -1900,7 +1824,7 @@ class ATM_WC:
             self.sender.reply("退出！")
 
         elif zh is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
 
         elif zh == 'y' or zh == 'Y':
             ts = sg.bucketGet('dd_wccks', self.user)
@@ -1915,7 +1839,7 @@ class ATM_WC:
                 pass
             self.sender.reply(f'{self.name}>>>删除成功！')
         else:
-            self.sender.reply(f'输入有误，退出！')
+            self.sender.reply('输入有误，退出！')
 
     def batch_delete_accounts(self):
         ts = sg.bucketGet('dd_wccks', self.user)
@@ -1976,7 +1900,7 @@ class ATM_WC:
                     self.sender.reply(batch_msg)
                     current_batch_msg = ''
                 else:
-                    batch_msg += f'回复序号选择账号删除\n回复"0"一键删除所有账号\n回复"q"退出操作\n===================='
+                    batch_msg += '回复序号选择账号删除\n回复"0"一键删除所有账号\n回复"q"退出操作\n===================='
                     self.sender.reply(batch_msg)
 
         choice = self.sender.listen(60000)
@@ -2164,7 +2088,7 @@ class ATM_WC:
                     time.sleep(1)
                     continue
 
-            except Exception as e:
+            except Exception:
                 if retry == max_retries - 1:
                     try:
                         if self.get_info() is not True:
@@ -2189,7 +2113,7 @@ class ATM_WC:
             n = 0
             id_dict = {}
             msg = '========望潮查询========\n'
-            msg += f'[0] 一键查询所有账号\n'
+            msg += '[0] 一键查询所有账号\n'
 
             for k, y in ts.items():
                 n += 1
@@ -2202,8 +2126,8 @@ class ATM_WC:
                 display_name = self.get_display_name(y)
                 msg += f'[{n}] {display_name}\n'
 
-            msg += f'=====================\n'
-            msg += f'回复序号选择账号,退出【q】！'
+            msg += '=====================\n'
+            msg += '回复序号选择账号,退出【q】！'
             self.sender.reply(msg)
 
             xz = self.sender.listen(60000)
@@ -2220,7 +2144,7 @@ class ATM_WC:
             if xz == 'q' or xz == 'Q':
                 self.sender.reply("退出！")
             elif xz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             elif xz_int == 0:
                 total_accounts = len(ts)
                 for idx, (k, y) in enumerate(ts.items(), 1):
@@ -2237,7 +2161,7 @@ class ATM_WC:
                 }, query_proxy_api=query_proxy_api if query_proxy_api else None)
                 self.sender.reply(account_msg)
             else:
-                self.sender.reply(f'输入有误，退出！')
+                self.sender.reply('输入有误，退出！')
 
     def get_signin_records(self, proxies=None):
         try:
@@ -2257,7 +2181,7 @@ class ATM_WC:
                 token = resp_login.get("data", {}).get("token")
                 if not token:
                     return []
-            except Exception as e:
+            except Exception:
                 return []
 
             lottery_login_body = {
@@ -2275,7 +2199,7 @@ class ATM_WC:
                 x_token = lottery_data.get("xToken") or lottery_data.get("x_token") or None
                 if not lottery_token:
                     return []
-            except Exception as e:
+            except Exception:
                 return []
 
             try:
@@ -2634,14 +2558,14 @@ class ATM_WC:
         if zh == 'q' or zh == 'Q':
             self.sender.reply("退出！")
         elif zh is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
         elif zh == '1':
             self.sender.reply('请发送您的wx机器人赞赏码:')
             pz = self.sender.listen(60000)
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 self.sender.replyImage(pz)
                 sg.bucketSet('dd_wcconfig', 'wxzsm', f'{pz}')
@@ -2652,7 +2576,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 True
                 self.sender.reply(f'授权金额配置成功: {pz}元')
@@ -2662,7 +2586,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 True
                 self.sender.reply(f'授权时间配置成功: {pz}天')
@@ -2672,7 +2596,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 sg.bucketSet('dd_wcconfig', 'sdyx', f'{pz}')
                 self.sender.reply(f'是否用户手动续期配置成功: {pz}')
@@ -2682,7 +2606,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 sg.bucketSet('dd_wcconfig', 'notify', f'{pz}')
                 self.sender.reply(f'设置接受管理员通知的渠道: {pz}')
@@ -2692,7 +2616,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 sg.bucketSet('dd_wcconfig', 'wxpusher', f'{pz}')
                 self.sender.reply(f'设置WxPusher的UID为: {pz}')
@@ -2702,7 +2626,7 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 sg.bucketSet('dd_wcconfig', 'dlapi', f'{pz}')
                 self.sender.reply(f'设置望潮抽奖代理api地址: {pz}')
@@ -2712,12 +2636,12 @@ class ATM_WC:
             if pz == 'q' or pz == 'Q':
                 self.sender.reply("退出！")
             elif pz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             else:
                 sg.bucketSet('dd_wcconfig', 'cxproxy', f'{pz}')
                 self.sender.reply(f'设置望潮查询代理api地址: {pz}')
         else:
-            self.sender.reply(f'输入有误!!')
+            self.sender.reply('输入有误!!')
 
     def check_all_accounts_auth(self):
         return True
@@ -2937,22 +2861,22 @@ class ATM_WC:
         if zh == 'q' or zh == 'Q':
             self.sender.reply("退出！")
         elif zh is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
         elif zh == '1':
             self.qbsq()
         elif zh == '2':
             self.zdsq()
         else:
-            self.sender.reply(f'输入有误!!')
+            self.sender.reply('输入有误!!')
 
     def qbsq(self):
-        self.sender.reply(f"请输入给所有账号授权的天数！！\n回复序号,退出【q】！")
+        self.sender.reply("请输入给所有账号授权的天数！！\n回复序号,退出【q】！")
         sjts = self.sender.listen(60000)
         if sjts == 'q' or sjts == 'Q':
             self.sender.reply("退出！")
 
         elif sjts is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
 
         elif isinstance(int(sjts), int):
             ts = sg.bucketAllKeys('dd_wccks')
@@ -3002,7 +2926,7 @@ class ATM_WC:
         if myuid == 'q' or myuid == 'Q':
             self.sender.reply("退出！")
         elif myuid is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
         else:
             ts = sg.bucketGet('dd_wccks', myuid)
             if ts == '' or ts == '{}':
@@ -3044,7 +2968,7 @@ class ATM_WC:
                     self.sender.reply("退出！")
 
                 elif xz is None:
-                    self.sender.reply(f'超时退出！')
+                    self.sender.reply('超时退出！')
 
                 elif xz == '0':
                     self.uid_batch_auth(myuid, ts)
@@ -3066,7 +2990,7 @@ class ATM_WC:
                         self.sender.reply("退出！")
 
                     elif sjts is None:
-                        self.sender.reply(f'超时退出！')
+                        self.sender.reply('超时退出！')
 
                     elif isinstance(int(sjts), int):
                         dqsj = datetime.now().strftime("%Y-%m-%d")

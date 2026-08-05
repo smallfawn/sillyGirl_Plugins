@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.1]
+# [version: v1.1.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,15 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +93,8 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
 def select_accounts(sender,user_bucket,user_id,*a,**k):
     raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -134,7 +129,6 @@ _CONFIG_FIELD_MAP = {
 }
 
 import ast
-import base64
 import json
 import time
 
@@ -159,17 +153,9 @@ CURRENT_VERSION = "1.1.0"
 PAY_TYPE_NAMES = {'alipay': '支付宝', 'wxpay': '微信支付', 'qqpay': 'QQ钱包'}
 
 
-def get_user_content():
-    """获取用户配置内容。"""
-    osname = sg.bucketGet(CONFIG_BUCKET, 'osname') or 'S_YYQD'
-    qlname = sg.bucketGet(CONFIG_BUCKET, 'qlname') or ''
-    vip_money = float(sg.bucketGet(CONFIG_BUCKET, 'Vipmoney') or '1')
-    coin_raw = sg.bucketGet(CONFIG_BUCKET, 'coin') or '0'
-    return osname, qlname, '雨云管理', '雨云查询', '雨云登录', vip_money, int(coin_raw)
 
 
 def parse_batch_accounts(input_text):
-    """解析批量登录输入，格式为 账号#密码。"""
     accounts = []
     for line in input_text.strip().splitlines():
         line = line.strip()
@@ -184,7 +170,6 @@ def parse_batch_accounts(input_text):
 
 
 def load_user_accounts(user_id=None):
-    """读取用户绑定账号列表。"""
     target_user = str(user_id or userid)
     raw_value = sg.bucketGet(USER_BUCKET, target_user)
     if not raw_value:
@@ -200,7 +185,6 @@ def load_user_accounts(user_id=None):
 
 
 def save_user_accounts(accounts, user_id=None):
-    """保存用户绑定账号列表。"""
     target_user = str(user_id or userid)
     cleaned = []
     for account in accounts:
@@ -215,7 +199,6 @@ def save_user_accounts(accounts, user_id=None):
 
 
 def load_account_info(username):
-    """读取单个账号信息。"""
     raw_value = sg.bucketGet(TOKEN_BUCKET, username)
     if not raw_value:
         return None
@@ -228,7 +211,6 @@ def load_account_info(username):
 
 
 def build_env_value(account_info):
-    """构造面板环境变量值。"""
     username = str(account_info.get('username', '')).strip()
     password = str(account_info.get('password', '')).strip()
     if not username or not password:
@@ -241,7 +223,6 @@ def is_valid_auth(auth_time):
 
 
 def render_batch_result(title, success_list=None, fail_list=None, warn_list=None, extra_lines=None):
-    """生成批量操作统一回执。"""
     success_list = success_list or []
     fail_list = fail_list or []
     warn_list = warn_list or []
@@ -264,7 +245,6 @@ def render_batch_result(title, success_list=None, fail_list=None, warn_list=None
 
 
 def _get_ql_client():
-    """获取面板客户端，根据开关决定使用青龙或呆呆面板。"""
     osname = sg.bucketGet(CONFIG_BUCKET, 'osname') or 'S_YYQD'
     qlname = sg.bucketGet(CONFIG_BUCKET, 'qlname') or ''
     use_dp = str(sg.bucketGet(CONFIG_BUCKET, 'use_dumbpanel') or '').lower() == 'true'
@@ -275,7 +255,6 @@ def _get_ql_client():
 
 
 def update_ql_env(username, account_info):
-    """更新面板环境变量（青龙 / 呆呆面板通用）。"""
     env_value = build_env_value(account_info)
     if not env_value:
         return False
@@ -292,12 +271,10 @@ def update_ql_env(username, account_info):
 
 
 def delete_ql_env(username):
-    """删除面板环境变量（青龙 / 呆呆面板通用）。"""
     return _get_ql_client().delete_env(username)
 
 
 class RainyunAPI:
-    """雨云 API 客户端。"""
 
     BASE_URL = "https://api.v2.rainyun.com"
     TEST_URL = "http://www.baidu.com"
@@ -309,7 +286,6 @@ class RainyunAPI:
         self._set_proxy()
 
     def test_proxy(self, proxy_url):
-        """测试代理是否可用。"""
         try:
             proxies = {
                 'http': f'http://{proxy_url}',
@@ -321,7 +297,6 @@ class RainyunAPI:
             return False
 
     def _set_proxy(self):
-        """从代理 API 获取代理并设置到会话。"""
         if not self.proxy_api_url:
             return
 
@@ -341,7 +316,6 @@ class RainyunAPI:
             pass
 
     def login(self, username, password):
-        """登录雨云账号。"""
         try:
             response = self.session.post(
                 f"{self.BASE_URL}/user/login",
@@ -358,7 +332,6 @@ class RainyunAPI:
             return False, f"登录异常: {str(exc)}"
 
     def get_user_info(self):
-        """获取用户信息。"""
         if not self.csrf_token:
             return False, "未获取到 csrf_token"
 
@@ -380,7 +353,6 @@ class RainyunAPI:
 
 
 def yy_login(username, password):
-    """雨云登录兼容函数。"""
     api = RainyunAPI()
     success, message = api.login(username, password)
     if success:
@@ -389,14 +361,12 @@ def yy_login(username, password):
 
 
 def yy_userinfo(username, api, csrf_token=None):
-    """雨云用户信息兼容函数。"""
     if isinstance(api, RainyunAPI):
         return api.get_user_info()
     return False, "API对象无效"
 
 
 def bind_account():
-    """绑定账号。"""
     sender.reply(
         "=====雨云登录=====\n"
         "请输入账号信息\n"
@@ -481,7 +451,6 @@ def bind_account():
 
 
 def query_accounts():
-    """查询账号信息。"""
     _, selected = select_accounts(sender, USER_BUCKET, str(userid), AUTH_BUCKET, PLUGIN_NAME)
     if not selected:
         return
@@ -523,7 +492,6 @@ def query_accounts():
 
 
 def manage_account():
-    """管理账号。"""
     if not load_user_accounts():
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n==================")
         return
@@ -617,30 +585,15 @@ def authorize_multiple_accounts(usernames):
     return True
 
 
-def authorize_account(username, account_info):
-    return True
 
 
 
-def generate_iframe_url(url):
-    """将 URL 转为 iframe 页面链接。"""
-    try:
-        encoded = base64.b64encode(url.encode('utf-8')).decode('utf-8')
-        return f"https://metwhale.github.io?u={encoded}"
-    except Exception:
-        return url
 
 
-def process_qrcode_payment(project, months, money):
-    return True
 
 
-def process_mapay_payment(project, months, money, pay_type='alipay'):
-    return True
 
 
-def pay_order(project, months, money):
-    return True
 
 
 
@@ -649,7 +602,6 @@ def ks_auth():
 
 
 def show_tutorial():
-    """显示使用教程。"""
     tutorial = """
 =====雨云签到教程=====
 📱 用户指令:
@@ -685,7 +637,6 @@ def show_tutorial():
 
 
 def main():
-    """主入口。"""
     msg = sender.getMessage()
     lower_msg = msg.lower()
 

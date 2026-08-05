@@ -13,9 +13,12 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -51,16 +54,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -100,43 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -165,7 +121,6 @@ proxy_lock = threading.Lock()
 
 
 def get_proxy(force_new=False, account_key=None):
-    """获取代理地址"""
     if not IS_PROXY or not proxy_url:
         return None
     if account_key and not force_new:
@@ -202,7 +157,6 @@ def get_headers(token: str) -> dict:
 
 
 def get_score_rank(token: str, account_key: str = None) -> Optional[dict]:
-    """获取积分排名和可用积分"""
     url = f"{BASE_URL}/bil-front/v2.0/accounts/myScoreRank"
     try:
         proxies = get_proxy(account_key=account_key) if IS_PROXY else None
@@ -228,7 +182,6 @@ def get_score_rank(token: str, account_key: str = None) -> Optional[dict]:
 
 
 def get_score_mall(token: str, account_key: str = None) -> Optional[list]:
-    """获取积分商城商品列表"""
     url = f"{BASE_URL}/bil-front/v2.0/accounts/scoreMall"
     try:
         proxies = get_proxy(account_key=account_key) if IS_PROXY else None
@@ -249,7 +202,6 @@ def get_score_mall(token: str, account_key: str = None) -> Optional[list]:
 
 
 def exchange_goods(token: str, product_no: str, account_key: str = None) -> tuple:
-    """兑换积分商品"""
     url = f"{BASE_URL}/bil-front/v2.0/exchange"
     headers = get_headers(token)
     headers["content-type"] = "application/json;charset=UTF-8"
@@ -277,7 +229,6 @@ userid = sender.getUserID()
 
 
 def get_config():
-    """获取配置信息（包含代理定价）"""
     try:
         price_str = sg.bucketGet(bucket="G_SYC", key="price") or "0.88"
         price = float(price_str) if price_str.replace(".", "", 1).isdigit() else 0.88
@@ -311,7 +262,7 @@ def get_config():
             "agent_price": agent_price,
             "agent_points_per_month": agent_points_per_month,
         }
-    except Exception as e:
+    except Exception:
         return {
             "price": 0.88,
             "zsm": "",
@@ -325,18 +276,10 @@ def get_user_points(user_id=None):
     return 0
 
 
-def set_user_points(user_id, points):
-    """设置用户积分"""
-    sg.bucketSet("dd_sign_coin", user_id, str(points["dd_sign_coin"]))
-    sg.bucketSet("dd_sign_points", user_id, str(points["dd_sign_points"]))
 
 
-def extract_payment_info(payment_result):
-    return True
 
 
-def verify_payment_status(payment_info, expected_amount):
-    return True
 
 
 def agent_wechat_payment_flow(days, amount, config):
@@ -352,7 +295,6 @@ def get_all_authorized_accounts():
 
 
 def get_user_by_phone(phone):
-    """根据手机号查找用户ID"""
     try:
         all_users = sg.bucketAllKeys("G_SYC_user") or []
         for user_id in all_users:
@@ -370,7 +312,6 @@ def adjust_authorization_time(phone, days):
 
 
 def batch_adjust_all_users(days):
-    """批量调整所有用户的授权时间"""
     authorized_accounts = get_all_authorized_accounts()
     if not authorized_accounts:
         return 0, 0, []
@@ -390,7 +331,6 @@ def batch_adjust_all_users(days):
 
 
 def parse_selection(choice_str, max_index):
-    """解析用户选择（支持 1,4,6 或 1-8 或 0）"""
     indices = []
     if choice_str == "0":
         return list(range(max_index))
@@ -416,7 +356,6 @@ def parse_selection(choice_str, max_index):
 
 
 def adjust_single_user():
-    """调整单个用户的授权时间"""
     sender.reply("请输入需要授权的用户ID:")
     user_id_input = sender.input(60000, 1, False)
     if not user_id_input:
@@ -430,7 +369,7 @@ def adjust_single_user():
         phones_json = sg.bucketGet("G_SYC_user", target_user_id) or "[]"
         phones = json.loads(phones_json)
     except:
-        sender.reply(f"❌ 用户ID不存在或数据错误")
+        sender.reply("❌ 用户ID不存在或数据错误")
         return
     if not phones:
         sender.reply(f"❌ 用户 {target_user_id[:20]}... 没有绑定账号")
@@ -442,7 +381,7 @@ def adjust_single_user():
         account_list.append(
             {"phone": phone, "masked_phone": masked_phone, "expire_date": expire_date}
         )
-    list_msg = f"====用户账号列表====\n"
+    list_msg = "====用户账号列表====\n"
     list_msg += f"👤 用户ID: {target_user_id[:30]}...\n"
     list_msg += f"📱 账号数: {len(account_list)}个\n"
     list_msg += "--------------------\n"
@@ -490,7 +429,7 @@ def adjust_single_user():
         sender.reply("❌ 天数必须为整数（支持+/-）")
         return
     days_display = f"+{days}" if days > 0 else str(days)
-    confirm_msg = f"⚠️ 确认操作\n"
+    confirm_msg = "⚠️ 确认操作\n"
     confirm_msg += f"📱 选中账号: {len(selected_accounts)}个\n"
     confirm_msg += f"📆 调整天数: {days_display}天\n"
     confirm_msg += "回复 Y 确认执行"
@@ -526,7 +465,6 @@ def adjust_single_user():
 
 
 def fix_expire_year():
-    """修正到期时间，把超过 26年的改成25年"""
     authorized_accounts = get_all_authorized_accounts()
     if not authorized_accounts:
         sender.reply("❌ 没有找到已授权账号")
@@ -553,7 +491,7 @@ def fix_expire_year():
     if not need_fix:
         sender.reply("✅ 没有需要修正的账号（无超过 26年的记录）")
         return
-    list_msg = f"====需要修正的账号====\n"
+    list_msg = "====需要修正的账号====\n"
     list_msg += f"📱 共 {len(need_fix)} 个账号到期时间超过 26年\n"
     list_msg += "--------------------\n"
     for acc in need_fix[:20]:
@@ -606,7 +544,6 @@ def fix_expire_year():
 
 
 def delete_expired_accounts():
-    """删除所有过期账号"""
     today = datetime.now().strftime("%Y-%m-%d")
     authorized_accounts = get_all_authorized_accounts()
     if not authorized_accounts:
@@ -629,7 +566,7 @@ def delete_expired_accounts():
     if not expired_list:
         sender.reply("✅ 没有过期账号")
         return
-    list_msg = f"====过期账号列表====\n"
+    list_msg = "====过期账号列表====\n"
     list_msg += f"📱 共 {len(expired_list)} 个过期账号\n"
     list_msg += "--------------------\n"
     for acc in expired_list[:20]:
@@ -686,7 +623,6 @@ def delete_expired_accounts():
 
 
 def delete_user_accounts():
-    """删除用户名下所有账号（支持批量）"""
     sender.reply(
         "=====删除操作=====\n"
         "[1] 删除所有过期账号\n"
@@ -747,7 +683,7 @@ def delete_user_accounts():
     if not valid_users:
         sender.reply(f"❌ 输入的 {len(user_ids)} 个用户ID均无绑定账号")
         return
-    list_msg = f"====批量删除确认====\n"
+    list_msg = "====批量删除确认====\n"
     list_msg += f"� 用户数: {len(valid_users)}个\n"
     list_msg += f"📱 总账号: {len(all_accounts)}个\n"
     list_msg += "--------------------\n"
@@ -791,7 +727,7 @@ def delete_user_accounts():
                     pass
                 user_success += 1
                 success_count += 1
-            except Exception as e:
+            except Exception:
                 fail_count += 1
         try:
             sg.bucketDel("G_SYC_user", target_user_id)
@@ -822,7 +758,6 @@ def delete_user_accounts():
 
 
 def query_exchange_stock():
-    """查询兑换库存（随机选择当前用户一个账号）"""
     phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
     try:
         phones = json.loads(phones_json)
@@ -842,7 +777,7 @@ def query_exchange_stock():
     if not mall_list:
         sender.reply("❌ 获取商城数据失败，token可能已过期")
         return
-    msg = f"=====兑换库存查询=====\n"
+    msg = "=====兑换库存查询=====\n"
     for g in mall_list:
         name = (
             g.get("goodsName", "").replace("顺易充", "").replace("服务费", "").strip()
@@ -857,7 +792,6 @@ def query_exchange_stock():
 
 
 def do_exchange_stock():
-    """库存兑换（选账号、选商品、输数量、确认兑换）"""
     phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
     try:
         phones = json.loads(phones_json)
@@ -983,7 +917,6 @@ def do_exchange_stock():
 
 
 def summarize_all_users():
-    """统计每个用户名下的账号数量"""
     sender.reply("🔍 正在统计所有用户账号...")
     all_users = sg.bucketAllKeys("G_SYC_user") or []
     if not all_users:
@@ -1035,7 +968,6 @@ def summarize_all_users():
 
 
 def run_user_accounts():
-    """运行发送指令的微信IID名下所有的已经授权、未到期的账号"""
     try:
         phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
         phones = json.loads(phones_json)
@@ -1087,7 +1019,7 @@ def run_user_accounts():
             sender.reply(msg)
             return
 
-        msg = f"=====可运行账号列表=====\n"
+        msg = "=====可运行账号列表=====\n"
         msg += f"📱 找到 {len(valid_accounts)} 个已授权、未到期的账号\n"
         msg += "--------------------\n"
         for idx, acc in enumerate(valid_accounts, 1):
@@ -1108,7 +1040,6 @@ def run_user_accounts():
 
 
 def agent_auth_purchase():
-    """顺易充代理授权 - 使用代理资格"""
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
 
     sender.reply(f"""=====顺易充代理授权=====
@@ -1232,7 +1163,6 @@ def agent_auth_purchase():
 
 
 def agent_sync_accounts():
-    """顺易充代理 - 同步名下所有账号到代理到期时间"""
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
 
     agent_expire = '2099-12-31'
@@ -1309,7 +1239,7 @@ def agent_sync_accounts():
             True
             success_count += 1
             results.append(f"✅ {masked_phone}: → {agent_expire}")
-        except Exception as e:
+        except Exception:
             fail_count += 1
             results.append(f"❌ {masked_phone}: 同步失败")
 
@@ -1327,7 +1257,6 @@ def agent_sync_accounts():
 
 
 def agent_query_status():
-    """顺易充代理查询 - 查询当前用户的代理授权状态"""
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
 
     agent_expire = '2099-12-31'
@@ -1375,7 +1304,6 @@ def agent_query_status():
 
 
 def admin_agent_config():
-    """顺易充代理配置 - 管理员为指定用户设置代理授权时间"""
     if not sender.isAdmin():
         sender.reply("❌ 此功能仅限管理员使用")
         return
@@ -1630,8 +1558,8 @@ def main():
     if len(results) <= 20:
         summary += "\n详细结果:\n" + "\n".join(results)
     else:
-        summary += f"\n前10个结果:\n" + "\n".join(results[:10])
-        summary += f"\n...\n后10个结果:\n" + "\n".join(results[-10:])
+        summary += "\n前10个结果:\n" + "\n".join(results[:10])
+        summary += "\n...\n后10个结果:\n" + "\n".join(results[-10:])
     sender.reply(summary)
 
 

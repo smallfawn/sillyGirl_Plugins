@@ -13,9 +13,14 @@
 # [depe: ["pycryptodome","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+process_authorization = lambda *args, **kwargs: True
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     's_xjb_config_xjb_qlname': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割'),
@@ -137,9 +113,6 @@ import hmac
 import base64
 import uuid
 from urllib.parse import quote
-import re
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
 
@@ -190,7 +163,6 @@ B = "10050"  # client_id
 C = "FR*r!isE5W"  # 签名密钥
 
 def get_user_content():
-    """获取用户配置内容"""
     xjb_osname = sg.bucketGet('s_xjb_config', 'xjb_osname') or 'S_XJB'
     xjb_qlname = sg.bucketGet('s_xjb_config', 'xjb_qlname') or ''
     xjb_managecommand = sg.bucketGet('s_xjb_config', 'xjb_managecommand') or '新江北管理'
@@ -212,26 +184,15 @@ def get_user_content():
             randomquerycommand, randomsigncommand, xjbVipmoney, xjbcoin)
 
 def mask_phone(phone):
-    """手机号脱敏处理"""
     if not phone or len(phone) != 11:
         return phone
     return f"{phone[:3]}****{phone[7:]}"
 
-def get_random_user_agent():
-    """获取随机UA"""
-    backup_ua_list = [
-        'Mozilla/5.0 (Linux; Android 15; 2210132C Build/AQ3A.240812.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/135.0.7049.37 Mobile Safari/537.36',
-        'Mozilla/5.0 (Linux; Android 14; Pixel 6 Build/UQ1A.240605.004; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/133.0.6638.41 Mobile Safari/537.36',
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
-    ]
-    return random.choice(backup_ua_list)
 
 def generate_uuid():
-    """生成UUID"""
     return str(uuid.uuid4())
 
 def generate_device_info():
-    """生成设备信息"""
     version = "1.7.0"
     device_uuid = generate_uuid()
 
@@ -254,7 +215,6 @@ def generate_device_info():
     return ua, common_ua, device_uuid
 
 def get_signature(path, session_id="", request_uuid=""):
-    """生成API签名"""
     timestamp = int(time.time() * 1000)
     if not request_uuid:
         request_uuid = generate_uuid()
@@ -273,7 +233,6 @@ def get_signature(path, session_id="", request_uuid=""):
     }
 
 def get_passport_signature(body_params, signature_key, request_uuid=""):
-    """生成passport API签名"""
     if not request_uuid:
         request_uuid = generate_uuid()
 
@@ -291,7 +250,6 @@ def get_passport_signature(body_params, signature_key, request_uuid=""):
     }
 
 def encrypt_password(password):
-    """使用RSA加密密码"""
     try:
         public_key_str = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD6XO7e9YeAOs+cFqwa7ETJ+WXi
@@ -312,7 +270,6 @@ HMlluw4ZYmnOwg+thwIDAQAB
         return password  # 如果加密失败，返回原始密码
 
 def request_passport_api(path, ua):
-    """请求passport API"""
     url = f"https://passport.tmuyun.com{path}"
 
     headers = {
@@ -331,7 +288,6 @@ def request_passport_api(path, ua):
         return None
 
 def request_passport_post(path, data, ua, signature_key):
-    """发送passport POST请求"""
     url = f"https://passport.tmuyun.com{path}"
 
     sig_info = get_passport_signature(data, signature_key)
@@ -354,7 +310,6 @@ def request_passport_post(path, data, ua, signature_key):
         return None
 
 def request_vapp_api(path, session_id, account_id, common_ua, method='GET', data=None):
-    """请求vapp API"""
     url = f"https://vapp.tmuyun.com{path}"
 
     sig_info = get_signature(path, session_id)
@@ -390,7 +345,6 @@ def request_vapp_api(path, session_id, account_id, common_ua, method='GET', data
         return None
 
 def get_user_info(account_info):
-    """获取用户信息和积分"""
     try:
         phone = account_info.get('phone', '')
         password = account_info.get('password', '')
@@ -450,7 +404,6 @@ def get_user_info(account_info):
         return {"success": False, "message": str(e)}
 
 def bind_account():
-    """绑定新江北账号"""
     phone_guide_lines = [
         "请输入手机号码",
         "------------------",
@@ -606,11 +559,10 @@ def bind_account():
 ==================""")
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
         sender.reply(format_message("未绑定账号", [
             "❌ 未找到任何账号信息",
-            f"💡 发送 新江北登录 绑定"
+            "💡 发送 新江北登录 绑定"
         ]))
         return
 
@@ -744,11 +696,6 @@ def query_accounts():
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 def format_message(title, content_lines):
-    """
-    格式化消息，统一处理消息格式
-    title: 消息标题
-    content_lines: 消息内容行的列表
-    """
     message = f"""
 ====={title}=====
 """
@@ -757,7 +704,6 @@ def format_message(title, content_lines):
     return message
 
 def show_error(title, error_msg, extra_info=None):
-    """显示统一格式的错误消息"""
     content = [f"❌ {error_msg}"]
     if extra_info:
         content.append("------------------")
@@ -769,7 +715,6 @@ def show_error(title, error_msg, extra_info=None):
     return format_message(title, content)
 
 def get_ql_config():
-    """获取青龙配置信息"""
     try:
         qlconfig = sg.bucketGet('s_xjb_config', 'xjb_qlname')
         if not qlconfig:
@@ -793,7 +738,6 @@ def get_ql_config():
         return {"code": 500, "msg": f"获取青龙配置发生异常: {str(e)}", "data": None}
 
 def get_ql_token(host, client_id, client_secret):
-    """获取青龙 token"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         response = requests.get(url, timeout=10)
@@ -811,7 +755,6 @@ def get_ql_token(host, client_id, client_secret):
         return None
 
 def update_ql_env(phone, account_info):
-    """更新青龙环境变量"""
     try:
         print(f"开始更新青龙变量: {phone}")
 
@@ -937,7 +880,6 @@ def update_ql_env(phone, account_info):
         return False
 
 def delete_ql_env(phone):
-    """删除青龙环境变量"""
     try:
         env_name = sg.bucketGet('s_xjb_config', 'xjb_osname') or 'S_XJB'
 
@@ -1003,11 +945,10 @@ def delete_ql_env(phone):
         return False
 
 def manage_account():
-    """账号管理功能"""
     if not uservalue:
         sender.reply(format_message("未绑定账号", [
             "❌ 未找到任何账号信息",
-            f"💡 发送 新江北登录 绑定"
+            "💡 发送 新江北登录 绑定"
         ]))
         return
 
@@ -1159,10 +1100,8 @@ def manage_account():
         sender.reply(f"❌ 操作失败: {str(e)}")
 
 def show_tutorial():
-    """显示新江北教程"""
-    tutorial_url = sg.bucketGet('s_xjb_config', 'tutorial_url') or 'https://example.com/tutorial'
 
-    tutorial = f"""
+    tutorial = """
 =====新江北使用教程=====
 🔍 基础功能:
 1. 新江北登录 - 绑定账号
@@ -1180,114 +1119,13 @@ def show_tutorial():
 =================="""
     sender.reply(tutorial)
 
-class MaPay_Api:
-    def __init__(self, config):
-        """初始化在线处理API类"""
-        self.config = config
-        self.pay_type_names = {
-            'alipay': '支付宝',
-            'wxpay': '微信支付',
-            'qqpay': 'QQ钱包',
-        }
 
-    def calculate_md5(self, text):
-        """计算字符串的MD5值"""
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
 
-    def sort_dict_by_key(self, data):
-        """对字典按照键名排序"""
-        return dict(sorted(data.items(), key=lambda x: x[0]))
-
-    def create_payment(self, amount, out_trade_no, name, user_id, pay_type=None, sitename=""):
-        return True
-
-    def query_order(self, order_no, order_type=2):
-        """查询订单状态"""
-        try:
-            query_url = self.config['gateway']
-            if query_url.endswith('/'):
-                query_url = query_url[:-1]
-            query_url = f"{query_url}/api/findorder"
-
-            params = {
-                "order_no": order_no,  # 订单号
-                "type": order_type     # 订单号类型
-            }
-
-            response = requests.get(query_url, params=params, timeout=10)
-
-            if response.status_code != 200:
-                return False, None, f"查询订单失败，HTTP状态码: {response.status_code}"
-
-            try:
-                result = response.json()
-            except:
-                return False, None, "查询订单失败，返回数据格式错误"
-
-            code = result.get('code', 0)
-            result.get('msg', '未知状态')
-            data = result.get('data', {})
-
-            if code == 200:  # 在线处理API返回的成功状态码是200
-                order_status = data.get('status')
-                if order_status == 1:  # 假设1表示支付成功
-                    return True, data, "支付成功"
-                else:
-                    return True, data, "订单未支付"
-            else:
-                return True, data, "未找到订单数据"
-
-        except Exception as e:
-            return False, None, f"查询订单异常: {str(e)}"
-
-class PaymentCallbackHandler(BaseHTTPRequestHandler):
-    """支付回调处理器"""
-    def do_GET(self):
-        try:
-            parsed_url = urlparse(self.path)
-            path = parsed_url.path.strip('/')
-            order_no = path
-
-            payment_status[order_no] = {'paid': True, 'time': time.time()}
-
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'Payment received')
-
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(f'Error: {str(e)}'.encode())
-
-    def log_message(self, format, *args):
-        pass
-
-def start_payment_server(order_no, callback_url, port):
-    return True
 
 def poll_mapi_payment_status(order_no, max_tries=30):
     return True
 
-def generate_qrcode(url):
-    """生成二维码图片
 
-    Args:
-        url: 要生成二维码的URL
-
-    Returns:
-        str: 二维码API的URL
-    """
-    try:
-        encoded_url = quote(url)
-        api_url = f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
-        return api_url
-    except Exception as e:
-        return None
-
-def poll_mapi_payment_status(order_no, max_tries=30):
-    return True
 
 def authorize_account(phone, account_info):
     return True
@@ -1296,87 +1134,13 @@ def authorize_multiple_accounts(accounts):
     return True
 
 
-def process_coin_exchange(phone, account_info, months, xjbcoin):
-    """处理积分兑换"""
-    try:
-        if not xjbcoin or int(xjbcoin) <= 0:
-            sender.reply(f"""
-=====兑换失败=====
-❌ 未配置积分价格
-------------------
-请检查配置配置积分兑换功能
-==================""")
-            return False
 
-        required_coins = months * int(xjbcoin)
 
-        user_coins = sg.bucketGet('dd_sign_points', userid) or '0'
-        user_coins = int(user_coins)
-
-        if user_coins < required_coins:
-            sender.reply(f"""
-=====积分不足=====
-❌ 积分余额不足
-------------------
-💰 当前积分: {user_coins}
-🔢 需要积分: {required_coins}
-🔍 差额: {required_coins - user_coins}
-==================""")
-            return False
-
-        new_coins = user_coins - required_coins
-        sg.bucketSet('dd_sign_points', userid, str(new_coins))
-
-        success = process_authorization(phone, account_info, months)
-
-        if success:
-            sender.reply(f"""
-=====积分兑换成功=====
-✅ 已扣除积分: {required_coins}
-💰 剩余积分: {new_coins}
-------------------
-授权已处理完成
-==================""")
-            return True
-        else:
-            sg.bucketSet('dd_sign_points', userid, str(user_coins))
-            sender.reply(f"""
-=====积分退还=====
-⚠️ 授权处理失败，已退还积分
-------------------
-💰 当前积分: {user_coins}
-==================""")
-            return False
-    except Exception as e:
-        try:
-            original_coins = sg.bucketGet('dd_sign_points', userid) or '0'
-            original_coins = int(original_coins)
-            if original_coins < user_coins:
-                sg.bucketSet('dd_sign_points', userid, str(user_coins))
-        except:
-            pass
-
-        error_msg = f"""
-=====兑换异常=====
-❌ 积分兑换过程出错
-------------------
-错误: {str(e)}
-=================="""
-        print(f"积分兑换异常: {phone}, 错误: {str(e)}")
-        sender.reply(error_msg)
-        return False
-
-def pay_order(project, months, money):
-    return True
-
-def handle_mapay_order(project, months, money, pay_type=None):
-    return True
 
 def xjb_auth():
     return True
 
 def update_alipay_info(accounts):
-    """更新账号支付宝信息"""
     success_count = 0
 
     for phone in accounts:
@@ -1456,7 +1220,6 @@ def update_alipay_info(accounts):
         sender.reply(f"✅ 已成功更新 {success_count} 个账号的支付宝信息")
 
 def update_session_id(accounts):
-    """更新SessionID"""
     success_count = 0
 
     for phone in accounts:
@@ -1524,7 +1287,6 @@ def update_session_id(accounts):
         sender.reply(f"✅ 已成功更新 {success_count} 个账号的SessionID")
 
 def get_red_packet_details(user_info):
-    """获取红包明细"""
     try:
         session_id = user_info.get('session_id', '')
         account_id = user_info.get('account_id', '')
@@ -1642,7 +1404,6 @@ def get_red_packet_details(user_info):
         return {"success": False, "message": f"获取红包明细失败: {str(e)}"}
 
 def format_red_packet_details(records):
-    """格式化红包明细信息"""
     if not records:
         return ["🧧 暂无红包明细"]
 
@@ -1691,7 +1452,6 @@ def format_red_packet_details(records):
     return details
 
 def check_xjb_auth_status():
-    """检测所有账号的授权状态并通知用户"""
     try:
         notify_channels = sg.bucketGet('s_xjb_config', 'notify') or ''
         if not notify_channels:
@@ -1762,7 +1522,6 @@ def check_xjb_auth_status():
         return f"❌ 检测失败: {str(e)}"
 
 def clean_xjb_expired():
-    """清理过期账号函数"""
     try:
         expired_count = 0
         token_deleted_count = 0

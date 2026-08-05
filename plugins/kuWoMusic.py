@@ -14,9 +14,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_Kuwo_PluginsData_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -131,7 +106,6 @@ _CONFIG_FIELD_MAP = {
     ('dd_Kuwo_PluginsData', 'days_per_month'): 'dd_Kuwo_PluginsData_days_per_month',
 }
 
-import re
 import requests
 import json
 from datetime import datetime, timedelta, timezone
@@ -148,7 +122,6 @@ userid = sender.getUserID()
 uservalue = sg.bucketGet(bucket='dd_Kuwo_bind', key=userid) or ''
 
 def normalize_panel_type(panel_type_value, legacy_use_daidai_value='false'):
-    """统一解析面板类型，兼容新旧配置。"""
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
         return 'daidai'
@@ -176,7 +149,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         exit(0)
 
 def seekdd():
-    """获取呆呆面板配置"""
     try:
         if not dd_Kuwo_ddname:
             sender.reply("=====配置错误=====\n未配置呆呆面板信息\n请在插件配置中填写:\n• 对接面板类型: 呆呆\n• 对接面板配置: Host丨AppKey丨AppSecret\n• 使用中文丨分隔\n==================")
@@ -212,7 +184,6 @@ def seekdd():
         exit(0)
 
 def DDtoken(DDurl, AppKey, AppSecret):
-    """获取呆呆面板Token"""
     try:
         url = f'{DDurl}/api/open-api/token'
         data = {"app_key": AppKey, "app_secret": AppSecret}
@@ -240,7 +211,6 @@ def DDtoken(DDurl, AppKey, AppSecret):
         exit(0)
 
 def get_dd_headers(content_type="application/json"):
-    """获取呆呆面板请求头"""
     return {
         "Authorization": f"Bearer {panel_token}",
         "accept": "application/json",
@@ -248,7 +218,6 @@ def get_dd_headers(content_type="application/json"):
     }
 
 def dd_allenvs(osname, account):
-    """查询呆呆面板环境变量"""
     url = f"{panel_url}/api/envs"
     headers = get_dd_headers()
     params = {"keyword": str(account), "page_size": 100}
@@ -269,7 +238,6 @@ def dd_allenvs(osname, account):
         exit(0)
 
 def dd_delenvs(id):
-    """删除呆呆面板环境变量"""
     if id is None:
         return
     url = f"{panel_url}/api/envs/{id}"
@@ -277,7 +245,6 @@ def dd_delenvs(id):
     requests.delete(url, headers=headers)
 
 def DDcreate(osname, value, account, phone):
-    """在呆呆面板创建新的环境变量"""
     try:
         expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
         url = f"{panel_url}/api/envs"
@@ -310,7 +277,6 @@ def DDcreate(osname, value, account, phone):
         return False
 
 def DDupdate(osname, value, account, env_id, phone):
-    """更新呆呆面板环境变量"""
     expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
     url = f"{panel_url}/api/envs/{env_id}"
 
@@ -332,7 +298,6 @@ def DDupdate(osname, value, account, env_id, phone):
         return False
 
 def PluginsData():
-    """获取插件配置数据"""
     panel_type = normalize_panel_type(
         sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='panel_type') or '',
         sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='use_daidai') or 'false'
@@ -394,7 +359,6 @@ def PluginsData():
     return QLurl, ClientID, ClientSecret, KuwoVipmoney, osname, Kuwocoin, use_daidai, dd_Kuwo_ddname, panel_group
 
 def recognize_captcha(image_base64: str) -> str:
-    """使用远程ddddocr接口进行验证码识别"""
     try:
         ocr_url = 'https://ddddocr.linzixuan.work/classification'
 
@@ -417,13 +381,10 @@ def recognize_captcha(image_base64: str) -> str:
 
         return result['result'].strip()  # 返回result字段的值
 
-    except Exception as e:
+    except Exception:
         raise
 
 def login(value):
-    """登录酷我账号
-    参数格式: 手机号#密码
-    """
     try:
         values = value.split('#')
         if len(values) != 2:
@@ -519,7 +480,6 @@ def login(value):
         return f"登录异常: {str(e)}", "登录异常", False
 
 def bind():
-    """绑定酷我账号"""
     sender.reply(
         "=====酷我账号登录=====\n"
         "🎵 请输入登录参数:\n"
@@ -582,7 +542,6 @@ def bind():
                 sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我管理]管理账号\n🔍 发送[酷我查询]查询状态\n===================")
 
 def Administration():
-    """管理酷我账号"""
     accst = '状态正常'
     message = ''
     count = 1
@@ -765,7 +724,6 @@ def Administration():
         exit(0)
 
 def query_withdraw_history(token):
-    """查询提现记录"""
     try:
         values = token.split('#')
         if len(values) != 4:
@@ -840,7 +798,6 @@ def query_withdraw_history(token):
         return f"查询提现记录失败: {str(e)}"
 
 def query():
-    """查询酷我账号状态"""
     if len(uservalue) != 0:
         accounts = _sg_literal(uservalue)
         for account in accounts:
@@ -848,7 +805,7 @@ def query():
                 accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=account) or ''
                 Token = sg.bucketGet(bucket='dd_Kuwo_account', key=account)
                 if not Token:
-                    sender.reply(f'【账号】Token获取失败')
+                    sender.reply('【账号】Token获取失败')
                     continue
 
                 pointValue, todaycoin = cx(Token)
@@ -888,7 +845,6 @@ def query():
         sender.reply('未绑定酷我账号')
 
 def cx(token):
-    """查询酷我音乐金币"""
     try:
         values = token.split('#')
         if len(values) != 4:
@@ -1001,24 +957,6 @@ def cx(token):
     except Exception as e:
         return f"查询异常: {str(e)}", 0
 
-def ValueErrors(value, count):
-    """验证输入值的有效性"""
-    if value is None or value == '':
-        sender.reply('输入超时！')
-        exit(0)
-    elif value.lower() == 'q':  # 添加对输入q的处理
-        sender.reply('退出操作！')
-        exit(0)
-
-    try:
-        value = int(value)
-        if value > count or value == 0:
-            sender.reply('输入错误！')
-            exit(0)
-        return value
-    except ValueError:
-        sender.reply('输入错误！')
-        exit(0)
 
 def empower(empowertime, me_as_int):
     day = me_as_int * 30
@@ -1034,7 +972,6 @@ def empower(empowertime, me_as_int):
     return str(delayed_date)
 
 def Addenvs(osname, value, account, phone):
-    """添加或更新环境变量（支持青龙/呆呆面板）"""
     if use_daidai:
         env_id = dd_allenvs(osname, account)
         if env_id is None:
@@ -1071,7 +1008,6 @@ def Addenvs(osname, value, account, phone):
         return False
 
 def QLzt(osname, value, account, phone):
-    """添加青龙变量"""
     try:
         expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
 
@@ -1107,7 +1043,6 @@ def QLzt(osname, value, account, phone):
         return False
 
 def QLupdate(osname, value, account, qlid, phone):
-    """更新青龙变量"""
     try:
         expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
 
@@ -1141,7 +1076,6 @@ def QLupdate(osname, value, account, qlid, phone):
         return False
 
 def allenvs(osname, account):
-    """获取所有环境变量（支持青龙/呆呆面板）"""
     if use_daidai:
         return dd_allenvs(osname, account)
 
@@ -1168,7 +1102,6 @@ def allenvs(osname, account):
         exit(0)
 
 def delenvs(id):
-    """删除环境变量（支持青龙/呆呆面板）"""
     if id is None:
         return
     if use_daidai:
@@ -1181,10 +1114,9 @@ def delenvs(id):
         "Content-Type": "application/json",
     }
     data = [id]
-    response = requests.delete(url, headers=headers, json=data).json()
+    requests.delete(url, headers=headers, json=data).json()
 
 def zf(project, me_as_int, accountVip, account, token, phone):
-    """支付处理"""
     login_info = sg.bucketGet('dd_Kuwo_login', account)
     if not login_info:
         sender.reply('获取账号登录信息失败')
@@ -1328,7 +1260,6 @@ def zf(project, me_as_int, accountVip, account, token, phone):
         return handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project)
 
 def handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project):
-    """处理微信支付"""
     sender.reply(
         "=====订单信息=====\n"
         f"🎈名称: 酷我授权\n"
@@ -1427,7 +1358,6 @@ def handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, 
         return False
 
 def yesornos():
-    """确认选择"""
     yesorno = sender.input(120000, 1, False)
     if yesorno == 'Y' or yesorno == 'y' or yesorno == '是':
         return True
@@ -1444,7 +1374,6 @@ def yesornos():
         exit(0)
 
 def kuwo_auth():
-    """酷我授权功能"""
     if not sender.isAdmin():
         sender.reply("您没有权限执行此操作！")
         exit(0)
@@ -1627,7 +1556,6 @@ def kuwo_auth():
     sender.reply(msg)
 
 def process_auth(account, days, stats):
-    """处理单个账号的授权"""
     try:
         login_info = sg.bucketGet('dd_Kuwo_login', account)
         if not login_info:
@@ -1660,7 +1588,6 @@ def process_auth(account, days, stats):
         stats['fail_accounts'].append(f"账号:{account}(处理失败:{str(e)})")
 
 def tutorial():
-    """显示酷我使用教程"""
     tutorial_text = (
         "=====酷我教程=====\n"
         "🎵 基础指令:\n"
@@ -1684,7 +1611,6 @@ def tutorial():
     sender.reply(tutorial_text)
 
 def withdraw_tutorial():
-    """显示酷我提现教程"""
     txjc = (
         "=====提现说明=====\n"
         "💰 提现说明:\n"
@@ -1702,7 +1628,6 @@ def withdraw_tutorial():
     sender.reply(txjc)
 
 def query_today_withdrawals():
-    """查询今日提现情况"""
     if not sender.isAdmin():
         sender.reply("您没有权限执行此操作！")
         exit(0)
@@ -1802,13 +1727,13 @@ def query_today_withdrawals():
                                 elif status == '2':  # 失败
                                     stats['failed_accounts'] += 1
                                 break  # 找到今日记录后跳出循环
-                        except Exception as e:
+                        except Exception:
                             continue
 
-                except Exception as e:
+                except Exception:
                     continue
 
-        except Exception as e:
+        except Exception:
             continue
 
     msg = (
@@ -1824,7 +1749,6 @@ def query_today_withdrawals():
     sender.reply(msg)
 
 def clean_expired_accounts():
-    """清理过期账号的青龙变量"""
     if not sender.isAdmin():
         sender.reply("您没有权限执行此操作！")
         exit(0)
@@ -1983,13 +1907,6 @@ def clean_expired_accounts():
     sender.reply(msg)
 
 def push(user, phone, message):
-    """推送消息到各个平台
-
-    Args:
-        user: 用户ID
-        phone: 手机号(已脱敏)
-        message: 推送消息内容
-    """
     push_msg = f"""
 =====酷我账号通知=====
 📱 账号: {phone}
@@ -2003,117 +1920,6 @@ def push(user, phone, message):
         except Exception as e:
             print(f"推送到{platform}失败: {str(e)}")
 
-def check_withdrawal_status():
-    """检查提现状态并推送成功提现的通知"""
-    all_users = sg.bucketAllKeys('dd_KuwoTX_bind')
-    if not all_users:
-        return
-
-    beijing_tz = timezone(timedelta(hours=8))
-    today = datetime.now(beijing_tz).strftime("%Y-%m-%d")
-
-    for user in all_users:
-        try:
-            accountlist = sg.bucketGet('dd_KuwoTX_bind', key=user)
-            if not accountlist or accountlist == '{}':
-                continue
-
-            accounts = _sg_literal(accountlist)
-            for account in accounts:
-                accountVip = sg.bucketGet('dd_KuwoTX_Vip', key=account) or ''
-                if not accountVip or accountVip <= today:
-                    continue
-
-                Token = sg.bucketGet('dd_KuwoTX_account', key=account)
-                if not Token:
-                    continue
-
-                try:
-                    values = Token.split('#')
-                    if len(values) != 4:
-                        continue
-
-                    loginUid = values[0]
-                    loginSid = values[2]
-                    phone = values[3]  # 获取手机号
-                    phone_masked = phone[:3] + '*' * 4 + phone[7:]  # 脱敏手机号
-
-                    url = "https://integralapi.kuwo.cn/api/v1/online/sign/v1/withdrawDetails"
-                    params = {
-                        'loginUid': loginUid,
-                        'loginSid': loginSid,
-                        'pn': '1',  # 第一页
-                        'rn': '10'  # 获取最近10条记录
-                    }
-
-                    headers = {
-                        'Host': 'integralapi.kuwo.cn',
-                        'Accept': 'application/json, text/plain, */*',
-                        'Origin': 'https://h5app.kuwo.cn',
-                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_7_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KWMusic/11.1.2.0',
-                        'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
-                        'Referer': 'https://h5app.kuwo.cn/'
-                    }
-
-                    response = requests.get(url, params=params, headers=headers)
-                    if response.status_code != 200:
-                        continue
-
-                    data = response.json()
-                    if data.get('code') != 200:
-                        continue
-
-                    records = data.get('data', {}).get('list', [])
-
-                    for record in records:
-                        date_str = record.get('dateTime', '') or record.get('createTime', '')
-                        if not date_str:
-                            continue
-
-                        try:
-                            if 'T' in date_str:
-                                utc_time = datetime.strptime(date_str.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-                            else:
-                                utc_time = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            utc_time = utc_time.replace(tzinfo=timezone.utc)
-                            beijing_time = utc_time.astimezone(beijing_tz)
-                            record_date = beijing_time.strftime("%Y-%m-%d")
-                            record_time = beijing_time.strftime("%H:%M:%S")
-
-                            if record_date == today:
-                                amount = float(record.get('amount', 0))
-                                status = str(record.get('status', ''))
-
-                                if status == '1':  # 成功
-                                    record_id = record.get('id', '')
-                                    pushed_key = f'dd_Kuwo_pushed_{account}_{record_id}'
-                                    if not sg.bucketGet('dd_Kuwo_pushed', pushed_key):
-                                        sg.bucketSet('dd_Kuwo_pushed', pushed_key, 'pushed')
-
-                                        push_msg = f"""
-=====提现成功通知=====
-📱 账号: {phone_masked}
-💰 金额: {amount}元
-⏰ 时间: {record_date} {record_time}
-✅ 状态: 提现成功
--------------------
-💡 资金将在1-3个工作日内到账
-=================="""
-
-                                        platforms = ['wb', 'tg', 'qq', 'qb', 'wx']
-                                        for platform in platforms:
-                                            try:
-                                                sg.push(platform, '', user, '', push_msg)
-                                            except Exception as e:
-                                                print(f"推送到{platform}失败: {str(e)}")
-                        except Exception as e:
-                            continue
-
-                except Exception as e:
-                    continue
-
-        except Exception as e:
-            continue
 
 today_date = datetime.now().date()
 today_time = str(today_date)
@@ -2145,7 +1951,6 @@ elif usermessage == '总结今日酷我':
 elif usermessage == '酷我清理':  # 添加新的指令处理
     clean_expired_accounts()
 elif usermessage == 'fake':
-    """定时任务处理 - 8点/15点检测授权过期及CK失效"""
     users = sg.bucketAllKeys(bucket='dd_Kuwo_bind')
     if not users:
         exit(0)

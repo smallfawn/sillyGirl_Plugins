@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: linzixuan]
-# [version: V6.60]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,13 @@
 # [depe: ["curl-cffi","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +89,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'bd_tptconfig_yxbf': form.string().title('运行并发数').default('').description('设置管理员一键运行所有账号同时最多多少账号一起运行,默认1'),
@@ -174,7 +149,7 @@ def ts_qb(data, wxpusher_alluid, name, arg1, arg2):
         'content': table_html,
         'contentType': 3,  # 表格类型
         'topicIds': [],  # 接收消息的用户ID列表，为空表示发送给所有用户
-        "summary": f'太平通日志推送',
+        "summary": '太平通日志推送',
         "uids": [wxpusher_alluid],
     }
 
@@ -187,7 +162,7 @@ def ts_qb(data, wxpusher_alluid, name, arg1, arg2):
         if result['code'] == 1000:
             if notify:
                 tsqd = notify.split(',')
-                sg.notifyMasters(f"🎉wxpusher推送成功", tsqd)
+                sg.notifyMasters("🎉wxpusher推送成功", tsqd)
         else:
             if notify:
                 tsqd = notify.split(',')
@@ -221,7 +196,7 @@ class ATM_tpt:
             self.sender.reply("退出！")
             return False
         elif name is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
             return False
         else:
             if len(name) > 6 or len(name) < 1:
@@ -237,7 +212,7 @@ class ATM_tpt:
             if jcurl == '':
                 jcurl = 'https://www.yuque.com/yuqueyonghulzdzov/fuzugi/xvy3lp28apxnpvoq?singleDoc#'
 
-            self.sender.reply(f"""=====太平通登录方式=====
+            self.sender.reply("""=====太平通登录方式=====
 1️⃣ 短信验证码登录
 2️⃣ CK直接登录
 ========================
@@ -248,13 +223,13 @@ class ATM_tpt:
             if qmdl == 'q' or qmdl == 'Q':
                 self.sender.reply("退出！")
             elif qmdl is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             elif qmdl == '1':
                 self.dx_login()
             elif qmdl == '2':
                 self.ck_login()
             else:
-                self.sender.reply(f'输入有误!!')
+                self.sender.reply('输入有误!!')
 
     def gl_login(self):
         try:
@@ -320,7 +295,7 @@ class ATM_tpt:
             if xz == 'q' or xz == 'Q':
                 self.sender.reply("退出！")
             elif xz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             elif int(xz) in xz_list:
                 zh = id_dict[int(xz)]
                 self.usid = zh['usid']
@@ -331,13 +306,12 @@ class ATM_tpt:
                 if '有效' in zhzt:
                     self.gl_zh()
                 else:
-                    self.sender.reply(f'你都失效了！先去上车更新一下吧！')
+                    self.sender.reply('你都失效了！先去上车更新一下吧！')
 
             else:
-                self.sender.reply(f'输入有误，退出！')
+                self.sender.reply('输入有误，退出！')
 
     def gl_zh(self):
-        """管理账号"""
         msg = f"""=====账号管理面板=====
 📱 当前账号: {self.name}
 
@@ -353,7 +327,7 @@ class ATM_tpt:
         if xz == 'q' or xz == 'Q':
             self.sender.reply("退出！")
         elif xz is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
         elif xz == '1':
             self.gl_sq()
         elif xz == '2':
@@ -361,10 +335,9 @@ class ATM_tpt:
         elif xz == '3':
             self.gl_sc()
         else:
-            self.sender.reply(f'输入有误，退出！')
+            self.sender.reply('输入有误，退出！')
 
     def gl_sq(self):
-        """账号授权"""
         try:
             sqje = '2099-12-31'
             sqsj = '2099-12-31'
@@ -549,7 +522,6 @@ class ATM_tpt:
             self.sender.reply(f"❌ 授权处理发生错误: {str(e)}")
 
     def gl_yx(self):
-        """运行账号"""
         sdyx = sg.bucketGet('bd_tptconfig', 'sdyx')
         if sdyx == '':
             sdyx = 'false'
@@ -568,7 +540,6 @@ class ATM_tpt:
                 tpt.main()
 
     def gl_sc(self):
-        """删除账号"""
         self.sender.reply(f"""=====删除账号确认=====
 📱 账号: {self.name}
 
@@ -594,7 +565,6 @@ class ATM_tpt:
             self.sender.reply("❌ 输入有误")
 
     def dssq(self):
-        """打赏授权"""
         try:
             status = False
             if status == "True" or status or status == "true":
@@ -616,7 +586,7 @@ class ATM_tpt:
                     jfsl = sg.bucketGet('bd_tptconfig', 'jfsl') or '1000'
                     user_jf = int(sg.bucketGet('dd_sign_points', self.user) or '0')
 
-                    msg = f"""=====选择支付方式====="""
+                    msg = """=====选择支付方式====="""
                     if zsm != '':
                         msg += f"""
 1️⃣ 微信支付
@@ -724,7 +694,6 @@ class ATM_tpt:
             self.sender.reply(f"❌ 支付处理失败: {str(e)}")
 
     def _update_auth_time(self, days):
-        """更新授权时间的辅助方法"""
         try:
             dqsj = datetime.now().strftime("%Y-%m-%d")
             if self.sqsj > dqsj:
@@ -924,13 +893,13 @@ class ATM_tpt:
                 notify = sg.bucketGet('bd_tptconfig', 'notify')
                 if notify == '':
                     self.sender.reply(
-                        f'🔔所有账号运行完毕！')
+                        '🔔所有账号运行完毕！')
                 else:
                     tsqd = notify.split(',')
                     self.sender.reply(
-                        f'🔔所有账号运行完毕！')
+                        '🔔所有账号运行完毕！')
                     sg.notifyMasters(
-                        f'🔔所有账号运行完毕！', tsqd)
+                        '🔔所有账号运行完毕！', tsqd)
             else:
                 self.sender.reply(f'🔔获取ck错误:\n🔔{get_tptcks}')
         except Exception as e:
@@ -1084,7 +1053,7 @@ false: 禁止
             self.sender.reply("❌ 输入有误")
 
     def tpsq(self):
-        msg = f"""=====太平通授权管理=====
+        msg = """=====太平通授权管理=====
 1️⃣ 一键授权所有用户
 2️⃣ 单独授权用户
 
@@ -1103,7 +1072,7 @@ false: 禁止
         elif xz == '1':
             self.qbqbsq()
         elif xz == '2':
-            msg = f"""=====用户授权=====
+            msg = """=====用户授权=====
 请输入需要授权的账号ID
 (可通过发送myuid获取)
 
@@ -1154,7 +1123,7 @@ false: 禁止
                     elif xz is None:
                         self.sender.reply("❌ 超时退出")
                     elif xz == '0':
-                        msg = f"""=====批量授权=====
+                        msg = """=====批量授权=====
 请输入授权天数
 退出请回复【q】
 ========================"""
@@ -1243,7 +1212,6 @@ false: 禁止
                         self.sender.reply("❌ 输入有误")
 
     def qbqbsq(self):
-        """一键授权所有用户"""
         try:
             ts = sg.bucketAllKeys('bd_tptcks')
             if not ts:
@@ -1311,7 +1279,6 @@ false: 禁止
             self.sender.reply(f"❌ 批量授权失败: {str(e)}")
 
     def jf_kt(self):
-        """积分开通授权"""
         try:
             jfsl = sg.bucketGet('bd_tptconfig', 'jfsl')
             sqsj = '2099-12-31'
@@ -1405,10 +1372,9 @@ false: 禁止
             self.sender.reply(f"❌ 积分开通出错: {str(e)}")
 
     def zf(self, total, months):
-        """支付处理"""
         try:
             if total == 0:
-                self.sender.reply(f"""=====支付成功=====
+                self.sender.reply("""=====支付成功=====
 ✅ 金额: 0.00元
 💫 状态: 已完成
 ========================""")
@@ -1502,7 +1468,6 @@ false: 禁止
             return False
 
     def dx_login(self):
-        """短信验证码登录"""
         try:
             import uuid
             import urllib3
@@ -1510,7 +1475,6 @@ false: 禁止
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
             def generate_device_id():
-                """生成设备ID"""
                 return f"{uuid.uuid4().hex[:8]}-{uuid.uuid4().hex[:12]}-{uuid.uuid4().hex[:8]}-{uuid.uuid4().hex[:7]}-{uuid.uuid4().hex[:12]}"
 
             self.sender.reply(f"""=====短信验证码登录=====
@@ -1523,7 +1487,7 @@ false: 禁止
                 self.sender.reply("退出！")
                 return
             elif phone is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
                 return
             elif len(phone) != 11 or not phone.isdigit():
                 self.sender.reply("❌ 请输入11位手机号码")
@@ -1619,7 +1583,7 @@ false: 禁止
                         self.sender.reply("退出！")
                         return
                     elif code is None:
-                        self.sender.reply(f'超时退出！')
+                        self.sender.reply('超时退出！')
                         return
                     elif len(code) != 6 or not code.isdigit():
                         self.sender.reply("❌ 请输入6位数字验证码")
@@ -1789,7 +1753,7 @@ false: 禁止
             self.sender.reply("退出！")
 
         elif ck is None:
-            self.sender.reply(f'超时退出！')
+            self.sender.reply('超时退出！')
 
         elif 'ey' in ck:
             xx_url = 'https://ecustomer.cntaiping.com/tpayms/app/tpay/account/getAcct'
@@ -1848,10 +1812,9 @@ false: 禁止
             except Exception as e:
                 self.sender.reply(f'{self.name}登录错误>>>{e}')
         else:
-            self.sender.reply(f'输入有误，退出！')
+            self.sender.reply('输入有误，退出！')
 
     def tpjc(self):
-        """定时太平检测 - 检查所有用户的授权过期情况"""
         try:
             if not self.sender.isAdmin():
                 self.sender.reply("❌ 此功能仅限管理员使用")
@@ -2012,7 +1975,6 @@ class TPT:
         }
 
     def get_proxy(self):
-        """获取代理IP"""
         try:
             proxy_api = sg.bucketGet('bd_tptconfig', 'proxy_api')
             if not proxy_api:
@@ -2058,7 +2020,6 @@ class TPT:
             return None
 
     def _make_request(self, method, url, **kwargs):
-        """统一的请求方法"""
         try:
             use_proxy = False
             if 'campaignsms/couponAndsign' in url:  # 签到任务
@@ -2729,7 +2690,7 @@ if __name__ == '__main__':
     elif message == '太平版本':
         if sender.isAdmin():
             sender.reply(
-                f"""=====太平通插件信息=====
+                """=====太平通插件信息=====
 📌 当前版本: V6.60
 
 🆕 更新内容:

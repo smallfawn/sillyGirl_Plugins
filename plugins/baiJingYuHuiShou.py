@@ -14,9 +14,15 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -147,16 +140,9 @@ BJY_KEY = "1f70a57fdf4061a7"
 BJY_SECRET = "eBRaFLkuJ5"
 
 
-def get_user_content():
-    osname = sg.bucketGet('s_bjy', 'osname') or 'S_BJYHS'
-    qlname = sg.bucketGet('s_bjy', 'qlname') or ''
-    Vipmoney = float(sg.bucketGet('s_bjy', 'Vipmoney') or '1')
-    coin = int(sg.bucketGet('s_bjy', 'coin') or '0')
-    return osname, qlname, Vipmoney, coin
 
 
 def _get_ql_client():
-    """Get panel client, auto-switch between QingLong and DumbPanel"""
     osname = sg.bucketGet('s_bjy', 'osname') or 'S_BJYHS'
     qlname = sg.bucketGet('s_bjy', 'qlname') or ''
     use_dp = str(sg.bucketGet('s_bjy', 'use_dumbpanel') or '').lower() == 'true'
@@ -168,7 +154,6 @@ def _get_ql_client():
 
 
 def update_ql_env(account, account_info):
-    """Update panel env variable"""
     username = account_info.get('username', '')
     password = account_info.get('password', '')
     if not username or not password:
@@ -180,7 +165,6 @@ def update_ql_env(account, account_info):
 
 
 def delete_ql_env(account):
-    """Delete panel env variable"""
     ql = _get_ql_client()
     return ql.delete_env(account)
 
@@ -239,7 +223,6 @@ def bjy_userinfo(username, auth):
 
 
 def bjy_creditrecord(username, auth):
-    """Get whale coin records"""
     url = "https://www.52bjy.com/api/app/user.php"
     headers = {
         'User-Agent': "Mozilla/5.0",
@@ -538,20 +521,12 @@ def authorize_multiple_accounts(usernames):
     return True
 
 
-def _process_auth(username, account_info, months):
-    return True
 
 
-def _process_coin_payment(username, account_info, months, coin):
-    return True
 
 
-def _handle_qrcode_payment(project, months, money):
-    return True
 
 
-def _handle_mapay_order(project, months, money, pay_type='alipay'):
-    return True
 
 
 def ks_auth():

@@ -13,9 +13,12 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_SXZB_ql_config': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖(直接复制)'),
@@ -143,7 +108,6 @@ sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
 class SenxuanClient:
-    """森选直播客户端"""
     def __init__(self, token_with_remark):
         if '#' in token_with_remark:
             self.remark, self.raw_token = token_with_remark.split('#', 1)
@@ -176,7 +140,6 @@ class SenxuanClient:
         self.session.headers.update(self.headers)
 
     def get_user_info(self):
-        """获取用户信息"""
         url = f"{self.base_url}/user/detail"
         try:
             response = self.session.get(url, timeout=10)
@@ -202,7 +165,6 @@ class SenxuanClient:
             return None
 
     def get_user_info_new(self):
-        """获取用户详细信息"""
         url = f"{self.base_url}/updateTxInfo"
         try:
             print("正在获取用户详细信息...")
@@ -217,7 +179,6 @@ class SenxuanClient:
             return None
 
     def get_video_detail(self, vid: int) -> Dict[str, Any]:
-        """获取单个视频详情"""
         url = f"{self.base_url}/video/getOneVideo?vid={vid}"
         try:
             response = self.session.get(url, timeout=10)
@@ -226,11 +187,10 @@ class SenxuanClient:
             if data.get("status") == 200 and data.get("data"):
                 return data.get("data")
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     def add_user_view_num(self, vid: int) -> Dict[str, Any]:
-        """记录用户观看视频"""
         url = f"{self.base_url}/video/addUserViewNum"
         body = {
             "vid": vid,
@@ -249,7 +209,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def video_job(self, vid: int, wait_time: int) -> Dict[str, Any]:
-        """提交视频观看完成"""
         url = f"{self.base_url}/video/videoJob"
 
         start_time = int(time.time() * 1000)
@@ -267,7 +226,7 @@ class SenxuanClient:
             print(f"  等待 {wait_time} 秒...")
             time.sleep(wait_time)
 
-            print(f"  正在提交观看完成...")
+            print("  正在提交观看完成...")
             response = self.session.post(url, json=body, timeout=10)
             response.raise_for_status()
             result = response.json()
@@ -278,7 +237,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def reward_user_small_change(self) -> Dict[str, Any]:
-        """获取答题奖励"""
         url = f"{self.base_url}/video/rewardUserSmallChange"
         try:
             response = self.session.get(url, timeout=10)
@@ -289,7 +247,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def get_video_ids(self) -> List[int]:
-        """一次性获取所有视频ID"""
         try:
             print("正在请求视频列表...")
             url = f"{self.base_url}/video/list?page=1&limit=50&status=1&source=0&isXn=1"
@@ -314,7 +271,6 @@ class SenxuanClient:
             return []
 
     def watch_video(self, vid: int) -> Dict[str, Any]:
-        """刷视频 - 使用原脚本逻辑"""
         url = f"{self.base_url}/video/videoJob"
 
         end_time = int(time.time() * 1000)
@@ -341,7 +297,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def withdraw(self) -> Dict[str, Any]:
-        """提现 - 使用原脚本逻辑"""
         url = f"{self.base_url}/userTx?"
 
         try:
@@ -357,7 +312,6 @@ class SenxuanClient:
             return {"status": 500, "msg": str(e)}
 
     def get_commission_info(self):
-        """获取佣金信息"""
         url = f"{self.base_url}/spread/commission/0?page=1&limit=5"
         try:
             print("正在获取佣金信息...")
@@ -379,7 +333,6 @@ class SenxuanClient:
             return {"success": False, "msg": str(e)}
 
     def run_daily_task(self) -> Dict[str, Any]:
-        """运行每日任务 - 已禁用"""
         return {
             "video_count": 0,
             "success_videos": 0,
@@ -390,7 +343,6 @@ class SenxuanClient:
         }
 
     def get_withdraw_records(self):
-        """获取提现记录 - 使用专用接口"""
         url = f"{self.base_url}/spread/commission/1?page=1&limit=15"
         try:
             print("正在获取提现记录...")
@@ -411,22 +363,6 @@ class SenxuanClient:
             print(f"获取提现记录失败: {e}")
             return {"success": False, "msg": str(e)}
 
-def get_config():
-    """获取插件配置"""
-    try:
-        price_str = sg.bucketGet(bucket='G_SXZB', key='price') or '0.88'
-        price = float(price_str) if price_str.replace('.', '', 1).isdigit() else 0.88
-        zsm = sg.bucketGet(bucket='G_SXZB', key='zsm') or ''
-        points_per_month_str = sg.bucketGet(bucket='G_SXZB', key='points_per_month') or '100'
-        points_per_month = int(points_per_month_str) if points_per_month_str.isdigit() else 100
-
-        return {
-            'price': price,
-            'zsm': zsm,
-            'points_per_month': points_per_month
-        }
-    except:
-        return {'price': 0.88, 'zsm': '', 'points_per_month': 100}
 
 class QingLongAPI:
     def __init__(self, url, client_id, client_secret):
@@ -484,57 +420,8 @@ def get_ql_config():
         }
     return {'url': '', 'client_id': '', 'client_secret': ''}
 
-def upload_to_qinglong():
-    if not sender.isAdmin():
-        sender.reply("❌ 仅管理员可使用此功能")
-        return
-    ql_config = get_ql_config()
-    if not all([ql_config['url'], ql_config['client_id'], ql_config['client_secret']]):
-        sender.reply("❌ 青龙配置不完整，请先配置青龙地址、ClientID、ClientSecret")
-        return
-    all_users = sg.bucketKeys(bucket='G_sxzb_user') or []
-    if not all_users:
-        sender.reply("❌ 没有找到任何账号")
-        return
-    sender.reply("⏳ 正在连接青龙...")
-    ql = QingLongAPI(ql_config['url'], ql_config['client_id'], ql_config['client_secret'])
-    success, msg = ql.login()
-    if not success:
-        sender.reply(f"❌ 青龙连接失败: {msg}")
-        return
-    tokens = []
-    for user in all_users:
-        accounts = get_user_accounts(user)
-        for account_id in accounts:
-            auth_data = '2099-12-31'
-            if not auth_data: continue
-            try:
-                auth_info = json.loads(auth_data)
-                expire_date = auth_info.get('expire_time', '')
-                if expire_date and datetime.strptime(expire_date, "%Y-%m-%d").date() < datetime.now().date(): continue
-            except: continue
-            token_data = sg.bucketGet('G_sxzb_token', account_id)
-            if token_data: tokens.append(token_data)
-    if not tokens:
-        sender.reply("❌ 没有找到有效授权的账号")
-        return
-    env_name = "G_SXZB_TOKEN"
-    env_value = "\n".join(tokens)
-    existing = ql.get_envs(env_name)
-    target_env = next((e for e in existing if e.get('name') == env_name), None)
-    if target_env:
-        success, msg = ql.update_env(target_env['id'], env_name, env_value, f"森选Token-{len(tokens)}个")
-        action = "更新"
-    else:
-        success, msg = ql.add_env(env_name, env_value, f"森选Token-{len(tokens)}个")
-        action = "添加"
-    if success:
-        sender.reply(f"✅ 上传青龙成功！\n📦 变量名: {env_name}\n👥 账号数: {len(tokens)}个\n🔄 操作: {action}")
-    else:
-        sender.reply(f"❌ 上传失败: {msg}")
 
 def auto_upload_qinglong(account_id=None):
-    """自动上传token到青龙面板，统一变量名，通过remarks区分账号，返回(成功状态, 消息)"""
     ql_config = get_ql_config()
     if not all([ql_config['url'], ql_config['client_id'], ql_config['client_secret']]):
         return False, "青龙配置未完成"
@@ -580,13 +467,13 @@ def auto_upload_qinglong(account_id=None):
         if existing_env:
             success, msg = ql.update_env(existing_env['id'], env_name, token_data, remarks)
             if success:
-                return True, f"已更新到青龙"
+                return True, "已更新到青龙"
             else:
                 return False, f"青龙更新失败: {msg}"
         else:
             success, msg = ql.add_env(env_name, token_data, remarks)
             if success:
-                return True, f"已上传到青龙"
+                return True, "已上传到青龙"
             else:
                 return False, f"青龙添加失败: {msg}"
 
@@ -604,17 +491,8 @@ def get_user_accounts(user_id=None):
 def get_user_points(user_id=None):
     return 0
 
-def set_user_points(user_id, points):
-    """设置用户积分 - 适配呆呆积分数据结构"""
-    sg.bucketSet('dd_sign_coin', user_id, str(points['dd_sign_coin']))
-    sg.bucketSet('dd_sign_points', user_id, str(points['dd_sign_points']))
-
-    sign_key = f"sign_{user_id}"
-    sg.bucketSet('dd_sign_coin', sign_key, str(points['dd_sign_coin']))
-    return True
 
 def verify_live_api(token: str) -> Dict[str, Any]:
-    """使用直播接口验证token有效性"""
     url = "https://yh.sentezhenxuan.com/api/mobile/shop-live/room/getLiveRoomActivity"
     headers = {
         "content-type": "application/x-www-form-urlencoded",
@@ -671,7 +549,6 @@ def verify_live_api(token: str) -> Dict[str, Any]:
         }
 
 def validate_token(token_with_remark):
-    """验证Token有效性并返回账号信息"""
     try:
         if '#' in token_with_remark:
             remark, raw_token = token_with_remark.split('#', 1)
@@ -710,7 +587,6 @@ def validate_token(token_with_remark):
         return False, {'error': f'验证失败: {str(e)}'}
 
 def bindaccount():
-    """森选登录绑定 - 支持批量登录"""
     welcome_msg = """
 =====森选直播登录=====
 请按格式输入: 备注#authorization
@@ -821,7 +697,6 @@ def bindaccount():
         sender.reply("❌ 登录失败")
 
 def query_account_status():
-    """查询账号状态"""
     accounts = get_user_accounts()
 
     if not accounts:
@@ -855,7 +730,7 @@ def query_account_status():
             try:
                 auth_info = json.loads(auth_data)
                 expire_date = auth_info.get('expire_time', '未知')
-                result_msg += f"🔐 授权状态: ✅ 已授权\n"
+                result_msg += "🔐 授权状态: ✅ 已授权\n"
                 result_msg += f"📅 到期时间: {expire_date}\n"
 
                 if expire_date != "未知":
@@ -909,7 +784,6 @@ def query_account_status():
     sender.reply(final_result)
 
 def show_tutorial():
-    """显示使用教程"""
     tutorial = """
 =====森选直播使用教程=====
 1️⃣ 「森选直播登录」绑定账号
@@ -947,7 +821,6 @@ def show_tutorial():
     sender.reply(tutorial)
 
 def sz_manage():
-    """账号管理 - 支持批量授权合并支付"""
     accounts = get_user_accounts()
     if not accounts:
         sender.reply("❌ 您还没有绑定账号，请先发送【森选直播登录】绑定")
@@ -1058,23 +931,14 @@ def sz_manage():
 def batch_authorize_accounts(target_accounts):
     return True
 
-def _batch_wechat_payment(accounts, months, amount, config):
-    return True
 
-def _batch_points_payment(accounts, months, required_points):
-    return True
 
 def _handle_authorize_single(account_id):
     return True
 
-def _process_wechat_payment(account_id, config):
-    return True
 
-def _process_points_payment(account_id, config):
-    return True
 
 def _handle_update_token_single(account_id, old_remark):
-    """处理更新token"""
     sg.bucketGet('G_sxzb_token', account_id)
 
     sender.reply(f"""=====更新Token=====
@@ -1116,7 +980,6 @@ def _handle_update_token_single(account_id, old_remark):
 🔑 Token已更新""")
 
 def _handle_delete_account_single(account_id, remark):
-    """处理删除账号"""
     sg.bucketGet('G_sxzb_token', account_id)
 
     sender.reply(f"""=====确认删除=====
@@ -1144,7 +1007,6 @@ def _handle_delete_account_single(account_id, remark):
 def admin_authorize_account():
     return True
 def sz_clean_accounts():
-    """清理未授权和授权过期的森选直播账号"""
     if not sender.isAdmin():
         sender.reply("""
 =====权限不足=====
@@ -1216,7 +1078,7 @@ def sz_clean_accounts():
             else:
                 sg.bucketDel(bucket='G_sxzb_user', key=user)
 
-        except Exception as e:
+        except Exception:
             failed_count += 1
             continue
 
@@ -1230,7 +1092,7 @@ def sz_clean_accounts():
 📊 清理效率: {efficiency:.1f}%
 =================="""
     else:
-        result_msg = f"""
+        result_msg = """
 =====清理完成=====
 ✅ 未发现需要清理的账号
 所有账号均为有效授权状态
@@ -1239,13 +1101,11 @@ def sz_clean_accounts():
     sender.reply(result_msg)
 
 def get_random_ua():
-    """生成随机UA"""
     versions = ['126.0.0.0', '127.0.0.0', '128.0.0.0', '129.0.0.0', '130.0.0.0', '131.0.0.0', '132.0.0.0']
     wechat_versions = ['7.0.20.1781', '7.0.21.1800', '7.0.22.1850']
     return f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.choice(versions)} Safari/537.36 MicroMessenger/{random.choice(wechat_versions)} NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF"
 
 def get_live_room_list():
-    """获取直播间列表"""
     url = "https://yh.sentezhenxuan.com/api/mobile/shop-live/room/getLiveRoomList"
     headers = {
         "content-type": "application/x-www-form-urlencoded",
@@ -1270,7 +1130,6 @@ def get_all_authorized_users():
     return True
 
 def sz_subscribe():
-    """用户订阅/取消订阅开播提醒"""
     current_status = sg.bucketGet('G_sxzb_subscribe', userid) or 'on'
 
     if current_status == 'on':
@@ -1287,7 +1146,6 @@ def sz_subscribe():
 👉 再次发送「森选订阅」可关闭""")
 
 def sz_push():
-    """手动触发推送（自动模式）"""
     custom_msg = sg.bucketGet('G_SXZB', 'push_message') or ''
     subscribers = get_subscribers()
 
@@ -1409,7 +1267,6 @@ def sz_push():
             pass
 
 def clean_old_push_records():
-    """清理旧的推送记录（保留今天的）"""
     today = datetime.now().strftime('%Y-%m-%d')
     all_keys = sg.bucketAllKeys(bucket='G_sxzb_pushed') or []
     for key in all_keys:
@@ -1417,7 +1274,6 @@ def clean_old_push_records():
             sg.bucketDel(bucket='G_sxzb_pushed', key=key)
 
 def get_subscribers():
-    """获取所有订阅用户（所有已授权用户默认订阅）"""
     authorized_users = get_all_authorized_users()
     subscribers = []
     for user_id in authorized_users:

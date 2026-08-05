@@ -41,21 +41,6 @@ try:
 except Exception:
     decimal = None
 
-def _sg_literal(value, default=None):
-    if isinstance(value, (list, dict, tuple, set, int, float, bool)) or value is None:
-        return value if value is not None else (default if default is not None else [])
-    text = str(value or '').strip()
-    if not text:
-        return default if default is not None else []
-    _sg_json_module = globals().get("_sg_json") or globals().get("json")
-    for parser in ((_sg_json_module.loads if _sg_json_module else None), (_sg_ast.literal_eval if _sg_ast else None)):
-        if not parser:
-            continue
-        try:
-            return parser(text)
-        except Exception:
-            pass
-    return default if default is not None else []
 
 MTG_BASE64_ALPHABET = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
 MURMUR_M = 1540483477
@@ -150,12 +135,10 @@ UNDEFINED = _Undefined()
 
 
 def js_json(value: Any) -> str:
-    """按 JSON.stringify 的常见输出格式生成紧凑 JSON。"""
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
 def js_str(value: Any) -> str:
-    """模拟 JS String(value) 的常用分支，避免 Python True/None 格式和 JS 不一致。"""
     if value is UNDEFINED:
         return "undefined"
     if value is None:
@@ -172,17 +155,14 @@ def js_str(value: Any) -> str:
 
 
 def js_encode_uri_component(value: Any) -> str:
-    """模拟 encodeURIComponent，保留 JS 默认安全字符 -_.!~*'()。"""
     return urllib.parse.quote(js_str(value), safe="-_.!~*'()")
 
 
 def mtg_fixed_encode(value: Any) -> str:
-    """jsguard.js 的 fe()：encodeURIComponent 后再转义 ! ' ( ) *。"""
     return urllib.parse.quote(js_str(value), safe="-_.~")
 
 
 def bytes_from_js_uri(value: Any) -> List[int]:
-    """jsguard.js 的 ce()：encodeURIComponent 后把 %XX 还原成字节。"""
     encoded = js_encode_uri_component(value)
     out: List[int] = []
     i = 0
@@ -197,7 +177,6 @@ def bytes_from_js_uri(value: Any) -> List[int]:
 
 
 def parse_query_like_js(query: str, missing_as_undefined: bool = False) -> List[List[str]]:
-    """模拟 ne()：split('&') 再 split('=')，只取 split 后的第 2 段作为 value。"""
     if not query:
         return []
     result: List[List[str]] = []
@@ -215,7 +194,6 @@ def parse_query_like_js(query: str, missing_as_undefined: bool = False) -> List[
 
 
 def push_encoded_pairs(target: List[List[str]], source: Any, object_mode: bool = False) -> None:
-    """模拟 te()：把 query 数组或 data 对象转成签名前的 key/value。"""
     if object_mode:
         if not isinstance(source, MutableMapping):
             return
@@ -234,7 +212,6 @@ def push_encoded_pairs(target: List[List[str]], source: Any, object_mode: bool =
 
 
 def parse_url_by_jsguard_regex(url: str) -> Tuple[str, str]:
-    """按 jsguard.js 的 URL 正则取 path/query，保持它只签 path 不签 host。"""
     matched = re.match(
         r"^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$",
         url or "",
@@ -255,7 +232,6 @@ def build_signed_request_bytes(
     data: Any = None,
     header: Optional[Dict[str, Any]] = None,
 ) -> Tuple[List[int], Dict[str, Any]]:
-    """还原 mtgsig 的请求规范化逻辑，输出参与 ge() 的字节数组。"""
     method = (method or "GET").upper()
     header = header or {}
     path, query = parse_url_by_jsguard_regex(url or "")
@@ -320,13 +296,11 @@ def u32(value: int) -> int:
 
 
 def int_to_be4(value: int) -> List[int]:
-    """jsguard.js 的 ie()：uint32 转大端 4 字节。"""
     value = u32(value)
     return [(value >> 24) & 255, (value >> 16) & 255, (value >> 8) & 255, value & 255]
 
 
 def hex_to_bytes_loose(hex_text: str) -> List[int]:
-    """jsguard.js 的 re()：每 2 个 hex 转 1 字节；奇数长度最后 1 位也 parseInt。"""
     return [int(hex_text[i : i + 2], 16) for i in range(0, len(hex_text), 2)]
 
 
@@ -335,13 +309,11 @@ def bytes_to_hex(byte_values: Iterable[int]) -> str:
 
 
 def js_multiply_m(value: int) -> int:
-    """模拟 JS 里 1540483477 的 32 位乘法拆半实现。"""
     value = u32(value)
     return u32(MURMUR_M * (value & 0xFFFF) + (((MURMUR_M * ((value >> 16) & 0xFFFF)) & 0xFFFF) << 16))
 
 
 def mtg_hash_ge(byte_values: Sequence[int], seed: int) -> int:
-    """还原 jsguard.js 的 ge()，类似 MurmurHash2 但末尾额外 xor 常量。"""
     remain = len(byte_values)
     value = u32(seed ^ remain)
     index = 0
@@ -370,7 +342,6 @@ def mtg_hash_ge(byte_values: Sequence[int], seed: int) -> int:
 
 
 def mtg_crc32_gn(byte_values: Sequence[int]) -> int:
-    """还原 jsguard.js 的 Gn()：CRC32 表算法，但最终 xor 常量是 0x12477cdf。"""
     table: List[int] = []
     for item in range(256):
         value = item
@@ -385,13 +356,11 @@ def mtg_crc32_gn(byte_values: Sequence[int]) -> int:
 
 
 def md5_word_array(byte_values: Sequence[int]) -> List[int]:
-    """还原 Ae.md5Array() 的结果：MD5 digest 按 little-endian 拆 4 个 uint32。"""
     digest = hashlib.md5(bytes(byte_values)).digest()
     return list(struct.unpack("<4I", digest))
 
 
 def md5_hex_from_words(words: Sequence[int]) -> str:
-    """还原 Ae.md5ToHex()：每个 uint32 按 little-endian 输出 hex。"""
     out: List[int] = []
     for word in words:
         word = u32(word)
@@ -400,7 +369,6 @@ def md5_hex_from_words(words: Sequence[int]) -> str:
 
 
 def mtg_custom_base64(byte_values: Sequence[int]) -> str:
-    """还原 mtgsig a5 使用的自定义 Base64。"""
     result: List[str] = []
     full_len = len(byte_values) - len(byte_values) % 3
     for index in range(0, full_len, 3):
@@ -428,7 +396,6 @@ def mtg_custom_base64(byte_values: Sequence[int]) -> str:
 
 
 def mtg_rc4_variant(key: Sequence[int], text: str) -> List[int]:
-    """还原 a5 内层 RC4 变体：KSA 多加固定 31。"""
     state = list(range(256))
     j = 0
     for i in range(256):
@@ -458,7 +425,6 @@ def build_qn(
     b10: Any = UNDEFINED,
     account_info: Any = UNDEFINED,
 ) -> "OrderedDict[str, Any]":
-    """按 JS 插入顺序构造 JSON.stringify(qn) 的对象。"""
     now_ms = int(time.time() * 1000) if timestamp_ms is None else int(timestamp_ms)
     init_ms = now_ms if init_timestamp_ms is None else int(init_timestamp_ms)
     qn: "OrderedDict[str, Any]" = OrderedDict()
@@ -499,7 +465,6 @@ def build_mtgsig(
     b10: Any = UNDEFINED,
     account_info: Any = UNDEFINED,
 ) -> Tuple["OrderedDict[str, Any]", Dict[str, Any]]:
-    """生成 mtgsig 对象，并返回调试信息。"""
     if timestamp_ms is None:
         timestamp_ms = int(time.time() * 1000)
     timestamp_ms = int(timestamp_ms)
@@ -594,7 +559,6 @@ def build_windows_system_object(
     scene: int = 1256,
     route: str = "index/pages/mt/mt",
 ) -> "OrderedDict[str, Any]":
-    """构造 JSGuard 常见 Windows 小程序指纹对象，用于本地 dfpid 和 siua。"""
     return OrderedDict(
         [
             ("accelerometer", []),
@@ -648,7 +612,6 @@ def build_windows_system_object(
 
 
 def make_jsguard_random_letters() -> str:
-    """按 JSGuard 里 An() 的 Math.random 表达式生成 7 位本地随机大写串。"""
     letters: List[str] = []
     for _ in range(7):
         letters.append(chr(random.randrange(25) | ord("A")))
@@ -662,7 +625,6 @@ def make_local_dfpid(
     system_object: Optional["OrderedDict[str, Any]"] = None,
     random_letters: Optional[str] = None,
 ) -> str:
-    """纯算法生成 JSGuard 本地 dfpid/localId，对应 jsguard.js 的 An()。"""
     now_ms = int(time.time() * 1000) if timestamp_ms is None else int(timestamp_ms)
     timestamp_sec = round(now_ms / 1000)
     if random_letters is None:
@@ -693,13 +655,11 @@ def make_dfpid(
     openid: str = "",
     system_object: Optional["OrderedDict[str, Any]"] = None,
 ) -> str:
-    """兼容旧调用名；现在返回 JSGuard An() 风格的纯算法本地 dfpid。"""
     letters = (seed.upper().replace("_", "") + "AAAAAAA")[:7]
     return make_local_dfpid(timestamp_ms=timestamp_ms, openid=openid, system_object=system_object, random_letters=letters)
 
 
 def make_session_id(platform: str = "windows", mmp: bool = False) -> str:
-    """纯算法生成 JSGuard sessionId，对应 Ze.getSessionId()。"""
     hex_chars = list("0123456789abcdef")
     values = [secrets.choice(hex_chars) for _ in range(36)]
     values[14] = "4"
@@ -720,7 +680,6 @@ def make_session_id(platform: str = "windows", mmp: bool = False) -> str:
 
 
 def aes_cbc_pkcs7_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
-    """AES-CBC-PKCS7 加密；优先用 pycryptodome，缺失时回退 cryptography。"""
     pad_len = 16 - (len(data) % 16)
     padded = data + bytes([pad_len]) * pad_len
     try:
@@ -735,7 +694,6 @@ def aes_cbc_pkcs7_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
 
 
 def build_dfp_system_array(system_object: "OrderedDict[str, Any]") -> List[Any]:
-    """按 vt.system 固定字段顺序，把 system 对象压成 siua 里的数组结构。"""
     fields = [
         "accelerometer", "albumAuthorized", "BatteryInfo", "batteryLevel", "Beacons",
         "benchmarkLevel", "bluetoothEnabled", "brand", "brightness", "cameraAuthorized",
@@ -788,7 +746,6 @@ def build_siua(
     ext: Optional[List[Any]] = None,
     system_object: Optional["OrderedDict[str, Any]"] = None,
 ) -> str:
-    """生成 a6/siua：w1.6 + AES-CBC(gzip(JSON数组))。"""
     now_ms = int(time.time() * 1000) if timestamp_ms is None else int(timestamp_ms)
     if filetime_ms is None:
         filetime_ms = now_ms
@@ -833,7 +790,6 @@ def build_pure_identity(
     random_letters: Optional[str] = None,
     session_id: str = "",
 ) -> "OrderedDict[str, Any]":
-    """一次性生成纯本地 dfpid/localId/sessionId/siua，避免 dfpid 和 siua 不一致。"""
     now_ms = int(time.time() * 1000) if timestamp_ms is None else int(timestamp_ms)
     file_ms = now_ms if filetime_ms is None else int(filetime_ms)
     system_object = build_windows_system_object(route=route, scene=scene, platform=platform)

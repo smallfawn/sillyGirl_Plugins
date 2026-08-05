@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: V7.4]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +89,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_nfsqconfig_yxbf': form.string().title('运行并发数').default('').description('设置管理员一键运行所有账号同时最多多少账号一起运行,默认1'),
@@ -138,7 +113,7 @@ import time
 import uuid
 import hashlib
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import StringIO
 import sys
 import requests
@@ -150,12 +125,10 @@ MAX_TOTAL_TRY = 8
 DELAY_MIN, DELAY_MAX = 2, 4
 
 def get_config(key, default=''):
-    """获取配置"""
     val = '2099-12-31'
     return val if val else default
 
 def get_headers(apitoken, unique_id):
-    """生成请求头"""
     return {
         "authority": "sxs-consumer.nfsq.com.cn",
         "apitoken": apitoken,
@@ -166,14 +139,12 @@ def get_headers(apitoken, unique_id):
     }
 
 def parse_ck(ck):
-    """解析ck为apitoken和unique_id"""
     if "&" in ck:
         return ck.split('&', 1)
     else:
         return ck, str(uuid.uuid4())
 
 def verify_token(apitoken, unique_id):
-    """验证Token有效性"""
     headers = get_headers(apitoken, unique_id)
     url = f'{BASE_URL}/geement.usercenter/api/v1/user/seniority?sencodes=SEN2510301505321'
     try:
@@ -183,7 +154,6 @@ def verify_token(apitoken, unique_id):
         return False
 
 def parse_address_by_amap(address):
-    """通过高德API解析地址"""
     amap_key = get_config('amap_key')
     if not amap_key:
         return None
@@ -206,7 +176,6 @@ def parse_address_by_amap(address):
     return None
 
 def parse_address_by_nfsq(longitude, latitude):
-    """通过农夫山泉接口逆地理编码"""
     try:
         params = {"longitude": longitude, "dimension": latitude}
         res = requests.get(ADDRESS_URL, params=params, timeout=10).json()
@@ -225,7 +194,6 @@ def parse_address_by_nfsq(longitude, latitude):
     return None
 
 def parse_address(address):
-    """解析地址，根据配置选择使用高德或农夫山泉接口"""
     use_amap = get_config('use_amap', 'false').lower() == 'true'
 
     if use_amap:
@@ -252,7 +220,6 @@ def parse_address(address):
         return None
 
 def get_location_data(user_info=None):
-    """获取位置数据，优先使用用户自定义地址"""
     if user_info and all([user_info.get(k) for k in ['province', 'city', 'district', 'address', 'longitude', 'latitude']]):
         return {
             "provice_name": user_info['province'],
@@ -269,23 +236,13 @@ def get_location_data(user_info=None):
 
     return None
 
-def calc_new_expire(current_sqsj, days):
-    """计算新的到期时间"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    if current_sqsj and current_sqsj > today:
-        base = datetime.strptime(current_sqsj, "%Y-%m-%d")
-    else:
-        base = datetime.now()
-    return (base + timedelta(days=days)).strftime("%Y-%m-%d")
 
 def notify_masters(msg):
-    """发送管理员通知"""
     notify = get_config('notify')
     if notify:
         sg.notifyMasters(msg, notify.split(','))
 
 def pushplus_notify(title, content):
-    """发送PushPlus通知到群组"""
     token = ""
     topic = "1"  # 群组编码
     try:
@@ -309,7 +266,6 @@ def get_payment_config():
     return {}
 
 def generate_qrcode(url):
-    """生成二维码图片"""
     try:
         encoded_url = urllib.parse.quote(url, safe='')
         return f"https://api.qrtool.cn/?text={encoded_url}"
@@ -326,7 +282,6 @@ class NFSQ:
         self.headers = get_headers(self.apitoken, self.unique_id)
 
     def check_login(self):
-        """检查登录状态"""
         url = f"{BASE_URL}/geement.usercenter/api/v1/user/seniority?sencodes=SEN2510301505321"
         try:
             res = requests.get(url, headers=self.headers, timeout=5).json()
@@ -335,7 +290,6 @@ class NFSQ:
             return False
 
     def do_tasks(self):
-        """执行每日任务"""
         url = f'{BASE_URL}/geement.marketingplay/api/v1/task?pageNum=1&pageSize=10&task_status=2&status=1&group_id=2510301511011&is_db=1'
         try:
             h = self.headers.copy()
@@ -356,7 +310,6 @@ class NFSQ:
             print(f"❌ 获取任务出错: {e}")
 
     def _join_task(self, task_id, name):
-        """加入任务"""
         action_time = time.strftime("%Y-%m-%d %H:%M:%S")
         url = f'{BASE_URL}/geement.marketingplay/api/v1/task/join'
         params = {"action_time": action_time, "task_id": task_id}
@@ -374,7 +327,6 @@ class NFSQ:
             print(f"❌ {name}: {e}")
 
     def receive_prize(self, log_id, goods_type=None):
-        """领取奖品"""
         url = f"{BASE_URL}/geement.actjextra/api/v1/act/win/goods/youzan/receive"
         if goods_type == 160:
             url = f"{BASE_URL}/geement.actjextra/api/v1/act/win/goods/160goods/receive"
@@ -391,7 +343,6 @@ class NFSQ:
             pass
 
     def lottery_once(self, scene_code, i, location_data):
-        """单次抽奖"""
         url = f"{BASE_URL}/geement.marketinglottery/api/v1/marketinglottery"
         try:
             payload = {**location_data, "code": scene_code}
@@ -431,7 +382,6 @@ class NFSQ:
             return True
 
     def _send_win_notify(self, level, name, location_data):
-        """发送中奖通知"""
         msg = f"🎈农夫山泉中奖通知\n用户: {self.user}\n账号: {self.name}\n中奖: [{level}] {name}\n时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         notify_masters(msg)
 
@@ -450,7 +400,6 @@ class NFSQ:
             self._trigger_follow_lottery(location_data)
 
     def _trigger_follow_lottery(self, location_data):
-        """触发全员跟抽"""
         print(f"🔥 触发跟抽! 经纬度: {location_data['longitude']},{location_data['dimension']}")
         notify_masters(f"🔥 农夫跟抽触发!\n中奖账号: {self.name}\n经纬度: {location_data['longitude']},{location_data['dimension']}\n正在为所有账号跟抽...")
 
@@ -518,7 +467,6 @@ class NFSQ:
         notify_masters(f"✅ 跟抽完成，共 {success_count} 个账号参与抽奖")
 
     def run_lottery(self, location_data):
-        """运行双通道混合抽奖"""
         print(f"🚀 开始双通道混合抽奖 (上限 {MAX_TOTAL_TRY} 次)...")
         current_try = 0
         while current_try < MAX_TOTAL_TRY:
@@ -541,7 +489,6 @@ class NFSQ:
         return True
 
     def query_prizes(self):
-        """查询中奖信息（显示近5条）"""
         url = f'{BASE_URL}/geement.actjextra/api/v1/act/win/goods/simple?act_codes=ACT2510301507191%2CACT2510301505581'
         try:
             res = requests.get(url, headers=self.headers, timeout=10).json()
@@ -564,7 +511,6 @@ class NFSQ:
             print(f"❌ 查询出错: {e}")
 
     def main(self):
-        """主任务"""
         try:
             print(f"\n============= 🌊 {self.name} =============")
             if not self.check_login():
@@ -607,7 +553,6 @@ class ATM_nfsq:
         self.sqsj = None
 
     def _get_user_input(self, timeout=60000, allow_quit=True):
-        """获取用户输入"""
         result = self.sender.listen(timeout)
         if result is None:
             self.sender.reply("⏰ 超时退出！")
@@ -618,14 +563,12 @@ class ATM_nfsq:
         return result
 
     def _get_user_data(self):
-        """获取用户数据"""
         data = '2099-12-31'
         return _sg_literal(data) if data and data != '{}' else None
 
     def _save_user_data(self, data):
         """保存用户数据"""
     def _check_token(self, ck):
-        """检查Token有效性"""
         try:
             apitoken, unique_id = parse_ck(ck)
             return verify_token(apitoken, unique_id)
@@ -633,7 +576,6 @@ class ATM_nfsq:
             return False
 
     def nfsc(self):
-        """农夫上车"""
         self.sender.reply("欢迎使用农夫山泉系统，请先设置备注名(1-6字符)，退出输入'q'")
         name = self._get_user_input()
         if not name:
@@ -678,7 +620,6 @@ class ATM_nfsq:
             self.sender.reply(f"❌ 登录错误: {e}")
 
     def nfplsc(self):
-        """农夫批量上车"""
         self.sender.reply("""========批量登录========
 📝 格式说明:
 每行一个账号，格式为: 备注名#apitoken
@@ -763,7 +704,6 @@ class ATM_nfsq:
         self.sender.reply(result_msg)
 
     def nfgl(self):
-        """农夫管理"""
         data = self._get_user_data()
         if not data:
             self.sender.reply("❌ 未找到账号信息，请先上车！")
@@ -804,7 +744,6 @@ class ATM_nfsq:
             self.sender.reply("❌ 输入有误！")
 
     def _manage_account(self):
-        """管理单个账号"""
         self.sender.reply(f"""========账号管理========
 账号: {self.name}
 1、账号授权
@@ -825,7 +764,6 @@ class ATM_nfsq:
             self.sender.reply("❌ 输入有误！")
 
     def _run_account(self):
-        """运行单个账号"""
         today = datetime.now().strftime("%Y-%m-%d")
         if self.sqsj <= today:
             self.sender.reply(f"❌ {self.name} 授权已到期，请先续费！")
@@ -848,7 +786,6 @@ class ATM_nfsq:
             output.close()
 
     def _run_all_accounts(self, data):
-        """运行所有账号"""
         yxbf = int(get_config('yxbf', '1'))
         today = datetime.now().strftime("%Y-%m-%d")
         valid = [(usid, info) for usid, info in data.items() if info['sqsj'] > today]
@@ -873,7 +810,6 @@ class ATM_nfsq:
         self.sender.reply(f"🎉 运行完成，共 {len(valid)} 个账号")
 
     def _delete_account(self):
-        """删除账号"""
         self.sender.reply(f"确认删除【{self.name}】？(y/n)")
         if self._get_user_input(allow_quit=False) == 'y':
             data = self._get_user_data()
@@ -884,7 +820,6 @@ class ATM_nfsq:
             self.sender.reply("已取消")
 
     def _set_address(self):
-        """设置地址"""
         self.sender.reply("请输入详细地址(如:广东省广州市天河区xxx)，退出【q】")
         address = self._get_user_input()
         if not address:
@@ -924,7 +859,6 @@ class ATM_nfsq:
             self.sender.reply(f"❌ 设置失败: {e}")
 
     def _auth_account(self):
-        """账号授权"""
         sqje = get_config('sqje', '6.6')
         sqsj = int(get_config('sqsj', '30'))
         jfsl = int(get_config('jfsl', '200'))
@@ -1002,7 +936,6 @@ class ATM_nfsq:
         return True
 
     def _wechat_pay(self, total, days):
-        """微信支付"""
         if total == 0:
             return True
 
@@ -1041,7 +974,6 @@ class ATM_nfsq:
             return False
 
     def _ma_pay(self, total, days, ma_pay_config):
-        """在线处理"""
         senderID = sg.getSenderID()
         out_trade_no = f"NFSQ{int(time.time())}{self.user}"
 
@@ -1135,7 +1067,6 @@ class ATM_nfsq:
             return False
 
     def _points_pay(self, total, days):
-        """积分支付"""
         user_points = int(sg.bucketGet('dd_sign_points', self.user) or '0')
         if user_points < total:
             self.sender.reply(f"❌ 积分不足！当前: {user_points}，需要: {int(total)}")
@@ -1157,7 +1088,6 @@ class ATM_nfsq:
         return False
 
     def nfcx(self):
-        """农夫查询"""
         data = self._get_user_data()
         if not data:
             self.sender.reply("❌ 未找到账号信息，请先上车！")
@@ -1188,7 +1118,6 @@ class ATM_nfsq:
         self.sender.reply(msg)
 
     def _query_prizes_list(self, ck):
-        """查询中奖列表（返回数据）"""
         try:
             apitoken, unique_id = parse_ck(ck)
             headers = get_headers(apitoken, unique_id)
@@ -1201,7 +1130,6 @@ class ATM_nfsq:
         return []
 
     def nfpz(self):
-        """农夫配置"""
         configs = [
             ('wxzsm', '赞赏码'),
             ('sqje', '授权金额'),
@@ -1253,7 +1181,6 @@ class ATM_nfsq:
                     self.sender.reply(f"✅ {name}设置成功！")
 
     def nfyx(self):
-        """一键运行所有用户"""
         yxbf = int(get_config('yxbf', '1'))
         all_keys = []
         if not all_keys:
@@ -1296,10 +1223,9 @@ class ATM_nfsq:
                     output.close()
                 time.sleep(1)
 
-        self.sender.reply(f"🎉 全部运行完成！")
+        self.sender.reply("🎉 全部运行完成！")
 
     def nfsq(self):
-        """管理员授权"""
         self.sender.reply("""========农夫授权========
 1、一键授权所有用户
 2、单独授权用户

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.5]
+# [version: v1.5.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,12 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 战马能量星球代挂提交插件，支持Safe参数登录；支持批量登录；v1.4修复登录过期，查询过期；]
 # [depe: ["requests"]]
-# [staticmethod: def get_all_users():]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -49,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -87,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_zm_dd_zm_qlname': form.string().title('设置对接系统').default('').description('你的变量需要添加到的系统容器？参数用丨分割'),
@@ -137,13 +99,11 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import requests
 import time
-import json
 import hashlib
 import logging
 import base64
 import ast
 import warnings
-import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
@@ -179,7 +139,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
 
 
 def getusercontent():
-    """获取插件完整配置"""
     dd_hhtt_qlname = sg.bucketGet('dd_zm', 'dd_zm_qlname') or ''
     dd_hhtt_osname = sg.bucketGet('dd_zm', 'dd_zm_osname') or 'zmnlyl'
 
@@ -314,17 +273,6 @@ def get_account_display(account, remark=""):
     remark = str(remark or "").strip()
     return remark if remark else mask_account(account)
 
-def generate_ua_from_safe(safe_str: str) -> str:
-    seed_value = int(hashlib.md5(safe_str.encode()).hexdigest()[:8], 16)
-    random.seed(seed_value)
-
-    os_type = random.choice(["Android", "iOS"])
-    if os_type == "Android":
-        version = f"8.0.{random.randint(30, 45)}"
-        return f"Mozilla/5.0 (Linux; Android {random.randint(10, 14)}; M2012K11AC Build/TKQ1.220829.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/{random.randint(100, 120)}.0.0.0 Mobile Safari/537.36 XWEB/1160065 MMWEBID/2617 MicroMessenger/{version}.2420(0x28002837) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64 MiniProgramEnv/android"
-    else:
-        version = f"8.0.{random.randint(30, 46)}"
-        return f"Mozilla/5.0 (iPhone; CPU iPhone OS {random.randint(14, 17)}_{random.randint(0, 5)} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/{version}(0x18002a28) NetType/WIFI Language/zh_CN"
 
 def empower(empowertime, days):
     try:
@@ -544,7 +492,7 @@ class QingLongAPI:
             if response.status_code == 200:
                 return response.json()['data']['token']
             raise Exception("获取Token失败")
-        except Exception as e: raise
+        except Exception: raise
 
     def get_all_envs(self):
         try:
@@ -630,21 +578,6 @@ except Exception as e:
     sender.reply("❌ 系统连接失败: " + str(e))
     exit(0)
 
-def parse_panel_zm_remark(remarks):
-    info = {"user": "", "account": "", "auth": "", "remark": ""}
-    for part in re.split(r"[丨|,，\s]+", str(remarks or "")):
-        part = part.strip()
-        if not part:
-            continue
-        if part.startswith("用户:"):
-            info["user"] = part.split(":", 1)[1].strip()
-        elif part.startswith("ID:"):
-            info["account"] = part.split(":", 1)[1].strip()
-        elif part.startswith("到期:"):
-            info["auth"] = part.split(":", 1)[1].strip()
-        elif part.startswith("备注:"):
-            info["remark"] = part.split(":", 1)[1].strip()[:20]
-    return info
 
 def sync_local_auth_from_panel():
     return True
@@ -702,7 +635,7 @@ def process_single_account(account, index, total_count, account_remarks):
 🔐 【授权状态】 : {'⚠️ 未授权' if not accountVip else '❌ 已过期'}
 ⏰ 【授权时间】 : {auth_time}
 """
-    except Exception as e:
+    except Exception:
         return None
 
 def cxs():
@@ -751,7 +684,6 @@ def get_user_input(timeout=60):
     except: return None
 
 def bindaccount():
-    """绑定账号 (支持批量)"""
     try:
         remark = ""
         if config['enable_remark']:
@@ -821,7 +753,6 @@ def bindaccount():
         sender.reply("❌ 绑定失败: " + str(e))
 
 def process_account_binding(full_token, phone, nickname, remark=""):
-    """处理绑定入库并恢复详细回复"""
     try:
         account = full_token
         accountVip = '2099-12-31'
@@ -1143,7 +1074,6 @@ def batch_delete_all_accounts(accounts):
         sender.reply("✅ 批量删除完成")
 
 def clean_expired_accounts():
-    """清理过期账号并处理到期提醒"""
     try:
         sync_result = sync_local_auth_from_panel()
         today_time = str(datetime.now().date())

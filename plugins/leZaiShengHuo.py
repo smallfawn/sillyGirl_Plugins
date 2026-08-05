@@ -13,9 +13,14 @@
 # [depe: ["beautifulsoup4","cryptography","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+calculate_auth_time = lambda *args, **kwargs: "2099-12-31"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'yuhua_lzsh_bingfa': form.string().title('并发数量').default('').description('不填默认20'),
@@ -128,7 +104,7 @@ _CONFIG_FIELD_MAP = {
 
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 import requests
 import json
@@ -166,10 +142,6 @@ def safe_reply(sender, msg):
         sender.reply(part)
 
 def token_online_login():
-    """
-    【Token登录功能】
-    通过抓包获取 xiaoletoken
-    """
     guide = """
 =====Token登录=====
 乐仔生活请求头中的xiaoletoken值
@@ -195,11 +167,7 @@ def token_online_login():
     process_login_success(token)
 
 def sms_login_interaction():
-    """
-    【短信登录功能】
-    自动发送短信
-    """
-    sender.reply(f"""
+    sender.reply("""
 =====短信登录=====
 请输入乐仔生活手机号
 ------------------
@@ -229,7 +197,7 @@ def sms_login_interaction():
         return
 
     _mask_identifier(phone)
-    sender.reply(f"""
+    sender.reply("""
 =====短信验证=====
 请回复短信验证码
 ------------------
@@ -253,7 +221,6 @@ def sms_login_interaction():
         sender.reply(f"❌ 登录失败: {token_or_msg}")
 
 def process_login_success(token):
-    """处理登录成功后的逻辑（Token验证与保存）"""
     sender.reply("正在验证凭证有效性...")
     try:
         hsh = HSH(token)
@@ -265,7 +232,7 @@ def process_login_success(token):
 
         info_ok, info_data = hsh.get_user_info()
         if not info_ok:
-            sender.reply(f"❌ 登录失败: 无法获取用户信息")
+            sender.reply("❌ 登录失败: 无法获取用户信息")
             return
 
         phone = str(info_data.get('phone', '未知'))
@@ -332,7 +299,7 @@ def send_request_global(method, url, **kwargs):
     kwargs.setdefault('timeout', 45)
 
     if DEBUG:
-        printf(f"\n===== [REQUEST START] =====", "DEBUG")
+        printf("\n===== [REQUEST START] =====", "DEBUG")
         printf(f"METHOD: {method} | URL: {url}", "DEBUG")
         printf(f"HEADERS: {json.dumps(kwargs.get('headers', {}), ensure_ascii=False)}", "DEBUG")
         if kwargs.get('json'):
@@ -354,7 +321,7 @@ def send_request_global(method, url, **kwargs):
                     printf(f"RSP BODY: {json.dumps(response.json(), ensure_ascii=False)}", "DEBUG")
                 except:
                     printf(f"RSP BODY: {response.text[:1000]}", "DEBUG")
-                printf(f"===== [REQUEST END] =====\n", "DEBUG")
+                printf("===== [REQUEST END] =====\n", "DEBUG")
 
             return response
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
@@ -418,13 +385,11 @@ class HSH:
                     if attempt == 2:
                         raise Exception(f"远程签名获取失败: {e}")
 
-                import time
                 time.sleep(2)
 
             raise Exception("远程获取签名多次尝试失败")
 
     def send_sms_with_captcha(self, phone):
-        """发送短信验证码"""
         try:
             url = f"{self.base_url}/verification-code?phoneNumber={phone}"
             res = self._send_request('GET', url)
@@ -438,7 +403,6 @@ class HSH:
         return False, "请求失败"
 
     def login_by_sms_code(self, phone, sms_code):
-        """使用短信验证码登录"""
         if DEBUG: printf(f"正在尝试短信登录: {phone} code={sms_code}", "INFO")
         url = f"{self.base_url}/register-or-login"
         payload = {
@@ -466,7 +430,6 @@ class HSH:
         return False, "网络请求无响应"
 
     def check_token(self):
-        """检测Token有效性 (已修复Token泄露问题)"""
         url = f"{self.base_url}/user-info"
         res = self._send_request('GET', url)
         if res is None: return False, "网络请求失败"
@@ -499,7 +462,6 @@ class HSH:
             return False, "解析响应失败"
 
     def get_user_info(self):
-        """获取手机号和用户ID"""
         url = f"{self.base_url}/user-info"
         res = self._send_request('GET', url)
         if not res: return False, {}
@@ -516,7 +478,6 @@ class HSH:
         return False, {}
 
     def get_total_score(self):
-        """获取当前总积分"""
         url = f"{self.base_url}/points/wall/v4"
         res = self._send_request('GET', url)
         if not res: return "0"
@@ -529,7 +490,6 @@ class HSH:
         return "0"
 
     def get_today_score(self):
-        """获取今日获取的积分"""
         url = f"{self.base_url}/points/desc"
         res = self._send_request('GET', url)
         if not res: return "0"
@@ -557,7 +517,6 @@ class HSH:
         return "0"
 
     def query_assets(self):
-        """聚合查询资产"""
         self.get_user_info() # 刷新状态
         total = self.get_total_score()
         today = self.get_today_score()
@@ -574,7 +533,6 @@ class HSH:
             self.session = None
 
     def sign_in(self):
-        """每日签到"""
         try:
             url = f"{self.base_url}/sign-in"
             res = self._send_request('GET', url)
@@ -593,7 +551,6 @@ class HSH:
         return False, "异常"
 
     def do_task_with_retry(self, task_id, task_name, is_video=False):
-        """执行单个任务(含重试)"""
         url = f"{self.base_url}/points/mark-finished"
         payload = {"taskId": task_id}
 
@@ -620,7 +577,6 @@ class HSH:
         return False
 
     def get_qrcode_task_count(self):
-        """获取今日扫码任务完成次数"""
         url = f"{self.base_url}/points/desc"
         res = self._send_request('GET', url)
         count = 0
@@ -640,7 +596,6 @@ class HSH:
         return count
 
     def do_qrcode_task(self):
-        """执行扫码积分派发任务"""
         equipment_value = str(540000 + random.randint(1000, 9999))
         url = "https://infor.leyaoyao.com/infor/xiaolelife/third/auth/qr-code/wxmini/url/v3"
         payload = {
@@ -656,7 +611,6 @@ class HSH:
         return False
 
     def run_daily_tasks(self, phone_mask):
-        """执行日常任务"""
         sign_ok, sign_msg = self.sign_in()
 
         url = f"{self.base_url}/points/wall/v4"
@@ -690,7 +644,7 @@ class HSH:
 
             if qrcode_done >= qrcode_limit:
                 finished_tasks_count += 1
-                task_report_lines.append(f"💳 扫码积分派发任务")
+                task_report_lines.append("💳 扫码积分派发任务")
             else:
                 needed = qrcode_limit - qrcode_done
                 success_cnt = 0
@@ -704,7 +658,7 @@ class HSH:
                 final_done = qrcode_done + success_cnt
                 if final_done >= qrcode_limit:
                     finished_tasks_count += 1
-                    task_report_lines.append(f"💳 扫码积分派发任务")
+                    task_report_lines.append("💳 扫码积分派发任务")
                 else:
                     task_report_lines.append(f"❌ 扫码积分派发任务 ({final_done}/{qrcode_limit})")
 
@@ -715,9 +669,9 @@ class HSH:
                 total_tasks_count += 1
                 if sign_ok:
                     finished_tasks_count += 1
-                    task_report_lines.append(f"🎨 每日签到")
+                    task_report_lines.append("🎨 每日签到")
                 else:
-                    task_report_lines.append(f"❌ 每日签到")
+                    task_report_lines.append("❌ 每日签到")
 
                 for group in groups:
                     for task in group.get("tasks", []):
@@ -780,7 +734,6 @@ imtype = sender.getImtype()
 uservalue = sg.bucketGet(bucket='yuhua_lzsh_user', key=userid)
 
 def get_config():
-    """获取插件配置"""
     manage_cmd = sg.bucketGet('yuhua_lzsh', 'manage_cmd') or '乐仔管理'
     query_cmd = sg.bucketGet('yuhua_lzsh', 'query_cmd') or '乐仔查询'
     login_cmd = sg.bucketGet('yuhua_lzsh', 'login_cmd') or '乐仔登录'
@@ -799,7 +752,6 @@ today_time = str(datetime.now().date())
 
 
 def login():
-    """账号登录"""
     login_guide = """
 =====登录方式=====
 [1] Token登录
@@ -831,7 +783,6 @@ def login():
         return
 
 def _query_single_account(unique_id):
-    """【内部函数】并发查询单个账号"""
     time.sleep(random.uniform(0.5, 1.0))
     phone = sg.bucketGet('yuhua_lzsh_phone', unique_id) or "未知"
     phone_mask = _mask_identifier(phone)
@@ -868,9 +819,6 @@ def _query_single_account(unique_id):
         hsh.close()
 
 def query_account():
-    """
-    【乐仔查询】
-    """
     if not uservalue:
         sender.reply(f"""
 =====未绑定账号=====
@@ -887,7 +835,7 @@ def query_account():
 ==================""")
         return
 
-    sender.reply(f"正在查询....")
+    sender.reply("正在查询....")
 
     bf_num_local = bingfa
 
@@ -902,7 +850,6 @@ def query_account():
                 sender.reply(f"❌ 查询某个账号时出错: {e}")
 
 def _wrap_task_run(unique_id):
-    """【内部函数】任务运行包装器"""
     time.sleep(random.uniform(0.5, 2.0))
     phone = sg.bucketGet('yuhua_lzsh_phone', unique_id) or "未知"
     phone_mask = _mask_identifier(phone)
@@ -930,7 +877,6 @@ def _wrap_task_run(unique_id):
         hsh.close()
 
 def execute_batch_run():
-    """【乐仔运行】用户侧指令"""
     if not uservalue:
         sender.reply(f"=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 {login_cmd} 绑定账号\n==================")
         return
@@ -939,7 +885,7 @@ def execute_batch_run():
         sender.reply(f"=====未绑定账号=====\n❌ 未找到任何账号信息\n💡 发送 {login_cmd} 绑定账号\n==================")
         return
 
-    sender.reply(f"正在执行...")
+    sender.reply("正在执行...")
 
     bf_num_local = bingfa
     with ThreadPoolExecutor(max_workers=bf_num_local) as executor:
@@ -953,7 +899,6 @@ def execute_batch_run():
                 sender.reply(f"❌ 执行出错: {e}")
 
 def admin_run_all_tasks():
-    """【乐仔一键运行】管理员侧指令 (已优化：动态判断完成率)"""
     sender.reply("正在执行...")
 
     tasks = []
@@ -1027,7 +972,7 @@ def admin_run_all_tasks():
                 details.append(f"🤪 账号: {p}\n🪁 原因: {r}")
 
     report = [
-        f"=====乐仔一键=====",
+        "=====乐仔一键=====",
         f"✨ 总账号数: {len(tasks)}",
         f"✅ 运行成功: {success}",
         f"❌ 运行失败: {failed}",
@@ -1050,7 +995,6 @@ def _mask_identifier(identifier: str) -> str:
     return identifier[:3] + "****" + identifier[-4:]
 
 def auth_all_accounts_for_user(accounts):
-    """一键授权"""
     prompt = "=====一键授权=====\n"
     if price > 0:
         prompt += f"授权价格: {price}元/月\n"
@@ -1095,7 +1039,6 @@ def auth_all_accounts_for_user(accounts):
 ==================""")
 
 def manage_account():
-    """管理账号"""
     if not uservalue:
         sender.reply(f"""
 =====未绑定账号=====
@@ -1156,7 +1099,6 @@ def manage_account():
         sender.reply("❌ 无效的选择")
 
 def show_account_menu(account):
-    """显示账号操作菜单"""
     menu = """
 =====账号操作=====
 [1] 授权账号
@@ -1184,7 +1126,6 @@ def show_account_menu(account):
         sender.reply("❌ 无效的选择")
 
 def confirm_delete(account):
-    """确认是否删除账号"""
     phone = sg.bucketGet('yuhua_lzsh_phone', account) or "未知"
     phone_mask = _mask_identifier(phone)
     sender.reply(f"⚠️ 确认要删除账号 {phone_mask} 吗？(y/n)")
@@ -1204,7 +1145,6 @@ def confirm_delete(account):
     delete_account(account)
 
 def delete_account(account):
-    """删除本地记录"""
     phone = sg.bucketGet('yuhua_lzsh_phone', account) or "未知"
     phone_mask = _mask_identifier(phone)
     accounts = _sg_literal(uservalue or '[]')
@@ -1233,7 +1173,6 @@ def delete_account(account):
 ==================""")
 
 def auth_account(account):
-    """用户侧手动授权"""
     phone = sg.bucketGet('yuhua_lzsh_phone', account) or "未知"
     phone_mask = _mask_identifier(phone)
     if not price:
@@ -1295,170 +1234,9 @@ def admin_auth():
     except Exception:
         pass
     return None
-def auth_all_users():
-    """一键授权所有用户"""
-    sender.reply("""
-=====批量授权=====
-请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-    try:
-        days_str = sender.input(60000, 0, False)
-        if not days_str:
-            sender.reply("❌ 输入超时")
-            return
-        elif days_str.lower() == 'q':
-            sender.reply("✅ 已退出操作")
-            return
-        days = int(days_str)
-        users = sg.bucketAllKeys('yuhua_lzsh_user')
-        success = 0
-        failed = 0
-        for user in users:
-            accounts = _sg_literal(sg.bucketGet('yuhua_lzsh_user', user) or '[]')
-            for acc_id in accounts:
-                try:
-                    calculate_auth_time(acc_id, days)
-                    True
-                    success += 1
-                except Exception as e:
-                    failed += 1
 
-        action_text = "授权" if days > 0 else "扣除"
-        day_abs = abs(days)
-        sender.reply(f"""
-=====操作完成=====
-✅ 成功: {success}个账号
-❌ 失败: {failed}个账号
-⏰ 时长: {action_text}{day_abs}天
-==================""")
-    except ValueError:
-        sender.reply("❌ 无效的天数")
-    except Exception as e:
-        sender.reply(f"❌ 授权失败: {str(e)}")
-
-def auth_specific_user():
-    """指定用户授权"""
-    sender.reply("""
-=====指定授权=====
-请输入用户ID
-(发送myuid可获取ID)
-------------------
-回复"q"退出""")
-    user_id = sender.input(60000, 0, False)
-    if not user_id:
-        sender.reply("❌ 输入超时")
-        return
-    if user_id.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-
-    accounts = _sg_literal(sg.bucketGet('yuhua_lzsh_user', user_id) or '[]')
-    if not accounts:
-        sender.reply("❌ 该用户没有绑定账号")
-        return
-
-    account_list_msg = "=====账号列表=====\n[0] 授权全部账号\n"
-    for i, acc_id in enumerate(accounts, 1):
-        phone = sg.bucketGet('yuhua_lzsh_phone', acc_id) or "未知"
-        phone_mask = _mask_identifier(phone)
-        auth_str = '2099-12-31'
-
-        status_line = ""
-        if auth_str:
-            try:
-                auth_date = datetime.strptime(auth_str, "%Y-%m-%d").date()
-                if auth_date > datetime.now().date():
-                    status_line = f"✅ {auth_date.strftime('%Y-%m-%d')}"
-                else:
-                    status_line = "❌ 已过期"
-            except ValueError:
-                status_line = "⚠️ 未授权"
-        else:
-            status_line = "⚠️ 未授权"
-
-        account_list_msg += f"------------------\n[{i}] 账号信息\n🤪 账号: {phone_mask}\n☁ 授权: {status_line}\n"
-
-    account_list_msg += "------------------\n回复数字选择\n回复'q'退出\n=================="
-    sender.reply(account_list_msg)
-
-    choice_str = sender.input(60000, 0, False)
-    if not choice_str:
-        sender.reply("❌ 输入超时")
-        return
-    if choice_str.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-
-    try:
-        choice_idx = int(choice_str)
-        if not 0 <= choice_idx <= len(accounts):
-            raise ValueError("无效的选择")
-    except ValueError:
-        sender.reply("❌ 无效的选择")
-        return
-
-    target_accounts = []
-    if choice_idx == 0:
-        target_accounts = accounts
-    else:
-        target_accounts.append(accounts[choice_idx - 1])
-
-    sender.reply("""
-=====指定授权=====
-请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-    days_str = sender.input(60000, 0, False)
-    if not days_str:
-        sender.reply("❌ 输入超时")
-        return
-    if days_str.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-
-    try:
-        days = int(days_str)
-        latest_accounts = _sg_literal(sg.bucketGet('yuhua_lzsh_user', user_id) or '[]')
-        if not latest_accounts:
-            sender.reply("❌ 操作失败：该用户已无任何账号")
-            return
-
-        success = 0
-        failed = 0
-        for acc_id in target_accounts:
-            if acc_id not in latest_accounts:
-                failed += 1
-                continue
-
-            try:
-                calculate_auth_time(acc_id, days)
-                True
-                success += 1
-            except Exception as e:
-                failed += 1
-
-        action_text = "授权" if days > 0 else "扣除"
-        day_abs = abs(days)
-        reply_msg = f"""
-=====操作完成=====
-👤 用户: {user_id}
-✅ 成功: {success}个账号
-❌ 失败: {failed}个账号
-⏰ 时长: {action_text}{day_abs}天
-=================="""
-
-        sender.reply(reply_msg)
-
-    except ValueError:
-        sender.reply("❌ 无效的天数")
-    except Exception as e:
-        sender.reply(f"❌ 授权时发生未知错误: {str(e)}")
 
 def cron_task():
-    """定时任务处理"""
     if imtype != 'fake':
         pass
     today_str = str(datetime.now().date())
@@ -1494,7 +1272,6 @@ def cron_task():
 
 notified_accounts = set()
 def notify_user(user, account, message):
-    """发送用户通知"""
     try:
         if account in notified_accounts:
             return
@@ -1594,11 +1371,10 @@ def check_maintenance_page() -> bool:
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
         base64.b64encode(nonce + ciphertext).decode('utf-8')
         True
-    except Exception as e:
+    except Exception:
         pass
     return live_status
 def main():
-    """主函数"""
     try:
         if not check_maintenance_page():
             sender.reply("❌ 服务端无法连通, 插件停止运行")

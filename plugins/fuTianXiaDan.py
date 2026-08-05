@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,12 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
 try:
     import ast as _sg_ast
 except Exception:
@@ -51,16 +54,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(value, default=None):
-    if isinstance(value,(list,dict,tuple,set,int,float,bool)) or value is None:
-        return value if value is not None else ([] if default is None else default)
-    text=str(value or "").strip()
-    if not text: return [] if default is None else default
-    for parser in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if parser:
-            try: return parser(text)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
@@ -100,43 +93,6 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-def mask_account(value):
-    value=str(value or ""); return value if len(value)<=7 else value[:3]+"***"+value[-4:]
-def generate_qrcode_url(text): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(text or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-def calculate_auth_time(*a,**k): return "2099-12-31"
-def check_auth_status(*a,**k): return "账号默认可用"
-_check_auth_status=check_auth_status
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw
-    if isinstance(raw,dict): raw=list(raw.keys()) or list(raw.values())
-    return (raw if isinstance(raw,list) else []), (raw if isinstance(raw,list) else [])
-def process_authorization(*a,**k): return True
-def process_coin_payment(*a,**k): return True
-def admin_auth_all_accounts(*a,**k): return True
-def admin_auth_by_user(*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+", str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -188,7 +144,6 @@ class FutianOrderBot:
         self.phone = None  # 添加手机号属性
 
     def login(self, phone: str, password: str) -> bool:
-        """登录账号"""
         self.phone = phone  # 保存手机号
         login_url = f"{self.base_url}/user/login"
 
@@ -221,7 +176,6 @@ class FutianOrderBot:
             return False
 
     def search_products(self, search_word: str, page: int = 1, page_count: int = 15) -> Dict[str, Any]:
-        """搜索商品"""
         search_url = f"{self.base_url}/product/search"
 
         search_param = {
@@ -242,7 +196,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def display_search_results(self, search_result: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """显示搜索结果"""
         if search_result.get("stateCode") != 0:
             sender.reply(f"❌ 搜索失败: {search_result.get('message', '未知错误')}")
             return []
@@ -276,7 +229,6 @@ class FutianOrderBot:
         return items
 
     def clear_and_add_to_cart(self, goods_id: int, quantity: int = 1) -> bool:
-        """清空购物车并添加商品"""
         cart_url = f"{self.base_url}/cart/show"
         try:
             response = self.session.get(cart_url, verify=False)
@@ -293,7 +245,6 @@ class FutianOrderBot:
             return False
 
     def _clear_cart(self, baskets: list):
-        """清空购物车"""
         clear_url = f"{self.base_url}/cart/removeGoods"
         remove_items = []
 
@@ -313,7 +264,6 @@ class FutianOrderBot:
                 pass
 
     def _add_to_cart(self, goods_id: int, quantity: int) -> bool:
-        """添加商品到购物车"""
         add_url = f"{self.base_url}/cart/addGoods"
         add_items = [{"goodsId": goods_id, "number": quantity, "type": 1}]
 
@@ -328,7 +278,6 @@ class FutianOrderBot:
             return False
 
     def clear_user_addresses(self):
-        """清空用户所有收货地址"""
         try:
             address_list_url = f"{self.base_url}/user/consignees"
             response = self.session.get(address_list_url, verify=False)
@@ -350,7 +299,6 @@ class FutianOrderBot:
             sender.reply(f"❌ 清空地址异常: {str(e)}")
 
     def clear_shopping_cart(self):
-        """清空购物车"""
         try:
             cart_url = f"{self.base_url}/cart/show"
             response = self.session.get(cart_url, verify=False)
@@ -369,7 +317,6 @@ class FutianOrderBot:
             sender.reply(f"❌ 清空购物车异常: {str(e)}")
 
     def get_region_list(self, parent_id: int = 0) -> List[Dict[str, Any]]:
-        """获取地区列表"""
         region_url = f"{self.base_url}/region/findChild"
         region_param = {"id": parent_id}
         region_param_json = json.dumps(region_param, separators=(',', ':'))
@@ -390,7 +337,6 @@ class FutianOrderBot:
             return []
 
     def interactive_region_selection(self) -> Optional[int]:
-        """交互式选择地区"""
 
         sender.reply("🌏 请选择省份/直辖市:")
         provinces = self.get_region_list(0)
@@ -513,7 +459,6 @@ class FutianOrderBot:
             return selected_district.get('id')
 
     def get_cart_token(self) -> Optional[str]:
-        """获取购物车令牌"""
         cart_show_url = f"{self.base_url}/asyncCheckout/show"
 
         try:
@@ -531,7 +476,6 @@ class FutianOrderBot:
             return None
 
     def create_shipping_address(self) -> int:
-        """创建收货地址"""
         address_url = f"{self.base_url}/user/addConsignees"
 
         region_id = self.shipping_address.get("region_id", 1355)
@@ -561,7 +505,6 @@ class FutianOrderBot:
         return None
 
     def get_image_verify_code(self) -> Dict[str, Any]:
-        """获取图形验证码"""
         verify_url = f"{self.base_url}/global/createImageVerifyCode"
         param = {"type": "VERIFYCODE_IMAGE_USEPOINT"}
         param_json = json.dumps(param, separators=(',', ':'))
@@ -576,7 +519,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def send_sms_verify_code(self, img_verify_code: str) -> Dict[str, Any]:
-        """发送短信验证码"""
         sms_url = f"{self.base_url}/asyncCheckout/sendLoginNameSMS"
         param = {
             "loginName": self.phone,
@@ -592,7 +534,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def verify_sms_code(self, sms_code: str) -> Dict[str, Any]:
-        """验证短信验证码"""
         verify_url = f"{self.base_url}/asyncCheckout/checkPoint"
         param = {
             "loginName": self.phone,
@@ -610,7 +551,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def update_cart_data(self, address_id: int, point_payment: int) -> Dict[str, Any]:
-        """更新购物车数据"""
         update_url = f"{self.base_url}/asyncCheckout/update"
 
         cart_token = self.get_cart_token()
@@ -647,7 +587,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def verify_point_payment(self, point_payment: int) -> bool:
-        """验证积分支付"""
         if point_payment <= 4000:
             return True
 
@@ -714,7 +653,6 @@ class FutianOrderBot:
         return True
 
     def create_order(self, address_id: int, point_payment: int) -> Dict[str, Any]:
-        """创建订单"""
         if not self.verify_point_payment(point_payment):
             return {"error": "积分验证失败", "stateCode": -1}
 
@@ -755,7 +693,6 @@ class FutianOrderBot:
             return {"error": str(e)}
 
     def delete_shipping_address(self, address_id: int):
-        """删除收货地址"""
         delete_url = f"{self.base_url}/user/consignees/del"
         delete_param = {"id": address_id}
 
@@ -770,7 +707,6 @@ class FutianOrderBot:
             pass
 
     def get_order_list(self, status: str = "0", page: int = 1, page_count: int = 15) -> Dict[str, Any]:
-        """获取订单列表"""
         order_url = f"{self.base_url}/order/list"
 
         order_param = {
@@ -794,7 +730,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def display_order_list(self, order_result: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """显示订单列表并返回订单数据"""
         if order_result.get("stateCode") != 0:
             sender.reply(f"❌ 获取订单列表失败: {order_result.get('message', '未知错误')}")
             return []
@@ -836,7 +771,6 @@ class FutianOrderBot:
         return items
 
     def get_order_logistics(self, order_id: str) -> Dict[str, Any]:
-        """获取订单物流信息"""
         logistics_url = f"{self.base_url}/order/packages"
 
         logistics_param = {"orderId": order_id}
@@ -853,7 +787,6 @@ class FutianOrderBot:
             return {"error": str(e), "stateCode": -1}
 
     def display_logistics(self, logistics_result: Dict[str, Any]):
-        """显示物流信息"""
         if logistics_result.get("stateCode") != 0:
             sender.reply(f"❌ 获取物流信息失败: {logistics_result.get('message', '未知错误')}")
             return
@@ -864,7 +797,7 @@ class FutianOrderBot:
             sender.reply("❌ 暂无物流信息")
             return
 
-        result_text = f"🚚 物流信息:\n" + "=" * 40 + "\n"
+        result_text = "🚚 物流信息:\n" + "=" * 40 + "\n"
 
         for i, package in enumerate(data, 1):
             express_info = package.get("express", {})
@@ -883,7 +816,7 @@ class FutianOrderBot:
 
             product_list = package.get("productList", [])
             if product_list:
-                result_text += f"  📦 包裹商品:\n"
+                result_text += "  📦 包裹商品:\n"
                 for product in product_list:
                     name = product.get("name", "未知商品")
                     count = product.get("count", 1)
@@ -895,7 +828,6 @@ class FutianOrderBot:
 
 
 def process_accounts_login(accounts_text: str) -> List[Dict[str, str]]:
-    """处理账号信息"""
     accounts = []
     lines = accounts_text.strip().split('\n')
 
@@ -913,7 +845,6 @@ def process_accounts_login(accounts_text: str) -> List[Dict[str, str]]:
 
 
 def show_main_menu():
-    """显示主菜单"""
     sender.reply("""
 🚀 福田下单系统 🚀
 1️⃣ 开始下单
@@ -921,7 +852,6 @@ def show_main_menu():
 
 
 def show_logistics_menu():
-    """显示物流查询菜单"""
     sender.reply("""
 🚚 福田物流查询 🚚
 1️⃣ 查看所有订单
@@ -931,7 +861,6 @@ def show_logistics_menu():
 
 
 def handle_logistics_query():
-    """处理物流查询"""
     sender.reply("""
 📱 账号登录 📱
 请输入账号信息，格式：手机号#密码

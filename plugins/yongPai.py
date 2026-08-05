@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v4.5]
+# [version: v1.5.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_yy_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -135,7 +110,6 @@ _CONFIG_FIELD_MAP = {
 
 import re
 from datetime import datetime, timedelta
-import urllib.parse
 from decimal import Decimal
 import requests
 import time
@@ -221,7 +195,6 @@ def getusercontent():
 
 
 def update_proxy(session, proxy_url):
-    """更新代理配置，返回代理字典"""
     if not proxy_url:
         return None
 
@@ -570,7 +543,7 @@ def delenvs(id):
         "Content-Type": "application/json",
     }
     data = [id]
-    response = requests.delete(url, headers=headers, json=data).json()
+    requests.delete(url, headers=headers, json=data).json()
 
 
 def allenvs(osname, account):
@@ -781,8 +754,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
         exit(0)
 
 
-def getRandom(start, end):
-    return random.randint(start, end)
 
 
 def generate_random_ua():
@@ -793,7 +764,6 @@ def generate_random_ua():
 
 
 def ValueErrors(value, count):
-    """验证输入值是否为有效的整数且在合理范围内"""
     try:
         value = int(value)
         if value > count or value == 0:
@@ -812,12 +782,6 @@ def ValueErrors(value, count):
 
 
 def parse_batch_selection(input_str, max_count):
-    """解析批量选择输入，支持逗号分隔和范围选择
-    示例：
-    - 1,3,5 -> [1,3,5]
-    - 1-5 -> [1,2,3,4,5]
-    - 1,3-5,7 -> [1,3,4,5,7]
-    """
     try:
         selected_indices = []
         parts = input_str.split(',')
@@ -855,11 +819,6 @@ def parse_batch_selection(input_str, max_count):
         raise ValueError(f"输入格式错误: {str(e)}")
 
 
-def generate_md5(input_string):
-    md5_hash = hashlib.md5()
-    md5_hash.update(input_string.encode('utf-8'))
-    md5_digest = md5_hash.hexdigest()
-    return md5_digest
 
 
 def yesornos():
@@ -880,7 +839,6 @@ def yesornos():
 
 
 def sf_login(sender):
-    """甬派账号登录"""
     login_guide = """
 =====甬派账号登录=====
 请按以下格式输入账号信息:
@@ -972,7 +930,7 @@ def sf_login(sender):
                     result = response.json()
                     login_success = True
                     break
-                except Exception as e:
+                except Exception:
                     if retry < 2:
                         time.sleep(1)
                         if proxy_url:
@@ -997,7 +955,7 @@ def sf_login(sender):
             else:
                 fail_count += 1
 
-        except Exception as e:
+        except Exception:
             fail_count += 1
             continue
 
@@ -1038,7 +996,7 @@ def sf_login(sender):
                             print(f"更新账号 {phone} 的青龙变量时出错: {str(e)}")
                             continue
 
-            except Exception as e:
+            except Exception:
                 continue
 
         result_msg = f"""
@@ -1123,7 +1081,6 @@ def bindaccount():
 
 
 def empower(empowertime, me_as_int):
-    """授权时间计算"""
     day = me_as_int * 30
     if len(empowertime) == 0 or empowertime <= str(today_time):
         delayed_date = today_date + timedelta(days=day)
@@ -1441,7 +1398,6 @@ def get_payment_config():
 
 
 def zf(project, me_as_int, accountVip, token, phone, account, batch_accounts=None):
-    """支付功能,支持单个和批量账号支付"""
     try:
         zsm, use_ma_pay_local, ma_pay_config = get_payment_config()
         if not zsm and not use_ma_pay_local:
@@ -1458,8 +1414,7 @@ def zf(project, me_as_int, accountVip, token, phone, account, batch_accounts=Non
                 {'account': account, 'token': token, 'accountVip': accountVip, 'phone': phone}]
             for acc in accounts_to_process:
                 try:
-                    new_auth_time = empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
-                    True
+                    empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
                     stored_info = sg.bucketGet('dd_yy_token', acc['account'])
                     if stored_info:
                         Addenvs(osname=dd_yy_osname, value=stored_info, account=acc['account'],
@@ -1596,8 +1551,7 @@ def zf(project, me_as_int, accountVip, token, phone, account, batch_accounts=Non
 
                     for acc in accounts_to_process:
                         try:
-                            new_auth_time = empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
-                            True
+                            empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
 
                             stored_info = sg.bucketGet('dd_yy_token', acc['account'])
                             if stored_info:
@@ -1733,8 +1687,7 @@ HTTP状态码: {response.status_code}
 
                             for acc in accounts_to_process:
                                 try:
-                                    new_auth_time = empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
-                                    True
+                                    empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
 
                                     stored_info = sg.bucketGet('dd_yy_token', acc['account'])
                                     if stored_info:
@@ -1800,8 +1753,7 @@ HTTP状态码: {response.status_code}
 
                     for acc in accounts_to_process:
                         try:
-                            new_auth_time = empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
-                            True
+                            empower(empowertime=acc['accountVip'], me_as_int=me_as_int)
 
                             stored_info = sg.bucketGet('dd_yy_token', acc['account'])
                             if stored_info:
@@ -1839,7 +1791,6 @@ HTTP状态码: {response.status_code}
 
 
 def cx(token, use_proxy=False):
-    """查询用户信息和中奖记录"""
     try:
         account_info = token.split('#')
         if len(account_info) < 2:
@@ -1941,7 +1892,6 @@ def cx(token, use_proxy=False):
 
 
 def calculate_today_income(prizes):
-    """计算今日收益"""
     try:
         today = datetime.now().strftime("%Y-%m-%d")
         today_income = 0.0
@@ -2072,7 +2022,7 @@ def cxs():
                             account_info += "\n=================="""
                             sender.reply(account_info)
 
-                        except Exception as e:
+                        except Exception:
                             sender.reply(f"""
 =====甬派查询异常[{i}]=====
 📱 账号: {login_mobile}
@@ -2242,7 +2192,6 @@ def push(user, account, c):
 
 
 def clean_expired_accounts():
-    """清理过期的甬派账号"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有权限执行此操作")
         exit(0)
@@ -2314,7 +2263,6 @@ def clean_expired_accounts():
 
 
 def show_tutorial():
-    """显示甬派插件使用教程"""
     tutorial = """
 =====甬派插件教程=====
 🔰 基础功能指令:
@@ -2349,7 +2297,6 @@ def show_tutorial():
 
 
 def cx_today_income_fast(token, use_proxy=False):
-    """快速查询今日收益（只查询最近记录）"""
     try:
         account_info = token.split('#')
         if len(account_info) < 2:
@@ -2451,7 +2398,6 @@ def cx_today_income_fast(token, use_proxy=False):
 
 
 def cx_batch_today_income(accounts):
-    """批量查询今日收益（支持并发）"""
     results = {}
 
     def query_single_account(account):

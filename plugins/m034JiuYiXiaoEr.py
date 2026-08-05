@@ -14,9 +14,14 @@
 # [depe: ["requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+calculate_auth_time = lambda *args, **kwargs: "2099-12-31"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +91,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'mrconli_jiuyixiaoer_is_proxy': form.boolean().title('是否启用代理').default(False).description('true/false'),
@@ -128,7 +104,7 @@ _CONFIG_FIELD_MAP = {
 scripts_name =  "小二"
 bucket_prefix = "mrconli.jiuyixiaoer"
 
-from datetime import datetime, timedelta  # 操作日期、时间以及时间间隔
+from datetime import datetime
 import urllib3
 from decimal import Decimal  # 处理浮点数
 import time  # 处理时间
@@ -156,7 +132,6 @@ proxy = None  # 初始化全局代理变量
 
 
 def update_proxy():
-    """更新代理IP地址"""
     global proxy
     try:
         if not IS_PROXY or IS_PROXY == "false":
@@ -176,7 +151,6 @@ def update_proxy():
 
 
 def _send_request(method, url, **kwargs):
-    """带代理重试的请求方法"""
     global proxy
     attempts = 0
     while attempts < MAX_RETRIES:
@@ -209,14 +183,12 @@ def _send_request(method, url, **kwargs):
 
 
 def mask_phone(phone):
-    """手机号脱敏处理"""
     if not phone or len(phone) != 11:
         return phone
     return f"{phone[:3]}****{phone[7:]}"
 
 
 def get_headers():
-    """获取请求头信息"""
     return {
         'Host': 'jiuyixiaoer.fzjingzhou.com',
         'Connection': 'keep-alive',
@@ -234,7 +206,6 @@ def get_headers():
     }
 
 def get_user_info(token):
-    """获取用户信息"""
     update_proxy()
     url = 'https://jiuyixiaoer.fzjingzhou.com/api/Person/index'
     headers = get_headers()
@@ -254,7 +225,6 @@ def get_user_info(token):
         return False, None, str(e)
 
 def sign_in(token):
-    """签到功能"""
     url = 'https://jiuyixiaoer.fzjingzhou.com/api/Person/sign'
     headers = get_headers()
     data = {
@@ -278,7 +248,6 @@ def sign_in(token):
 
 
 def run(token):
-    """主函数"""
     update_proxy()
     success, msg = sign_in(token)
     if success:
@@ -288,7 +257,6 @@ def run(token):
 
 
 def batch_login():
-    """批量登录函数"""
     global uservalue
     sender.reply(
         f"======={login_cmd}=======\n"
@@ -347,12 +315,12 @@ def batch_login():
                     status = f"✅ {mask_phone(phone)} 更新成功"
                     accountVip = '2099-12-31'
                     if not accountVip or accountVip < today_time:
-                        sender.reply(f"⚠️ 账号未授权或授权已过期")
+                        sender.reply("⚠️ 账号未授权或授权已过期")
             uservalue = json.dumps(current_accounts)
 
             progress = f"[{index}/{total}] {status}"
             sender.reply(progress)
-        except Exception as e:
+        except Exception:
             fail_count += 1
             error_msg = f"无效账号: {account}"
             error_reasons.append(error_msg)
@@ -425,7 +393,7 @@ def query():
                 sender.reply(f'正在查询{scripts_name}账号[{mask_phone(account)}]，请耐心等待...')
                 success, phone, msg = get_user_info(token)
                 if not success:
-                    sender.reply(f'❌ 查询失败')
+                    sender.reply('❌ 查询失败')
                     continue
                 sender.reply(f"""
 ====={scripts_name}账号详情=====
@@ -437,7 +405,6 @@ def query():
 
 
 def cron_task():
-    """定时任务处理"""
     if imtype != 'fake':
         return
     try:
@@ -522,7 +489,6 @@ def user_run():
             sender.reply(f'❌ 账号[{mask_phone(account)}]运行出错: {str(e)}')
 
 def all_run():
-    """所有用户运行函数"""
     success_count = 0
     faild_count = 0
     unvip = 0
@@ -572,7 +538,7 @@ def all_run():
             print(f'【{account}】运行出错: {str(e)}')
             return False
         finally:
-            print(f"防黑号，随机延时...")
+            print("防黑号，随机延时...")
             time.sleep(random.uniform(5, 9))
 
     sender.reply(f"""
@@ -585,7 +551,6 @@ def all_run():
 
 
 def notify_user(user, account, message):
-    """发送用户通知"""
     try:
         notify_msg = f"""
 ====={scripts_name}账号通知=====
@@ -602,7 +567,6 @@ def notify_user(user, account, message):
         print(f"发送通知失败: {str(e)}")
 
 def get_config():
-    """获取插件配置"""
     try:
         manage_cmd = sg.bucketGet(bucket_prefix, 'manage_cmd') or f'{scripts_name}管理'
         query_cmd = sg.bucketGet(bucket_prefix, 'query_cmd') or f'{scripts_name}查询'
@@ -631,7 +595,6 @@ def get_config():
 
 
 def manage_accounts():
-    """管理账号"""
     accounts = _sg_literal(uservalue or "[]")
     if not accounts:
         sender.reply(f"""
@@ -771,7 +734,6 @@ def manage_accounts():
 
 
 def show_account_menu(account):
-    """显示账号操作菜单"""
     auth = '2099-12-31'
     auth_status = "✅ 已授权" if auth and auth > today else "❌ 未授权"
     auth_info = f"\n    到期: {auth}" if auth and auth > today else ""
@@ -805,7 +767,6 @@ def show_account_menu(account):
 
 
 def auth_account(account):
-    """账号授权"""
     try:
         price = Decimal(sg.bucketGet(bucket_prefix, 'price') or '1')   #  每月价格
         coin_bucket = sg.bucketGet(bucket_prefix, 'coin_bucket') or 'dd_sign_points'
@@ -956,24 +917,9 @@ def clean_expired():
     except Exception:
         pass
     return None
-def retry_on_error(func, retries=3, delay=1):
-    """错误重试装饰器"""
-
-    def wrapper(*args, **kwargs):
-        for i in range(retries):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if i == retries - 1:
-                    raise e
-                time.sleep(delay)
-        return None
-
-    return wrapper
 
 
 def log_operation(operation, user, account, status, message=''):
-    """记录操作日志"""
     try:
         log = {
             'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -998,120 +944,11 @@ def admin_auth():
     except Exception:
         pass
     return None
-def auth_all_users():
-    """一键授权所有用户"""
-    sender.reply("""
-=====批量授权=====
-📝 请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-    try:
-        days = sender.listen(60000)
-        if not days or days == 'q':
-            sender.reply("✅ 已取消授权")
-            return
-        days = int(days)
-        if days <= 0:
-            raise ValueError()
-        users = sg.bucketAllKeys(f'{bucket_prefix}.user')
-        success = 0
-        failed = 0
-        for user in users:
-            accounts = _sg_literal(sg.bucketGet(f'{bucket_prefix}.user', user) or '[]')
-            for account in accounts:
-                try:
-                    calculate_auth_time(account, days / 30)
-                    True
-                except Exception as e:
-                    failed += 1
-                    log_operation('batch_auth', user, account, 'failed', str(e))
-        sender.reply(f"""
-=====授权完成=====
-✅ 成功: {success}个账号
-❌ 失败: {failed}个账号
-⏰ 授权: {days}天
-==================""")
-    except ValueError:
-        sender.reply("❌ 无效的天数")
-    except Exception as e:
-        sender.reply(f"❌ 授权失败: {str(e)}")
 
 
-def auth_specific_user():
-    """指定用户授权"""
-    sender.reply("""
-=====指定授权=====
-📝 请输入用户ID
-(发送myuid可获取ID)
-------------------
-回复"q"退出""")
-    user_id = sender.listen(60000)
-    if not user_id or user_id == 'q':
-        return
-    accounts = _sg_literal(sg.bucketGet(f'{bucket_prefix}.user', user_id) or '[]')
-    if not accounts:
-        sender.reply("❌ 未找到该用户的账号")
-        return
-    account_list = """
-=====账号列表=====
-[0] 授权全部账号"""
-    for i, account in enumerate(accounts, 1):
-        auth = '2099-12-31'
-        status = "✅ 已授权" if auth and auth > today else "❌ 未授权"
-        account_list += f"\n[{i}] {mask_phone(account)}\n    {status}"
-    account_list += """
-------------------
-回复数字选择账号
-回复"q"退出"""
-    sender.reply(account_list)
-    choice = sender.listen(60000)
-    if not choice or choice == 'q':
-        return
-    try:
-        sender.reply("""
-=====设置授权时间=====
-📝 请输入授权天数
-------------------
-回复数字设置天数
-回复"q"退出""")
-        days = sender.listen(60000)
-        if not days or days == 'q':
-            return
-        days = int(days)
-        if days <= 0:
-            raise ValueError()
-        if choice == '0':
-            for account in accounts:
-                try:
-                    auth_time = calculate_auth_time(account, days / 30)
-                    True
-                except Exception as e:
-                    log_operation('auth', user_id, account, 'failed', str(e))
-            sender.reply(f"✅ 已授权所有账号 {days}天")
-        else:
-            index = int(choice) - 1
-            if not 0 <= index < len(accounts):
-                raise ValueError()
-            account = accounts[index]
-            auth_time = calculate_auth_time(account, days / 30)
-            True
-            sender.reply(f"""
-=====授权成功=====
-📱 账号: {mask_phone(account)}
-⏰ 时长: {days}天
-📅 到期: {auth_time}
-==================""")
-            log_operation('auth', user_id, account, 'success')
-    except ValueError:
-        sender.reply("❌ 无效的输入")
-    except Exception as e:
-        sender.reply(f"❌ 授权失败: {str(e)}")
-        log_operation('auth', user_id, account, 'failed', str(e))
 
 
 def delete_account(account):
-    """删除账号"""
     try:
         sg.bucketDel(f'{bucket_prefix}.token', account)
         True
@@ -1142,7 +979,6 @@ def delete_account(account):
         return False
 
 def tutorial():
-    """显示使用教程"""
     tutorial_text = (
         f"====={scripts_name}教程=====\n"
         "📝 入口：\n"
@@ -1165,7 +1001,6 @@ def tutorial():
 
 
 def main():
-    """主函数"""
     message = sender.getMessage()
     if '登录' in message or '登陆' in message or '上车' in message:
         batch_login()

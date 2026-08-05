@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v1.5]
+# [version: v1.5.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["cryptography","httpx","pycryptodome","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_ltyp_ql_config': form.string().title('设置对接容器').default('').description('青龙配置,用丨分割'),
@@ -132,18 +107,15 @@ _CONFIG_FIELD_MAP = {
 }
 
 import os
-import re
 import json
 import time
 import base64
 import hashlib
 import random
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 import httpx
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -166,14 +138,12 @@ LOGIN_APP_ID = "44fd964cef7a8ced082d577f9b8d6b2e4440b3365caa7f55c9dbb89f2bb937ff
 
 
 def get_config():
-    """获取插件配置"""
     var_name = sg.bucketGet('dd_ltyp', 'var_name') or 'LTYPCookie'
     ql_config = sg.bucketGet('dd_ltyp', 'ql_config') or ''
     ql_format = sg.bucketGet('dd_ltyp', 'ql_format') or '1'
     return var_name, ql_config, ql_format
 
 def get_daidai_config():
-    """获取呆呆面板配置"""
     use_daidai = sg.bucketGet('dd_ltyp', 'use_daidai') or 'false'
     use_daidai = use_daidai.lower() == 'true'
     dd_ltyp_ddname = sg.bucketGet('dd_ltyp', 'dd_ltyp_ddname') or ''
@@ -181,7 +151,6 @@ def get_daidai_config():
 
 
 def get_full_config():
-    """获取完整插件配置"""
     from decimal import Decimal
     var_name = sg.bucketGet('dd_ltyp', 'var_name') or 'LTYPCookie'
     ql_config = sg.bucketGet('dd_ltyp', 'ql_config') or ''
@@ -193,73 +162,27 @@ def get_full_config():
     return var_name, ql_config, zsm, vip_money, vip_coin, use_ma_pay
 
 
-def get_payment_config():
-    return {}
 
 
-def generate_qrcode(url):
-    """生成二维码图片"""
-    try:
-        import urllib.parse
-        encoded_url = urllib.parse.quote(url, safe='')
-        return f"https://api.qrtool.cn/?text={encoded_url}"
-    except Exception as e:
-        print(f"生成二维码失败: {str(e)}")
-        return None
 
 
-def send_qrcode_image(sender, qrcode_url, pay_type):
-    """发送二维码图片"""
-    pay_type_names = {'alipay': '支付宝', 'wxpay': '微信', 'qqpay': 'QQ钱包'}
-    pay_type_name = pay_type_names.get(pay_type, pay_type)
-
-    try:
-        sender.replyImage(qrcode_url)
-        if pay_type == 'qqpay':
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\nQQ支付打开图片若是黑屏，长按屏幕进行\"识别二维码\"即可！\n支付过程中输入'q'可取消支付")
-        else:
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\n支付过程中输入'q'可取消支付")
-    except:
-        if pay_type == 'qqpay':
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\nQQ支付打开图片若是黑屏，长按屏幕进行"识别二维码"即可！\n[CQ:image,file={qrcode_url}]'
-        else:
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\n[CQ:image,file={qrcode_url}]'
-        sender.reply(pay_msg)
 
 
-def empower(empowertime, me_as_int):
-    """授权时间计算"""
-    today_date = datetime.now().date()
-    today_time = str(today_date)
-    day = me_as_int * 30
-    if len(empowertime) == 0 or empowertime <= today_time:
-        delayed_date = today_date + timedelta(days=day)
-    elif empowertime > today_time:
-        empower_date = datetime.strptime(empowertime, "%Y-%m-%d")
-        delayed_date = empower_date + timedelta(days=day)
-        delayed_date = delayed_date.date()
-    else:
-        return None
-    return str(delayed_date)
 
 
 def get_auth_status(account_vip, today_time):
     return '2099-12-31'
 
 
-def parse_payment_result(ddzf):
-    return True
 
 
 def mask_phone(phone):
-    """手机号脱敏"""
     if isinstance(phone, str) and len(phone) >= 11:
         return phone[:3] + "****" + phone[-4:]
     return phone
 
 
 class SMSEncrypt:
-    """RSA加密类 - 用于短信验证码登录"""
     def __init__(self):
         self.k = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDc+CZK9bBA9IU+gZUOc6FUGu7y
@@ -287,7 +210,6 @@ jBUxzMeQlEC2czEMSwIDAQAB
 
 
 class UnicomSMS:
-    """联通短信验证码登录"""
     def __init__(self, phone):
         self.phone = phone
         self.e = SMSEncrypt()
@@ -312,7 +234,6 @@ class UnicomSMS:
             return {"code": "Err", "msg": f"请求异常: {str(e)}"}
 
     def login(self, code):
-        """使用短信验证码登录"""
         from urllib.parse import quote
         u = "https://m.client.10010.com/mobileService/radomLogin.htm"
         t = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -328,7 +249,6 @@ class UnicomSMS:
 
 
 def rsa_encrypt(plaintext, public_key_base64):
-    """RSA 公钥加密函数"""
     public_key_bytes = base64.b64decode(public_key_base64)
     public_key_b64 = base64.b64encode(public_key_bytes).decode('utf-8')
     pem_lines = [public_key_b64[i:i+64] for i in range(0, len(public_key_b64), 64)]
@@ -349,19 +269,16 @@ def rsa_encrypt(plaintext, public_key_base64):
 
 
 def mobile_encrypt(data):
-    """手机号加密函数"""
     encrypted_bytes = rsa_encrypt(data, PUBLIC_KEY_BASE64)
     return base64.b64encode(encrypted_bytes).decode('utf-8').replace('\n', '')
 
 
 def password_encrypt(password, random_str="000000"):
-    """密码加密函数"""
     combined = password + random_str
     return mobile_encrypt(combined)
 
 
 def handle_risk_verification(base_url, mobile_encrypted, session):
-    """处理风控验证"""
     try:
         from urllib.parse import urlencode, urlparse
         parsed = urlparse(base_url)
@@ -372,14 +289,13 @@ def handle_risk_verification(base_url, mobile_encrypted, session):
             "User-Agent": "Mozilla/5.0 (Linux; Android 12; Redmi K30 Pro Build/SKQ1.220303.001) AppleWebKit/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         }
-        response = session.get(full_url_with_params, headers=headers, timeout=15)
+        session.get(full_url_with_params, headers=headers, timeout=15)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
 def perform_login(mobile, password, retry_count=0, max_retries=2):
-    """账密登录获取token_online"""
     try:
         session = requests.Session()
         mobile_encrypted = mobile_encrypt(mobile)
@@ -443,7 +359,6 @@ def perform_login(mobile, password, retry_count=0, max_retries=2):
 
 
 def get_ql_token(url, client_id, client_secret):
-    """获取青龙token"""
     try:
         r = requests.get(f'{url}/open/auth/token?client_id={client_id}&client_secret={client_secret}')
         if r.status_code != 200:
@@ -457,7 +372,6 @@ def get_ql_token(url, client_id, client_secret):
 
 
 def dd_get_token(dd_url, app_key, app_secret):
-    """获取呆呆面板Token"""
     try:
         url = f'{dd_url}/api/open-api/token'
         data = {"app_key": app_key, "app_secret": app_secret}
@@ -474,7 +388,6 @@ def dd_get_token(dd_url, app_key, app_secret):
 
 
 def init_qinglong():
-    """初始化面板连接（支持青龙/呆呆面板）"""
     use_daidai, dd_ltyp_ddname = get_daidai_config()
     var_name, ql_config, ql_format = get_config()
 
@@ -513,10 +426,6 @@ def init_qinglong():
 
 
 def add_to_qinglong(ql_url, ql_token, var_name, token_online, phone, remark, ql_format='1', ecs_token=None, expire_time=None):
-    """添加变量到面板（支持青龙/呆呆面板）
-    ql_format: 1=手机号#token_online 2=token_online 3=手机号#ecs_token
-    expire_time: 授权到期时间
-    """
     use_daidai, _ = get_daidai_config()
 
     if ql_format == '1':
@@ -609,12 +518,11 @@ def add_to_qinglong(ql_url, ql_token, var_name, token_online, phone, remark, ql_
             if response.status_code != 200:
                 raise Exception("提交变量失败")
             return True
-        except Exception as e:
+        except Exception:
             return False
 
 
 def delete_from_qinglong(ql_url, ql_token, var_name, phone):
-    """从面板删除变量（支持青龙/呆呆面板）"""
     use_daidai, _ = get_daidai_config()
 
     if use_daidai:
@@ -654,18 +562,9 @@ def delete_from_qinglong(ql_url, ql_token, var_name, phone):
             return False
 
 
-def encrypt_aes(text, key, iv='wNSOYIB1k1DjY5lA'):
-    """AES加密"""
-    key_bytes = key[:16].encode('utf-8')
-    iv_bytes = iv.encode('utf-8')
-    cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
-    padded_text = pad(text.encode('utf-8'), AES.block_size)
-    encrypted_bytes = cipher.encrypt(padded_text)
-    return base64.b64encode(encrypted_bytes).decode('utf-8')
 
 
 async def get_ecstoken(session, token_online):
-    """获取ecs_token和手机号"""
     try:
         url = "https://m.client.10010.com/mobileService/onLine.htm"
         payload = {
@@ -697,7 +596,6 @@ async def get_ecstoken(session, token_online):
 
 
 async def get_ticket(session, ecs_token):
-    """获取ticket"""
     try:
         url = "https://m.client.10010.com/mobileService/openPlatform/openPlatLineNew.htm?to_url=https://contact.bol.wo.cn/market"
         headers = {
@@ -721,7 +619,6 @@ async def get_ticket(session, ecs_token):
 
 
 async def get_cloud_token(session, ticket):
-    """获取云盘token"""
     try:
         url = "https://panservice.mail.wo.cn/wohome/dispatcher"
         timestamp = str(int(time.time() * 1000))
@@ -764,7 +661,6 @@ async def get_cloud_token(session, ticket):
 
 
 async def get_market_user_token(session, ecs_token):
-    """获取权益超市userToken（用于抽奖记录查询，与脚本一致）"""
     try:
         from urllib.parse import urlparse, parse_qs
         url = "https://m.client.10010.com/mobileService/openPlatform/openPlatLineNew.htm?to_url=https://contact.bol.wo.cn/market"
@@ -801,7 +697,6 @@ async def get_market_user_token(session, ecs_token):
 
 
 async def query_raffle_records(session, user_token):
-    """查询权益超市抽奖中奖记录（与脚本getMyPrize接口一致）"""
     try:
         url = "https://backward.bol.wo.cn/prod-api/promotion/home/raffleActivity/getMyPrize"
         headers = {
@@ -835,7 +730,6 @@ async def query_raffle_records(session, user_token):
 
 
 async def query_cloud_lottery_records(session, cloud_token, activity_id):
-    """查询云盘抽奖中奖记录（与20251210联通云盘抽奖.py脚本一致）"""
     try:
         url = "https://panservice.mail.wo.cn/activity/lottery/recordList"
         headers = {
@@ -866,7 +760,6 @@ async def query_cloud_lottery_records(session, cloud_token, activity_id):
 
 
 async def query_sign_telephone(session, ecs_token):
-    """查询签到区话费红包总额"""
     try:
         url = "https://act.10010.com/SigninApp/convert/getTelephone"
         headers = {
@@ -890,7 +783,6 @@ async def query_sign_telephone(session, ecs_token):
 
 
 async def query_ttlxj_available(session, ecs_token, mobile):
-    """查询天天领现金-可用立减金"""
     try:
         target_url = "https://epay.10010.com/ci-mps-st-web/?webViewNavIsHidden=webViewNavIsHidden"
         open_url = f"https://m.client.10010.com/mobileService/openPlatform/openPlatLineNew.htm?to_url={target_url}"
@@ -1038,7 +930,6 @@ async def query_ttlxj_available(session, ecs_token, mobile):
 
 
 async def query_woread_balance(session, token_online):
-    """查询阅读区话费红包余额"""
     try:
         import hashlib as hl
         from Crypto.Cipher import AES
@@ -1050,7 +941,6 @@ async def query_woread_balance(session, token_online):
         secret_key = "7k1HcDL8RKvc"
 
         def encode_woread_hex(data):
-            """AES加密并返回hex再base64"""
             key_bytes = default_password[:16].encode('utf-8')
             iv_bytes = iv_string.encode('utf-8')
             cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
@@ -1086,7 +976,6 @@ async def query_woread_balance(session, token_online):
             return None
 
         def encode_woread_str(text):
-            """单字符串加密"""
             key_bytes = default_password[:16].encode('utf-8')
             iv_bytes = iv_string.encode('utf-8')
             cipher = AES.new(key_bytes, AES.MODE_CBC, iv_bytes)
@@ -1153,7 +1042,6 @@ async def query_woread_balance(session, token_online):
 
 
 async def query_watering_progress(session, user_token):
-    """查询权益超市浇花进度"""
     try:
         url = "https://backward.bol.wo.cn/prod-api/promotion/activityTask/getMultiCycleProcess?activityId=13"
         headers = {
@@ -1173,7 +1061,6 @@ async def query_watering_progress(session, user_token):
 
 
 async def query_cloud_points(session, ecs_token):
-    """查询云盘任务积分（完整流程）"""
     try:
         ticket_url = f"https://m.client.10010.com/edop_ng/getTicketByNative?appId=edop_unicom_d67b3e30&token={ecs_token}"
         ticket_headers = {
@@ -1259,7 +1146,6 @@ async def query_cloud_points(session, ecs_token):
 
 
 async def query_cloud_records(token_online):
-    """查询账号信息（包含各类余额和中奖记录）"""
     try:
         async with httpx.AsyncClient(timeout=30, verify=False) as session:
             phone, ecs_token, err = await get_ecstoken(session, token_online)
@@ -1317,7 +1203,6 @@ async def query_cloud_records(token_online):
 
 
 def bind_account():
-    """绑定联通云盘账号"""
     guide = """
 =====联通云盘登录=====
 [1] 📱 验证码登录
@@ -1348,7 +1233,6 @@ def bind_account():
 
 
 def login_by_sms():
-    """短信验证码登录"""
     sender.reply("""
 =====验证码登录=====
 📱 格式: 手机号#验证码
@@ -1429,8 +1313,6 @@ def login_by_sms():
 
 
 def _save_sms_account(phone, token_online, ecs_token):
-    """保存验证码登录的账号信息"""
-    global uservalue
 
     if not uservalue:
         sg.bucketSet('dd_ltyp_user', userid, str([phone]))
@@ -1460,7 +1342,6 @@ def _save_sms_account(phone, token_online, ecs_token):
 
 
 def login_by_token():
-    """Token登录"""
     sender.reply("""
 =====Token登录=====
 📱 格式: 备注#online_token
@@ -1569,8 +1450,6 @@ def login_by_token():
 
 
 def _save_token_account(phone, token_online, ecs_token, remark):
-    """保存Token登录的账号信息"""
-    global uservalue
 
     if not uservalue:
         sg.bucketSet('dd_ltyp_user', userid, str([phone]))
@@ -1600,7 +1479,6 @@ def _save_token_account(phone, token_online, ecs_token, remark):
 
 
 def login_by_password():
-    """账密登录"""
     sender.reply("""
 =====账密登录=====
 请输入账号信息
@@ -1710,7 +1588,6 @@ def login_by_password():
 
 
 def manage_account():
-    """账号管理功能"""
     from decimal import Decimal
 
     if not uservalue:
@@ -1818,7 +1695,6 @@ def manage_account():
 
 
 def show_account_menu(phone, accounts):
-    """显示账号操作菜单"""
     from decimal import Decimal
 
     today_time = str(datetime.now().date())
@@ -2063,7 +1939,6 @@ def batch_payment(accounts, months, total_money):
 
 
 def query_account():
-    """查询账号信息"""
     if not uservalue:
         sender.reply("""
 =====未绑定账号=====
@@ -2213,7 +2088,6 @@ def query_account():
 def admin_auth():
     return True
 def backend_manage():
-    """后台管理功能"""
     if not sender.isAdmin():
         sender.reply("❌ 您没有权限执行此操作!")
         return
@@ -2244,7 +2118,6 @@ def backend_manage():
 
 
 def clean_expired_accounts():
-    """清理过期的云盘账号"""
     users = sg.bucketAllKeys('dd_ltyp_user')
 
     if not users:
@@ -2300,7 +2173,6 @@ def clean_expired_accounts():
 
 
 def sync_to_qinglong():
-    """同步已授权账号到青龙"""
     users = sg.bucketAllKeys('dd_ltyp_user')
 
     if not users:
@@ -2361,7 +2233,6 @@ def sync_to_qinglong():
 
 
 def show_tutorial():
-    """显示云盘插件使用教程"""
     tutorial = """📚 联通云盘插件教程
 
 🔰 基础功能指令:
@@ -2387,7 +2258,6 @@ def show_tutorial():
 
 
 def main():
-    """主函数"""
     message = sender.getMessage()
 
     if '联通云盘登录' in message or '联通云盘登陆' in message:

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v2.0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,13 @@
 # [depe: ["pycryptodome","requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +90,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_kg_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -129,7 +104,6 @@ _CONFIG_FIELD_MAP = {
     ('dd_kg', 'var_name'): 'dd_kg_var_name',
 }
 
-import re
 from datetime import datetime, timedelta
 from decimal import Decimal
 import requests
@@ -145,7 +119,6 @@ today_date = datetime.now().date()
 today_time = str(today_date)
 
 def ValueErrors(value, count):
-    """验证输入值"""
     try:
         value = int(value)
         if value <= 0 or value > count:
@@ -162,7 +135,6 @@ userid = sender.getUserID()
 uservalue = sg.bucketGet(bucket='dd_kg_user', key=userid) or ''
 
 def normalize_panel_type(panel_type_value):
-    """统一解析面板类型。"""
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
         return 'daidai'
@@ -192,7 +164,6 @@ class Account:
         self.token = token
 
 def aes_encrypt(plaintext, key, iv):
-    """AES加密 - 输出hex格式"""
     try:
         key_bytes = key.encode('utf-8')
         iv_bytes = iv.encode('utf-8')
@@ -205,7 +176,6 @@ def aes_encrypt(plaintext, key, iv):
         return None
 
 def aes_decrypt(ciphertext, key, iv):
-    """AES解密 - 输入hex格式"""
     try:
         key_bytes = key.encode('utf-8')
         iv_bytes = iv.encode('utf-8')
@@ -219,7 +189,6 @@ def aes_decrypt(ciphertext, key, iv):
         return None
 
 def md5_encrypt(text):
-    """MD5加密 - 输出小写"""
     try:
         return hashlib.md5(text.encode('utf-8')).hexdigest()
     except Exception as e:
@@ -227,7 +196,6 @@ def md5_encrypt(text):
         return None
 
 def generate_qrcode(url):
-    """将支付链接转为二维码图片URL"""
     try:
         encoded_url = urllib.parse.quote(url, safe='')
         return f"https://api.qrtool.cn/?text={encoded_url}"
@@ -236,7 +204,6 @@ def generate_qrcode(url):
         return None
 
 def send_qrcode_image(pay_sender, qrcode_url, pay_type):
-    """发送二维码图片给用户扫在线处理"""
     pay_type_names = {'alipay': '支付宝', 'wxpay': '微信', 'qqpay': 'QQ钱包'}
     pay_type_name = pay_type_names.get(pay_type, pay_type)
     try:
@@ -253,7 +220,6 @@ def send_qrcode_image(pay_sender, qrcode_url, pay_type):
         pay_sender.reply(pay_msg)
 
 def get_config():
-    """获取配置信息"""
     panel_type = normalize_panel_type(sg.bucketGet('dd_kg', 'panel_type') or '')
     if not panel_type:
         sender.reply("对接面板类型填写无效，请填写：青龙/青龙面板/QL 或 呆呆/呆呆面板/Daidai")
@@ -270,7 +236,6 @@ def get_config():
     return panel_type, panel_config, var_name, zsm, kgVipmoney, kgcoin, use_ma_pay, panel_group
 
 def get_panel_settings():
-    """获取面板配置。"""
     panel_type, panel_config, var_name, _, _, _, _, panel_group = get_config()
     return panel_type, panel_config, var_name, panel_group
 
@@ -278,7 +243,6 @@ def get_payment_config():
     return {}
 
 def empower(empowertime, me_as_int):
-    """授权时间计算"""
     day = me_as_int * 30
     if len(empowertime) == 0 or empowertime <= str(today_time):
         delayed_date = today_date + timedelta(days=day)
@@ -292,7 +256,6 @@ def empower(empowertime, me_as_int):
     return str(delayed_date)
 
 def zf(project, me_as_int, accountVip, token, phone, account):
-    """支付处理函数"""
     try:
         money = Decimal(me_as_int) * Decimal(kgVipmoney)
         if money == 0:
@@ -559,7 +522,6 @@ def parse_payment_result(ddzf):
     return True
 
 def yesornos():
-    """确认选择处理"""
     yesorno = sender.input(120000, 1, False)
     if yesorno == 'Y' or yesorno == 'y' or yesorno == '是':
         return True
@@ -579,7 +541,6 @@ def kg_auth():
     return True
 
 def clean_expired_accounts():
-    """清理过期的酷狗账号"""
     if not sender.isAdmin():
         sender.reply("""
 =====权限不足=====
@@ -652,7 +613,6 @@ def clean_expired_accounts():
 
 
 def connect_qinglong():
-    """连接面板"""
     panel_type, panel_config, _, _ = get_panel_settings()
     if not panel_config:
         if panel_type == 'qinglong':
@@ -698,7 +658,6 @@ def connect_qinglong():
         return None, None
 
 def update_env(ql_url, token, value, account, remark):
-    """更新面板环境变量"""
     try:
         panel_type, _, var_name, panel_group = get_panel_settings()
         headers = {
@@ -775,7 +734,6 @@ def update_env(ql_url, token, value, account, remark):
         return False
 
 def delete_env_by_account(ql_url, token, account):
-    """按账号删除面板环境变量。"""
     try:
         panel_type, _, var_name, _ = get_panel_settings()
         headers = {
@@ -811,7 +769,6 @@ def delete_env_by_account(ql_url, token, account):
         return False
 
 def send_code(mobile):
-    """发送验证码"""
     if len(mobile) != 11:
         sender.reply("❌ 请输入正确的手机号码")
         return False
@@ -887,7 +844,6 @@ def send_code(mobile):
         return False
 
 def login_by_code(mobile, code):
-    """使用验证码登录"""
     if len(mobile) != 11:
         sender.reply("❌ 请输入正确的手机号码")
         return None
@@ -989,7 +945,6 @@ def login_by_code(mobile, code):
         return None
 
 def bind_account():
-    """绑定账号"""
     sender.reply("""
 =====酷狗账号登录=====
 请输入手机号码:
@@ -1116,7 +1071,6 @@ def bind_account():
 ==================""")
 
 def get_account_info(account):
-    """获取账号信息"""
     try:
         ctime13 = str(int(time.time() * 1000))
         paramsdata = f'srcappid=2919&clientver=12149&clienttime={ctime13}&mid=&uuid=&dfid=&appid=1005&userid={account.userid}&token={account.token}&from=client&spec=15&h5=1'
@@ -1155,7 +1109,6 @@ def get_account_info(account):
         }
 
 def get_today_coins(account):
-    """获取今日金币"""
     try:
         ctime10 = str(int(time.time()))
 
@@ -1223,13 +1176,11 @@ def get_today_coins(account):
         }
 
 def mask_phone(phone):
-    """手机号码脱敏处理"""
     if len(phone) != 11:
         return phone
     return phone[:3] + '*' * 4 + phone[-4:]
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
         sender.reply("""
 =====未绑定账号=====
@@ -1370,7 +1321,6 @@ def query_accounts():
 ==================""")
 
 def manage_accounts():
-    """管理账号"""
     if not uservalue:
         sender.reply("""
 =====账号管理=====
@@ -1535,7 +1485,6 @@ def manage_accounts():
 ==================""")
 
 def show_tutorial():
-    """显示酷狗教程"""
     tutorial = """
 =====酷狗使用教程=====
 🎯 功能介绍：
@@ -1567,7 +1516,6 @@ def show_tutorial():
     sender.reply(tutorial)
 
 def kg_cron_check():
-    """定时检测授权过期推送"""
     users = sg.bucketAllKeys(bucket='dd_kg_user')
     if not users:
         return
@@ -1625,7 +1573,6 @@ def kg_cron_check():
 
 
 def main():
-    """主函数"""
     global kgVipmoney, kgcoin
     _, _, var_name, zsm, kgVipmoney, kgcoin, use_ma_pay, _ = get_config()
     message = sender.getMessage()

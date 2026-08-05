@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: Jiang0529]
-# [version: v2.2]
+# [version: v1.3.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,14 +12,12 @@
 # [icon: https://pp.myapp.com/ma_icon/0/icon_54326748_1755482552/256]
 # [description: 星芽免费短剧插件；2.2版本更新日志：按面板对接模板增加呆呆面板支持，统一完善青龙/呆呆面板变量查询、新增、更新、删除、失败补交逻辑，兼容旧版青龙配置]
 # [depe: ["requests"]]
-# [classmethod: def from_config(cls):]
-# [property: def headers(self):]
-# [staticmethod: def extract_data_list(result):]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -51,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -89,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'ch_xy_config_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
@@ -139,7 +99,7 @@ import json
 import logging
 
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 import re
 import time
@@ -160,12 +120,10 @@ def xyauth(plaintext):
 
 
 def generate_android_id():
-    """随机生成一个Android ID (16位十六进制字符串)"""
     return ''.join(random.choice(HEX_DIGITS) for _ in range(16))
 
 
 def android_id_to_device_id(android_id):
-    """将Android ID转换为设备ID"""
     if not android_id or android_id == "9774d56d68369ce":
         return "9" + str(uuid.uuid4()).replace("-", "")
     else:
@@ -173,17 +131,12 @@ def android_id_to_device_id(android_id):
 
 
 def getdid():
-    '''
-    随机生成安卓id并生成did
-    :return: android_id, device_id
-    '''
     android_id = generate_android_id()
     device_id = android_id_to_device_id(android_id)
     return android_id, device_id
 
 
 def mask_phone(phone):
-    """手机号脱敏显示"""
     phone = safe_str(phone)
     if len(phone) < 11:
         return phone
@@ -191,17 +144,14 @@ def mask_phone(phone):
 
 
 def mask_phone_list(phones):
-    """脱敏展示多个手机号"""
     return '、'.join(mask_phone(phone) for phone in phones)
 
 
 def phone_digest(phone):
-    """生成手机号匹配标识，避免在外部备注中暴露完整手机号"""
     return hashlib.sha256(safe_str(phone).encode('utf-8')).hexdigest()[:12]
 
 
 def extract_remark_user(remarks):
-    """从青龙备注中提取原用户标识，定时更新时避免被 fake 触发用户覆盖"""
     if not remarks or '用户:' not in remarks:
         return ''
     try:
@@ -216,7 +166,6 @@ def build_ql_remark(phone, account_vip, owner_user=None, existing_remarks=None):
 
 
 def remark_matches_phone(remarks, phone):
-    """兼容新版哈希标识、旧版明文手机号与脱敏手机号备注"""
     remarks = safe_str(remarks)
     phone = safe_str(phone)
     if not remarks or not phone:
@@ -240,19 +189,16 @@ def remark_matches_phone(remarks, phone):
 
 
 def split_accounts(data):
-    """将存储的账号字符串拆分为账号列表"""
     if not data:
         return []
     return [item for item in data.split('&') if item]
 
 
 def safe_str(value):
-    """将 None 等空值安全转成字符串，避免 len(None) 等异常"""
     return value or ''
 
 
 def bind_user_phone(user_id, phone):
-    """为用户绑定手机号，自动去重"""
     phones = split_accounts(sg.bucketGet("ch_xy_phone", user_id))
     if phone not in phones:
         phones.append(phone)
@@ -260,7 +206,6 @@ def bind_user_phone(user_id, phone):
 
 
 def unbind_user_phone(user_id, phone):
-    """解绑用户手机号"""
     phones = split_accounts(sg.bucketGet("ch_xy_phone", user_id))
     phones = [item for item in phones if item != phone]
     if phones:
@@ -269,7 +214,6 @@ def unbind_user_phone(user_id, phone):
         sg.bucketDel(bucket='ch_xy_phone', key=user_id)
 
 def ValueErrors(value, count, sender_obj=None):
-    """验证输入值是否为有效的整数且在合理范围内"""
     try:
         value = int(value)
         if value <= 0 or value > count:
@@ -287,27 +231,9 @@ def ValueErrors(value, count, sender_obj=None):
         return None
 
 
-def empower(empowertime, me_as_int):
-    """授权时间计算"""
-    day = int(me_as_int) * 30
-    try:
-        if len(empowertime) == 0:
-            delayed_date = today_date + timedelta(days=day)
-        else:
-            empower_date = datetime.strptime(empowertime, "%Y-%m-%d").date()
-            if empower_date <= today_date:
-                delayed_date = today_date + timedelta(days=day)
-            else:
-                delayed_date = empower_date + timedelta(days=day)
-
-        return str(delayed_date)
-    except Exception as e:
-        print(f"授权时间计算出错: {str(e)}")
-        return str(today_date + timedelta(days=day))
 
 
 def normalize_panel_type(panel_type_value):
-    """统一解析面板类型，返回 qinglong / daidai / ''"""
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
         return 'daidai'
@@ -326,7 +252,6 @@ def panel_type_label(panel_type_value=None):
 
 
 def parse_panel_config():
-    """读取并校验面板配置；兼容旧版 ch_xy_config.Qinglong 配置"""
     panel_type_raw = sg.bucketGet(PLUGIN_NAMESPACE, 'panel_type') or ''
     panel_config = safe_str(sg.bucketGet(PLUGIN_NAMESPACE, 'panel_config')).strip()
     legacy_qinglong = safe_str(sg.bucketGet(PLUGIN_NAMESPACE, 'Qinglong')).strip()
@@ -399,7 +324,6 @@ def parse_panel_config():
 
 
 def get_qinglong_token(host, client_id, client_secret):
-    """获取青龙面板 API Token"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         response = requests.get(url, timeout=DEFAULT_REQUEST_TIMEOUT)
@@ -418,7 +342,6 @@ def get_qinglong_token(host, client_id, client_secret):
 
 
 def get_daidai_token(host, app_key, app_secret):
-    """获取呆呆面板 API Token"""
     try:
         url = f'{host}/api/open-api/token'
         response = requests.post(
@@ -441,7 +364,6 @@ def get_daidai_token(host, app_key, app_secret):
 
 
 class PanelClient:
-    """青龙/呆呆面板统一环境变量客户端"""
 
     def __init__(self, host, token, panel_type, panel_group=''):
         self.host = host.rstrip('/')
@@ -530,7 +452,6 @@ class PanelClient:
             raise RuntimeError(f"{self.label}请求失败: {str(e)}")
 
     def get_all_envs(self, var_name=None, keyword=''):
-        """获取面板变量列表，可按变量名/关键字过滤"""
         params = {}
         if self.is_daidai:
             params = {"page_size": 1000}
@@ -547,7 +468,6 @@ class PanelClient:
         return envs
 
     def search_env(self, var_name, phone=None, keyword=''):
-        """按变量名 + 手机标识/关键字搜索变量"""
         phone = safe_str(phone)
         keyword = safe_str(keyword)
         query_keyword = keyword or (phone_digest(phone) if phone else '')
@@ -663,7 +583,6 @@ class PanelClient:
 
 
 def ensure_panel_connection():
-    """按需建立面板连接，避免无关指令受配置影响"""
     global panel_client, QLurl, qltoken
     if panel_client is None:
         panel_client = PanelClient.from_config()
@@ -672,43 +591,18 @@ def ensure_panel_connection():
 
 
 def ensure_ql_connection():
-    """兼容旧函数名：实际返回当前对接面板的 host/token"""
     client = ensure_panel_connection()
     return client.host, client.token
 
 
-def seekql():
-    """兼容旧函数名：连接并验证当前对接面板配置"""
-    client = ensure_panel_connection()
-    return client.host, client.token
 
 
-def QLtoken(QLurl, ClientID, ClientSecret):
-    """兼容旧函数名：获取青龙 token"""
-    return get_qinglong_token(QLurl.rstrip('/'), ClientID, ClientSecret)
 
 
-def QLzt(osname, value, phone, owner_user=None):
-    """兼容旧函数名：向当前面板添加变量"""
-    client = ensure_panel_connection()
-    account_vip = sg.bucketGet(bucket='ch_xy_accountvip', key=phone)
-    remarks = build_ql_remark(phone, account_vip, owner_user=owner_user)
-    created = client.add_env(osname, value, remarks)
-    return PanelClient.env_id(created)
 
 
-def QLupdate(osname, value, qlid, phone, owner_user=None, existing_remarks=None):
-    """兼容旧函数名：更新当前面板变量"""
-    client = ensure_panel_connection()
-    account_vip = sg.bucketGet(bucket='ch_xy_accountvip', key=phone)
-    remarks = build_ql_remark(phone, account_vip, owner_user=owner_user, existing_remarks=existing_remarks)
-    updated = client.update_env(qlid, osname, value, remarks)
-    return PanelClient.env_id(updated) or qlid, updated.get('createdAt') if isinstance(updated, dict) else None
 
 
-def queue_pending_ql_sync(phone, value):
-    """记录待同步到面板的账号变量，避免因配置错误导致授权后账号未提交"""
-    sg.bucketSet(bucket='ch_xy_ql_pending', key=phone, value=value)
 
 
 def clear_pending_ql_sync(phone):
@@ -716,36 +610,23 @@ def clear_pending_ql_sync(phone):
 
 
 def addenvs_raise(osname, value, phone, owner_user=None):
-    """添加或更新当前对接面板变量，失败时抛异常，由上层决定是否中断"""
     client = ensure_panel_connection()
     client.upsert_env_for_phone(osname, value, phone, owner_user=owner_user)
 
 
-def sync_ql_env(osname, value, phone, owner_user=None):
-    """同步账号到当前面板；失败时自动写入待同步队列"""
-    try:
-        addenvs_raise(osname, value, phone, owner_user=owner_user)
-        clear_pending_ql_sync(phone)
-        return True, ''
-    except Exception as e:
-        queue_pending_ql_sync(phone, value)
-        return False, str(e)
 
 
 def Addenvs(osname, value, phone, owner_user=None):
-    """兼容旧函数名：添加或更新当前面板变量"""
     return addenvs_raise(osname, value, phone, owner_user=owner_user)
 
 
 def allenvs(osname, account):
-    """查询当前面板变量 ID"""
     client = ensure_panel_connection()
     env = client.find_env(osname, account)
     return PanelClient.env_id(env) if env else None
 
 
 def delenvs(id):
-    """删除当前面板变量"""
     if not id:
         return
     client = ensure_panel_connection()
@@ -753,7 +634,6 @@ def delenvs(id):
 
 
 def retry_pending_panel_sync(osname, phone_owner_map=None):
-    """定时任务补交授权成功但面板同步失败的账号"""
     phone_owner_map = phone_owner_map or {}
     try:
         pending_keys = sg.bucketAllKeys("ch_xy_ql_pending") or []
@@ -775,10 +655,10 @@ def retry_pending_panel_sync(osname, phone_owner_map=None):
             clear_pending_ql_sync(phone)
             continue
 
+        token = sg.bucketGet(bucket='ch_xy_token', key=phone)
+        did = sg.bucketGet(bucket='ch_xy_did', key=phone)
         value = safe_str(sg.bucketGet(bucket='ch_xy_ql_pending', key=phone))
         if not value:
-            token = sg.bucketGet(bucket='ch_xy_token', key=phone)
-            did = sg.bucketGet(bucket='ch_xy_did', key=phone)
             value = f'{token}#{did}' if token and did else ''
 
         if not value:
@@ -803,8 +683,6 @@ def retry_pending_panel_sync(osname, phone_owner_map=None):
         print(f"待同步面板变量补交完成: 成功 {success_count} 个，失败 {fail_count} 个")
 
 
-def getRandom(start, end):
-    return random.randint(start, end)
 
 
 class ProxyManager:
@@ -817,7 +695,6 @@ class ProxyManager:
         self.base_timeout = 3
 
     def _fetch_proxy(self):
-        """内部方法：从代理服务获取代理地址"""
         for _ in range(self.max_retries):
             try:
                 response = requests.get(self.PROXY_URL, timeout=self.base_timeout)
@@ -843,7 +720,6 @@ class ProxyManager:
         return None
 
     def update_proxy(self):
-        """更新当前代理配置"""
         if not self.IS_PROXY:
             return
 
@@ -863,7 +739,6 @@ class ProxyManager:
         print("代理已更新: {}".format(proxy_ip))
 
     def _request_with_retry(self, method, url, **kwargs):
-        """统一的请求重试逻辑"""
         params = kwargs.get('params')
         headers = kwargs.get('headers')
         data = kwargs.get('data')
@@ -912,18 +787,15 @@ class ProxyManager:
         return None
 
     def _parse_response(self, response):
-        """解析响应内容"""
         try:
             return response.json()
         except ValueError:
             return response.text
 
     def get(self, url, **kwargs):
-        """GET请求封装"""
         return self._request_with_retry('GET', url, **kwargs)
 
     def post(self, url, **kwargs):
-        """POST请求封装"""
         return self._request_with_retry('POST', url, **kwargs)
 
 
@@ -962,7 +834,6 @@ class Xingya:
         return split_accounts(sg.bucketGet("ch_xy_phone", self.user))
 
     def input_or_cancel(self, timeout=120000):
-        """统一处理输入取消与超时，减少分散的 exit(0)"""
         value = self.sender.input(timeout, 1, False)
         if value == 'timeout' or value == '':
             self.sender.reply('⏰ 操作超时,已退出')
@@ -975,7 +846,6 @@ class Xingya:
         return ValueErrors(value=value, count=count, sender_obj=self.sender)
 
     def ensure_admin_auth_ready(self):
-        """管理员授权前统一校验面板，避免授权后未提交"""
         try:
             ensure_ql_connection()
             return True
@@ -989,7 +859,6 @@ class Xingya:
             return False
 
     def delete_ql_env_for_phone(self, phone):
-        """业务层承接面板删除异常并统一提示"""
         try:
             qlid = allenvs(osname=ch_xy_osname, account=str(phone))
             if qlid:
@@ -1038,7 +907,6 @@ class Xingya:
         return token, did
 
     def parse_phone_selections(self, selection_text, phones, allow_select_all=False, allow_zero_all=False):
-        """解析账号多选输入，支持 1,2,3 / 1 2 3 / 1、2、3 / 999 全选"""
         if not selection_text:
             return None
 
@@ -1136,7 +1004,6 @@ class Xingya:
         self.sender.reply('\n'.join(result_lines))
 
     def zf(self,project, me_as_int):
-        """支付处理"""
         try:
             zsm = sg.bucketGet('ch_xy_config', 'zsm')
             use_ma_pay = '2099-12-31' == 'true'
@@ -1402,7 +1269,6 @@ class Xingya:
             return False
 
     def yesornos(self):
-        """确认操作"""
         yesorno = self.sender.input(120000, 1, False)
         if not yesorno or yesorno == 'timeout':
             self.sender.reply('⏰ 输入超时！')
@@ -1572,7 +1438,7 @@ class Xingya:
             self.sender.reply("异常错误")
             return
     def ck_login(self):
-        zh = f'===================\nCK提交登录\nCK格式：authorization#device_id\n提交格式：一行一个\n\n输入q取消操作\n==================='
+        zh = '===================\nCK提交登录\nCK格式：authorization#device_id\n提交格式：一行一个\n\n输入q取消操作\n==================='
         self.sender.reply(zh)
         cks = self.sender.input(120000, 1, False)
         if not cks or cks.lower() == 'q':
@@ -1743,11 +1609,11 @@ class Xingya:
                 "channel": "default",
                 "raw_channel": "default",
                 "font_scale": 1.0,
-                "define_args": f"{{\"theater_id\":\"4063\",\"theater_number\":\"3\",\"ab_id\":\"\",\"last_page\":\"page_welfare\"}}"
+                "define_args": "{\"theater_id\":\"4063\",\"theater_number\":\"3\",\"ab_id\":\"\",\"last_page\":\"page_welfare\"}"
             }
         ]
         try:
-            response = proxy_manager.post(
+            proxy_manager.post(
                 url,
                 json=payload,
                 headers=headers,
@@ -1756,7 +1622,7 @@ class Xingya:
                 prefix = f"账号 {mask_phone(phone)} " if phone else ""
                 self.sender.reply(f"{prefix}看剧时长已提交{times}分钟")
             return True
-        except Exception as e:
+        except Exception:
             if notify:
                 prefix = f"账号 {mask_phone(phone)} " if phone else ""
                 self.sender.reply(f"{prefix}看剧时长提交失败")
@@ -1792,7 +1658,7 @@ class Xingya:
     def guanli(self):
         parts = self.get_user_phones()
         if not parts:
-            self.sender.reply(f"""=======未绑定账号=====
+            self.sender.reply("""=======未绑定账号=====
 ❌ 未找到任何账号信息
 💡 发送星芽登录绑定
 ====================""")
@@ -1814,8 +1680,6 @@ class Xingya:
 
         if len(selected_phones) == 1:
             phone = selected_phones[0]
-            token = sg.bucketGet(bucket='ch_xy_token', key=phone)
-            did = sg.bucketGet(bucket='ch_xy_did', key=phone)
             accountVip, vip_status, _, _ = self.get_account_vip_status(phone)
             account_info = f"""
 =======账号详情======
@@ -1946,14 +1810,14 @@ class Xingya:
                 else:
                     self.sender.reply('✅ 已取消删除')
             else:
-                self.sender.reply(f"❌ 输入无效")
+                self.sender.reply("❌ 输入无效")
                 return
 
 
     def tixian(self):
         parts = self.get_user_phones()
         if not parts:
-            self.sender.reply(f"""=======未绑定账号=====
+            self.sender.reply("""=======未绑定账号=====
 ❌ 未找到任何账号信息
 💡 发送星芽登录绑定
 ====================""")
@@ -2048,7 +1912,7 @@ class Xingya:
                 return
             users = safe_str(sg.bucketGet("ch_xy_phone", usersid))
             if len(users) == 0:
-                self.sender.reply(f"""=======未绑定账号=====
+                self.sender.reply("""=======未绑定账号=====
 ❌ 未找到任何账号信息
 💡 发送星芽登录绑定
 ====================""")

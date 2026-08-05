@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v3.0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: true]
@@ -14,9 +14,16 @@
 # [depe: ["pycryptodome","requests","urllib3"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
+import re as _sg_re
 from threading import Thread as _sg_Thread
 from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+calculate_auth_time = lambda *args, **kwargs: "2099-12-31"
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -87,19 +94,7 @@ class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
 def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -155,7 +150,6 @@ PLUGIN_CONFIG = {'bucket': 's_tkzx', 'coin_key': 'dd_sign_points', 'name': '泰�
 
 
 class TaikangOnline:
-    """泰康在线API"""
 
     def __init__(self, union_id=None, open_id=None):
         self.base_url = "https://m.tk.cn"
@@ -393,7 +387,6 @@ def get_user_content():
 
 
 def _get_ql_client():
-    """获取面板客户端，根据开关决定使用青龙或呆呆面板"""
     osname = sg.bucketGet('s_tkzx', 'osname') or 'S_TKRS'
     qlname = sg.bucketGet('s_tkzx', 'qlname') or ''
     use_dp = str(sg.bucketGet('s_tkzx', 'use_daipanel') or '').lower() == 'true'
@@ -405,7 +398,6 @@ def _get_ql_client():
 
 
 def update_ql_env(account, account_info):
-    """更新面板环境变量（青龙/呆呆面板 通用）"""
     union_id = account_info.get('unionId', '')
     open_id = account_info.get('openId', '')
     if not union_id or not open_id:
@@ -422,13 +414,11 @@ def update_ql_env(account, account_info):
 
 
 def delete_ql_env(account):
-    """删除面板环境变量（青龙/呆呆面板 通用）"""
     ql = _get_ql_client()
     return ql.delete_env(account)
 
 
 def bind_account():
-    """绑定账号"""
     sender.reply(
         "=====泰康登录=====\n"
         "请输入泰康数据\n"
@@ -509,7 +499,6 @@ def bind_account():
 
 
 def query_accounts():
-    """查询账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n💡 发送 泰康登录 绑定\n==================")
         return
@@ -583,7 +572,6 @@ def query_accounts():
 
 
 def manage_account():
-    """管理账号"""
     if not uservalue:
         sender.reply("=====未绑定账号=====\n❌ 未找到账号\n==================")
         return
@@ -859,7 +847,6 @@ def _process_mapay_payment(project, months, money, pay_type='alipay'):
 
 
 def show_tutorial():
-    """显示教程"""
     sender.reply(
         '=====泰康教程=====\n'
         '用户指令:\n'
@@ -883,7 +870,6 @@ def ks_auth():
 
 
 def main():
-    """主入口"""
     msg = sender.getMessage()
 
     if '登录' in msg or '登陆' in msg:

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v3.6]
+# [version: v1.6.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,12 +12,12 @@
 # [icon: https://api.iconify.design/lucide:bot.svg]
 # [description: 速看小说代挂提交插件，支持抓包完整URL整段提交和短信登录；1. 严格执行整段提交：用户发送的完整URL直接存入青龙，不进行任何参数分割或重组；2. 修复因缺失签名参数导致的脚本运行失败问题；3.支持青龙/呆呆变量同步]
 # [depe: ["pycryptodome","requests"]]
-# [staticmethod: def _get_env_identity(env_ref):]
-
-
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -49,15 +49,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -87,35 +78,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_sk_rsa_private_key': form.string().title('RSA签名私钥PEM').default('').description('速看接口签名私钥，留空则短信/签名登录不可用'),
@@ -294,7 +256,6 @@ if current_imtype and current_imtype.lower() not in ["fake", "cron"]:
 
 
 def getusercontent():
-    """获取插件完整配置"""
     dd_sk_osname = sg.bucketGet('dd_sk', 'dd_sk_osname') or 'S_SUKAN'
     dd_sk_qlname = sg.bucketGet('dd_sk', 'dd_sk_qlname') or ''
     dd_managecommand = sg.bucketGet('dd_sk', 'dd_managecommand') or '速看管理'
@@ -437,11 +398,6 @@ def send_user_notice(user_id, msg, title="速看小说通知"):
         logger.warning(f"Push发送失败 {user_id}: {e}")
     return False
 
-def safe_send_message(user_id, msg, log_context=""):
-    ok = send_user_notice(user_id, msg)
-    if not ok:
-        logger.warning(f"消息发送失败 {log_context}")
-    return ok
 
 
 def extract_sukan_device_profile(full_data):
@@ -516,16 +472,6 @@ def get_sukan_sms_device_profile():
         return dict(SK_SMS_DEVICE_CONFIG)
 
 
-def get_sukan_sms_device_profiles():
-    profiles = []
-    learned = get_sukan_sms_device_profile()
-    if learned:
-        profiles.append(learned)
-    for profile in SK_SMS_DEVICE_PROFILES:
-        candidate = dict(profile)
-        if not any(candidate == existing for existing in profiles):
-            profiles.append(candidate)
-    return profiles
 
 
 def rsa_encrypt(data):
@@ -761,7 +707,6 @@ class SukanSMSLoginAPI:
 
 
 def empower(empowertime, days):
-    """授权时间计算 - 按天计算"""
     try:
         today_date = datetime.now().date()
         if len(empowertime) == 0 or empowertime <= str(today_date):
@@ -777,18 +722,13 @@ def empower(empowertime, days):
         logger.error("授权时间计算失败: " + str(e))
         raise Exception("授权时间计算失败: " + str(e))
 
-def _build_epay_sign(params_dict, key, exclude_keys=('sign', 'sign_type')):
-    return True
 
-def _create_epay_qr(out_trade_no, channel, project_name, money_str):
-    return True
 
 def process_epay_pay(amount, months, channel, order_prefix="SK"):
     return True
 
 
 class ProxyManager:
-    """代理管理器"""
 
     def __init__(self, enable_proxy=False, proxy_pool_url=''):
         self.enable_proxy = enable_proxy
@@ -798,7 +738,6 @@ class ProxyManager:
         self.proxy_cache_time = 300  # 代理缓存5分钟
 
     def get_proxy(self):
-        """获取代理"""
         if not self.enable_proxy or not self.proxy_pool_url:
             return None
 
@@ -849,13 +788,11 @@ class ProxyManager:
             return None
 
     def rotate_proxy(self):
-        """强制更换代理"""
         self.current_proxy = None
         self.last_fetch_time = 0
         return self.get_proxy()
 
     def get_proxy_dict(self):
-        """获取requests格式的代理字典"""
         proxy = self.get_proxy()
         if not proxy:
             return None
@@ -867,11 +804,9 @@ class ProxyManager:
 
 
 class RemarkManager:
-    """账号备注管理器"""
 
     @staticmethod
     def get_account_remark(user_id, account_id):
-        """获取账号备注"""
         try:
             remark_data = sg.bucketGet(bucket='dd_sk_remarks', key=f'{user_id}_{account_id}')
             if remark_data:
@@ -883,7 +818,6 @@ class RemarkManager:
 
     @staticmethod
     def set_account_remark(user_id, account_id, remark):
-        """设置账号备注"""
         try:
             remark_clean = remark.strip()[:20]  # 限制20字符
             if remark_clean:
@@ -897,7 +831,6 @@ class RemarkManager:
 
     @staticmethod
     def get_all_remarks(user_id):
-        """获取用户所有账号的备注"""
         try:
             accounts = AccountManager.get_accounts(user_id)
             remarks = {}
@@ -912,7 +845,6 @@ class RemarkManager:
 
     @staticmethod
     def delete_account_remark(user_id, account_id):
-        """删除账号备注"""
         try:
             sg.bucketDel(bucket='dd_sk_remarks', key=f'{user_id}_{account_id}')
             logger.info("删除备注: " + str(user_id) + " - " + str(account_id))
@@ -923,7 +855,6 @@ class RemarkManager:
 
 
 def safe_request(method, url, **kwargs):
-    """安全的请求包装函数，支持代理"""
     try:
         if 'timeout' not in kwargs:
             kwargs['timeout'] = REQUEST_TIMEOUT
@@ -972,7 +903,7 @@ def safe_request(method, url, **kwargs):
             kwargs['verify'] = False
             response = requests.request(method, url, **kwargs)
             return response
-        except Exception as retry_e:
+        except Exception:
             raise Exception("SSL验证失败: " + str(e))
     except requests.exceptions.RequestException as e:
         logger.error("请求失败: " + url + " - " + str(e))
@@ -983,14 +914,12 @@ def safe_request(method, url, **kwargs):
 
 
 def encrypt_token(token):
-    """简单加密Token (这里用于加密凭证)"""
     try:
         return base64.b64encode(token.encode()).decode()
     except:
         return token
 
 def decrypt_token(encrypted_token):
-    """解密Token (这里用于解密凭证)"""
     try:
         return base64.b64decode(encrypted_token.encode()).decode()
     except:
@@ -1095,11 +1024,9 @@ def migrate_account_binding_if_needed(user_id, old_account_key, new_account_key)
 
 
 class AccountManager:
-    """账号管理类"""
 
     @staticmethod
     def get_accounts(user_id):
-        """获取用户账号列表"""
         try:
             value = sg.bucketGet(bucket='dd_sk_user', key=user_id)
             if not value:
@@ -1120,7 +1047,6 @@ class AccountManager:
 
     @staticmethod
     def add_account(user_id, account):
-        """添加账号（去重）"""
         try:
             accounts = AccountManager.get_accounts(user_id)
             if account not in accounts:
@@ -1134,7 +1060,6 @@ class AccountManager:
 
     @staticmethod
     def remove_account(user_id, account):
-        """移除账号"""
         try:
             accounts = AccountManager.get_accounts(user_id)
             if account in accounts:
@@ -1152,7 +1077,6 @@ class AccountManager:
 
     @staticmethod
     def update_account_credentials(account_key, full_credential):
-        """更新账号的凭证 (Token/URL)"""
         try:
             encrypted = encrypt_token(full_credential)
             sg.bucketSet(bucket='dd_sk_token', key=account_key, value=encrypted)
@@ -1163,7 +1087,6 @@ class AccountManager:
 
     @staticmethod
     def get_all_users():
-        """获取所有绑定了速看账号的用户"""
         try:
             users = sg.bucketAllKeys(bucket='dd_sk_user')
             user_list = []
@@ -1178,7 +1101,6 @@ class AccountManager:
 
 
 class QingLongAPI:
-    """系统对接API封装"""
 
     def __init__(self):
         ql_config = config['dd_sk_qlname']
@@ -1207,7 +1129,6 @@ class QingLongAPI:
             raise
 
     def _get_token(self):
-        """获取系统Token"""
         try:
             url = self.QLurl + '/open/auth/token?client_id=' + self.ClientID + '&client_secret=' + self.ClientSecret
             response = safe_request("GET", url, timeout=REQUEST_TIMEOUT)
@@ -1227,7 +1148,6 @@ class QingLongAPI:
             raise
 
     def get_all_envs(self):
-        """获取所有环境变量"""
         try:
             url = self.QLurl + "/open/envs"
             headers = {
@@ -1248,7 +1168,6 @@ class QingLongAPI:
 
     @staticmethod
     def _get_env_identity(env_ref):
-        """兼容青龙不同版本的 id / _id 字段"""
         if not env_ref:
             return None, None
 
@@ -1261,10 +1180,6 @@ class QingLongAPI:
         return 'id', env_ref
 
     def find_env_by_account(self, value_snippet, user_id=None):
-        """
-        根据Token片段或用户ID查找环境变量
-        优先匹配用户ID(ID:xxxxx)防止变量重复
-        """
         try:
             envs = self.get_all_envs()
             f"{value_snippet}"
@@ -1288,7 +1203,6 @@ class QingLongAPI:
             return None
 
     def delete_env(self, env_id):
-        """删除环境变量"""
         _, env_value = self._get_env_identity(env_id)
         if not env_value:
             return False
@@ -1308,7 +1222,6 @@ class QingLongAPI:
             return False
 
     def add_env(self, full_value, user_id, nickname, remark="", auth_time="", owner_user_id=None):
-        """添加环境变量"""
         try:
             url = self.QLurl + "/open/envs"
             value = full_value
@@ -1355,7 +1268,6 @@ class QingLongAPI:
             raise
 
     def update_env(self, env_id, full_value, user_id, nickname, remark="", auth_time="", owner_user_id=None):
-        """更新环境变量"""
         try:
             env_field, env_value = self._get_env_identity(env_id)
             if not env_value:
@@ -1418,7 +1330,6 @@ def get_account_auth_status(account_key):
 
 
 def remove_account_env_from_system(account_key):
-    """按账号ID兜底删除青龙变量"""
     env_ref = ql_api.find_env_by_account(account_key, account_key)
     if not env_ref:
         return False
@@ -1426,7 +1337,6 @@ def remove_account_env_from_system(account_key):
 
 
 def sync_account_env(account_key, full_cred, nickname, remark=""):
-    """根据授权状态决定是否同步到青龙"""
     auth_time, _, is_authorized = get_account_auth_status(account_key)
     env_ref = ql_api.find_env_by_account(account_key, account_key)
 
@@ -1448,7 +1358,6 @@ def sync_account_env(account_key, full_cred, nickname, remark=""):
 
 
 def parse_sukan_env_remarks(remarks):
-    """解析速看青龙备注中的关键字段"""
     if not remarks:
         return {}
 
@@ -1463,7 +1372,6 @@ def parse_sukan_env_remarks(remarks):
 
 
 def clean_expired_envs_from_qinglong(today_date):
-    """兜底清理青龙中已过期的速看变量，防止本地账密缺失导致残留"""
     cleaned_count = 0
 
     try:
@@ -1507,7 +1415,6 @@ def clean_expired_envs_from_qinglong(today_date):
 
 
 class NN:
-    """速看(SuKan) 核心类"""
     def __init__(self, full_data=""):
         self.full_data = full_data.strip()
         self.kt = ""
@@ -1521,7 +1428,6 @@ class NN:
         self.parse_input()
 
     def getRandomUA(self):
-        """参考脚本生成随机UA"""
         try:
             androidVersions = ['10', '11', '12', '13']
             models = ['M2007J3SC', 'M2012K11C', '22041211AC', '23049RAD8C', 'V2055A', 'V2185A', 'PCDM10', 'PDEM30', 'Redmi K40', 'Mi 10']
@@ -1533,7 +1439,6 @@ class NN:
             return "Mozilla/5.0 (Linux; Android 12; M2007J3SC Build/SP1A.123456.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/99.0.4951.61 Safari/537.36 zyApp/SuKanRead zyVersion/8.0.2 zyChannel/801004"
 
     def parse_input(self):
-        """解析抓包数据 - 提取完整参数，不做任何阉割"""
         if not self.full_data: return
 
         try:
@@ -1566,7 +1471,6 @@ class NN:
             self.user_id = self.zyeid
 
     def get_headers(self):
-        """获取速看专用Header"""
         return {
             'Host': 'welfare-user.palmestore.com',
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -1577,7 +1481,6 @@ class NN:
         }
 
     def user_info(self):
-        """获取用户信息 (全参校验)"""
         try:
             if not self.kt or not self.zyeid:
                 return None
@@ -1622,7 +1525,6 @@ class NN:
 
 
 def nn_session_ids(input_str):
-    """验证速看数据有效性"""
     try:
         logger.info(f"验证速看数据: {input_str[:30]}...")
         nn = NN(input_str)
@@ -1649,7 +1551,6 @@ def nn_session_ids(input_str):
 
 
 def cx(full_credential):
-    """速看查询功能"""
     try:
         nn = NN(full_credential)
         info = nn.user_info()
@@ -1672,7 +1573,6 @@ def cx(full_credential):
         return None
 
 def process_single_account(account_key, index, total_count, account_remarks):
-    """处理单个账号查询"""
     try:
         enc_cred = sg.bucketGet(bucket='dd_sk_token', key=f'{account_key}')
         full = decrypt_token(enc_cred) if enc_cred else None
@@ -1736,7 +1636,6 @@ def process_single_account(account_key, index, total_count, account_remarks):
         return None
 
 def cxs():
-    """速看批量查询"""
     try:
         accounts = AccountManager.get_accounts(userid)
 
@@ -1779,7 +1678,6 @@ def cxs():
 
 
 def get_user_input(timeout=60):
-    """获取用户输入"""
     try:
         logger.info("等待用户输入，超时: " + str(timeout) + "秒")
         response = sender.listen(timeout * 1000)
@@ -1802,7 +1700,6 @@ def get_user_input(timeout=60):
 
 
 def bindaccount():
-    """绑定速看账号 - 支持CK登录和短信登录"""
     try:
         logger.info("用户 " + str(userid) + " 开始绑定账号")
 
@@ -1951,7 +1848,6 @@ def bindaccount():
 
 
 def process_account_binding(submission_str, device_id, user_id, nickname, remark="", phone="", login_type="ck"):
-    """处理账号绑定逻辑"""
     account_key = str(phone or user_id).strip() # 优先使用手机号归一化，兼容旧zyeid
     full_cred = submission_str # 存入完整的 Query String (包含所有p参数)
 
@@ -2033,125 +1929,13 @@ def process_account_binding(submission_str, device_id, user_id, nickname, remark
 
 def process_payment(project, months, accountVip, full_credential, nickname, account_key, remark=""):
     return True
-def process_wechat_pay(project, amount, months):
-    """处理微信支付"""
-    try:
-        if False:
-            sender.reply('⚠️ 当前有人正在支付,请稍后再试！')
-            return False
-
-        pay_msg = f"""
-=====微信扫在线处理====
-🎫 商品: {project}
-📅 时长: {months}月
-💰 金额: {amount}元
-------------------
-请使用微信扫在线处理
-回复"q"取消支付
-=================="""
-        sender.reply(pay_msg)
-        sender.replyImage(config['zsm'])
-
-        payment_result = False
-
-        if str(payment_result) == 'q':
-            sender.reply('✅ 已取消支付')
-            return False
-
-        money_received = 0
-        payer = ""
-
-        if isinstance(payment_result, dict):
-            if payment_result.get('Type') in ['微信赞赏', '微信收款']:
-                money_received = float(payment_result.get('Money', 0))
-                payer = payment_result.get('FromName', '')
-            elif payment_result.get('Money'):
-                money_received = float(payment_result.get('Money', 0))
-                payer = payment_result.get('FromName', '')
-            elif payment_result.get('money'):
-                money_received = float(payment_result.get('money', 0))
-                payer = payment_result.get('fromName', '')
-        else:
-            try:
-                result_data = json.loads(payment_result)
-                if result_data.get('Type') in ['微信赞赏', '微信收款']:
-                    money_received = float(result_data.get('Money', 0))
-                    payer = result_data.get('FromName', '')
-                else:
-                    money_received = float(result_data.get('Money', 0))
-                    payer = result_data.get('FromName', '')
-            except:
-                sender.reply("❌ 无法解析支付结果")
-                return False
-
-        if money_received >= float(amount):
-            return True
-        else:
-            sender.reply(f"""
-=====支付金额错误=====
-💰 应付: {amount}元
-💳 实付: {money_received}元
-{f'👤 付款人: {payer}' if payer else ''}
-
-❗ 请稍后核对支付记录！
-==================""")
-            return False
-
-    except Exception as e:
-        logger.error("微信支付失败: " + str(e))
-        sender.reply("❌ 支付失败: " + str(e))
-        return False
 
 
-def process_mapay_pay(project, amount, months, ma_pay_config):
-    return True
 
 
-def process_points_pay(points_needed, months):
-    """处理积分支付"""
-    try:
-        user_points = int(sg.bucketGet(config['points_bucket'], userid) or '0')
-
-        if user_points < points_needed:
-            sender.reply(f"""
-==================
-    积分不足
-==================
-👤 当前积分: {user_points}
-📍 需要积分: {points_needed}
-==================""")
-            return False
-
-        confirm_msg = f"""
-==================
-    积分支付确认
-==================
-💫 消耗积分: {points_needed}
-⏰ 授权时长: {months}月
-------------------
-确认请回复【y】
-取消请回复【n】
-=================="""
-        sender.reply(confirm_msg)
-
-        yesorno = get_user_input(timeout=120000)
-        if yesorno and yesorno.lower() in ['y', '是', 'yes']:
-            new_balance = user_points - points_needed
-            sg.bucketSet(config['points_bucket'], userid, str(new_balance))
-            logger.info(f"用户 {userid} 消耗积分 {points_needed}，剩余 {new_balance}")
-            return True
-        else:
-            sender.reply("✅ 已取消支付")
-            return False
-
-    except Exception as e:
-        logger.error("积分支付失败: " + str(e))
-        sender.reply("❌ 积分支付失败: " + str(e))
-        return False
 
 
 def xy_manage():
-    """速看账号管理"""
     accounts = AccountManager.get_accounts(userid)
 
     if not accounts:
@@ -2238,7 +2022,6 @@ def xy_manage():
 
 
 def manage_single_account(account, account_remarks):
-    """管理单个账号"""
     try:
         encrypted_cred = sg.bucketGet(bucket='dd_sk_token', key=f'{account}')
         full_cred = decrypt_token(encrypted_cred) if encrypted_cred else ""
@@ -2455,7 +2238,6 @@ def manage_single_account(account, account_remarks):
 
 
 def batch_auth_all_accounts(accounts, account_remarks):
-    """批量授权所有账号"""
     try:
         sender.reply("""
 =====批量授权=====
@@ -2641,9 +2423,7 @@ def batch_auth_all_accounts(accounts, account_remarks):
 
                 accountVip = '2099-12-31'
                 days = months * 30
-                new_auth_time = empower(empowertime=accountVip, days=days)
-
-                True
+                empower(empowertime=accountVip, days=days)
 
                 try:
                     remark = ""
@@ -2681,7 +2461,6 @@ def batch_auth_all_accounts(accounts, account_remarks):
 
 
 def process_batch_wechat_pay(amount, months, account_count):
-    """处理批量授权的微信支付"""
     try:
         if False:
             sender.reply('⚠️ 当前有人正在支付,请稍后再试！')
@@ -2762,7 +2541,6 @@ def process_batch_mapay_pay(amount, months, account_count, ma_pay_config):
 
 
 def process_batch_points_pay(points_needed, months, account_count, user_points):
-    """处理批量授权的积分支付"""
     try:
         if user_points < points_needed:
             sender.reply(f"""
@@ -2812,7 +2590,6 @@ def process_batch_points_pay(points_needed, months, account_count, user_points):
 
 
 def batch_delete_all_accounts(accounts):
-    """批量删除所有账号"""
     try:
         sender.reply(f"""
 =====批量删除警告=====
@@ -2884,222 +2661,14 @@ def batch_delete_all_accounts(accounts):
 
 def admin_auth_options():
     return True
-def collect_admin_stats():
-    stats = {
-        "users": 0, "accounts": 0, "authorized": 0, "unauthorized": 0,
-        "expired": 0, "expiring": 0, "no_token": 0
-    }
-    today = datetime.now().date()
-    users = AccountManager.get_all_users()
-    stats["users"] = len(users)
-    for user in users:
-        for account in AccountManager.get_accounts(user):
-            try:
-                stats["accounts"] += 1
-                if not sg.bucketGet(bucket='dd_sk_token', key=account):
-                    stats["no_token"] += 1
-                vip = '2099-12-31'
-                if not vip:
-                    stats["unauthorized"] += 1
-                    continue
-                try:
-                    vip_date = datetime.strptime(str(vip), "%Y-%m-%d").date()
-                except Exception:
-                    stats["expired"] += 1
-                    continue
-                if vip_date < today:
-                    stats["expired"] += 1
-                else:
-                    stats["authorized"] += 1
-                    if (vip_date - today).days <= config['reminder_days']:
-                        stats["expiring"] += 1
-            except Exception:
-                pass
-    return stats
-
-def admin_overview():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("⏳ 正在统计数据，请稍候...")
-    stats = collect_admin_stats()
-    sender.reply(f"""=====速看数据总览=====
-👥 用户数: {stats['users']}
-📦 账号数: {stats['accounts']}
-✅ 授权中: {stats['authorized']}
-⚠️ 未授权: {stats['unauthorized']}
-❌ 已过期: {stats['expired']}
-⏰ 即将到期: {stats['expiring']}
-🔑 缺少配置: {stats['no_token']}
-==================""")
-
-def send_long_admin_message(title, lines, footer="==================", max_len=1500):
-    if not lines:
-        sender.reply(f"{title}\n📭 暂无数据\n{footer}")
-        return
-    chunks = []
-    current = title
-    for line in lines:
-        add_text = "\n" + line
-        if len(current) + len(add_text) + len(footer) + 20 > max_len and current != title:
-            chunks.append(current)
-            current = title
-        current += add_text
-    chunks.append(current)
-    for idx, chunk in enumerate(chunks, 1):
-        page_tip = f"\n-----第 {idx}/{len(chunks)} 段-----" if len(chunks) > 1 else ""
-        sender.reply(f"{chunk}{page_tip}\n{footer}")
-        time.sleep(0.2)
-
-def admin_user_ck_preview():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("⏳ 正在生成用户账号预览，请稍候...")
-    today = datetime.now().date()
-    rows = []
-    total_accounts = 0
-    for user in AccountManager.get_all_users():
-        try:
-            accounts = AccountManager.get_accounts(user)
-            if not accounts:
-                continue
-            auth_count = unauth_count = expired_count = expiring_count = no_token_count = 0
-            for account in accounts:
-                total_accounts += 1
-                if not sg.bucketGet(bucket='dd_sk_token', key=account):
-                    no_token_count += 1
-                vip = '2099-12-31'
-                if not vip:
-                    unauth_count += 1
-                    continue
-                try:
-                    vip_date = datetime.strptime(str(vip), "%Y-%m-%d").date()
-                except Exception:
-                    expired_count += 1
-                    continue
-                if vip_date < today:
-                    expired_count += 1
-                else:
-                    auth_count += 1
-                    if (vip_date - today).days <= config['reminder_days']:
-                        expiring_count += 1
-            rows.append({
-                "user": str(user), "count": len(accounts), "auth": auth_count,
-                "unauth": unauth_count, "expired": expired_count,
-                "expiring": expiring_count, "no_token": no_token_count
-            })
-        except Exception:
-            pass
-    rows.sort(key=lambda x: x["count"], reverse=True)
-    lines = [f"👥 用户数: {len(rows)}  📦 账号总数: {total_accounts}", "------------------"]
-    for i, row in enumerate(rows, 1):
-        extra = []
-        if row["unauth"]: extra.append(f"未授权{row['unauth']}")
-        if row["expired"]: extra.append(f"过期{row['expired']}")
-        if row["expiring"]: extra.append(f"临期{row['expiring']}")
-        if row["no_token"]: extra.append(f"缺配置{row['no_token']}")
-        extra_text = f" ({' / '.join(extra)})" if extra else ""
-        lines.append(f"[{i}] 用户: {row['user']}\n账号: {row['count']} 个  授权: {row['auth']} 个{extra_text}")
-    send_long_admin_message("=====用户账号预览=====", lines)
-
-def admin_find_account():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("""=====反查账号归属=====
-请输入账号ID/备注/用户ID
-回复 q 退出
-==================""")
-    keyword = get_user_input(timeout=60)
-    if not keyword or keyword.lower() == 'q':
-        return
-    keyword = keyword.strip()
-    matches = []
-    for user in AccountManager.get_all_users():
-        user_match = keyword in str(user)
-        remarks = RemarkManager.get_all_remarks(user) if config['enable_remark'] else {}
-        for account in AccountManager.get_accounts(user):
-            try:
-                remark = remarks.get(account, "")
-                vip = '2099-12-31'
-                vip_st = '未授权' if not vip else str(vip)
-                if user_match or keyword in str(account) or (remark and keyword in remark):
-                    remark_text = f"\n📝 备注: {remark}" if remark else ""
-                    matches.append(f"👤 用户: {user}\n🔑 账号: {account}{remark_text}\n🔐 授权: {vip_st}")
-            except Exception:
-                pass
-    if not matches:
-        sender.reply("❌ 未找到匹配账号")
-        return
-    msg = f"=====反查结果=====\n共找到 {len(matches)} 条"
-    for item in matches[:10]:
-        msg += f"\n------------------\n{item}"
-    if len(matches) > 10:
-        msg += f"\n------------------\n仅显示前10条，共 {len(matches)} 条"
-    msg += "\n=================="
-    sender.reply(msg)
-
-def admin_sync_panel():
-    if not sender.isAdmin():
-        sender.reply("❌ 权限不足")
-        return
-    sender.reply("""=====同步面板变量=====
-[1] 同步所有授权账号
-[2] 同步指定用户账号
-------------------
-回复数字选择，Q退出
-==================""")
-    choice = get_user_input(timeout=60)
-    if not choice or choice.lower() == 'q':
-        return
-    if choice == '1':
-        users = AccountManager.get_all_users()
-        sender.reply("⚠️ 即将同步所有授权账号。\n确认请回复【确认同步】")
-        if get_user_input(timeout=60) != "确认同步":
-            sender.reply("✅ 已取消同步")
-            return
-    elif choice == '2':
-        sender.reply("请输入用户ID，回复 q 退出")
-        target_user = get_user_input(timeout=60)
-        if not target_user or target_user.lower() == 'q':
-            return
-        users = [target_user.strip()]
-    else:
-        sender.reply("❌ 请输入有效选项")
-        return
-
-    today = str(datetime.now().date())
-    success = skipped = failed = 0
-    sender.reply("⏳ 正在同步，请稍候...")
-    for user in users:
-        remarks = RemarkManager.get_all_remarks(user) if config['enable_remark'] else {}
-        for account in AccountManager.get_accounts(user):
-            try:
-                vip = '2099-12-31'
-                enc = sg.bucketGet(bucket='dd_sk_token', key=account)
-                full_cred = decrypt_token(enc) if enc else ""
-                if not vip or vip < today or not full_cred:
-                    skipped += 1
-                    continue
-                remark = remarks.get(account, "")
-                sync_account_env(account, full_cred, f"用户{account}", remark)
-                success += 1
-            except Exception:
-                failed += 1
-    sender.reply(f"""=====同步完成=====
-✅ 成功: {success}
-⏭️ 跳过: {skipped}
-❌ 失败: {failed}
-==================""")
 
 
-def admin_auth_all_users():
-    return True
-def admin_auth_specific_user():
-    return True
+
+
+
+
+
 def clean_expired_accounts(force_report=False, clean_invalid=False):
-    """定时任务：过期提醒与清理"""
 
     users = sg.bucketAllKeys(bucket='dd_sk_user')
     manual_run = force_report or (usermessage in ['速看清理', '清理速看'])
@@ -3250,7 +2819,6 @@ def clean_expired_accounts(force_report=False, clean_invalid=False):
 
 
 def admin_broadcast():
-    """管理员公告广播"""
     if not sender.isAdmin():
         sender.reply("❌ 权限不足")
         return
@@ -3312,7 +2880,6 @@ def admin_broadcast():
 
 
 def show_tutorial():
-    """显示速看插件使用教程"""
     tutorial = f"""
 =====速看插件教程=====
 🔰 基础功能指令:
@@ -3386,7 +2953,7 @@ try:
         clean_expired_accounts()
 
 except Exception as e:
-    logger.error(f"主逻辑执行失败: " + str(e))
+    logger.error("主逻辑执行失败: " + str(e))
     sender.reply(f"""
 =====系统错误=====
 ❌ 插件执行失败

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: V7.9]
+# [version: v1.9.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,9 +13,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +89,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'dd_hqcsh_Qinglong': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割'),
@@ -377,7 +352,7 @@ class JD:
             self.sender.reply("您当前没有提交账号！")
             exit(0)
         else:
-            msg = f"======车生活管理======\n"
+            msg = "======车生活管理======\n"
             d = _sg_literal(tong)
             account_map = {}  # 用于存储序号到账号信息的映射
 
@@ -418,7 +393,7 @@ class JD:
                 elif cz == "1":
                     try:
                         if '2099-12-31' == "" or '2099-12-31' == "":
-                            self.sender.reply(f"插件配参不完整，请管理员发送【车生活配置】设置授权金额")
+                            self.sender.reply("插件配参不完整，请管理员发送【车生活配置】设置授权金额")
                             exit(0)
 
                         if '2099-12-31' == "true":
@@ -487,7 +462,6 @@ class JD:
                 exit(0)
 
     def sc(self, index):
-        """删除账号"""
         tong = sg.bucketGet("dd_hqcsh", self.user)
         if tong == "":
             self.sender.reply("当前没有账号")
@@ -531,10 +505,9 @@ class JD:
                                                 }
                                                 del_data = [env['id']]
                                                 requests.delete(del_url, headers=headers, json=del_data)
-                                                msg = f"已删除青龙变量\n"
                                                 break
-                except Exception as e:
-                    msg = f"删除青龙变量异常:{str(e)}\n"
+                except Exception:
+                    pass
 
                 tong = _sg_literal(tong)
                 del tong[index]
@@ -566,14 +539,14 @@ class JD:
             if zh == 'q' or zh == 'Q':
                 self.sender.reply("退出！")
             elif zh is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
             elif zh == '1':
                 self.sender.reply('请发送您的wx机器人赞赏码:')
                 pz = self.sender.listen(60000)
                 if pz == 'q' or pz == 'Q':
                     self.sender.reply("退出！")
                 elif pz is None:
-                    self.sender.reply(f'超时退出！')
+                    self.sender.reply('超时退出！')
                 else:
                     self.sender.replyImage(pz)
                     sg.bucketSet('dd_hqcsh', 'zsm', f'{pz}')
@@ -584,7 +557,7 @@ class JD:
                 if pz == 'q' or pz == 'Q':
                     self.sender.reply("退出！")
                 elif pz is None:
-                    self.sender.reply(f'超时退出！')
+                    self.sender.reply('超时退出！')
                 else:
                     True
                     self.sender.reply(f'授权金额配置成功: {pz}元')
@@ -594,20 +567,19 @@ class JD:
                 if pz == 'q' or pz == 'Q':
                     self.sender.reply("退出！")
                 elif pz is None:
-                    self.sender.reply(f'超时退出！')
+                    self.sender.reply('超时退出！')
                 else:
                     True
                     self.sender.reply(f'授权时间配置成功: {pz}天')
             else:
-                self.sender.reply(f'输入有误!!')
+                self.sender.reply('输入有误!!')
         else:
             self.sender.reply("不是管理员")
             exit(0)
 
     def sq(self):
-        """车生活授权"""
         if self.sender.isAdmin():
-            msg = f'========车生活授权========\n1、一键授权所有用户\n2、单独授权用户\n======================\n回复序号,退出【q】！'
+            msg = '========车生活授权========\n1、一键授权所有用户\n2、单独授权用户\n======================\n回复序号,退出【q】！'
             self.sender.reply(msg)
             xz = self.sender.listen(60000)
 
@@ -615,12 +587,12 @@ class JD:
                 self.sender.reply("退出！")
                 return
             elif xz is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
                 return
             elif xz == '1':
                 self.qbqbsq()
             elif xz == '2':
-                msg = f'请输入需要授权的账号id\n通过给机器人发送myuid获得\n退出【q】！'
+                msg = '请输入需要授权的账号id\n通过给机器人发送myuid获得\n退出【q】！'
                 self.sender.reply(msg)
                 myuid = self.sender.listen(60000)
                 if myuid == 'q' or myuid == 'Q':
@@ -628,7 +600,7 @@ class JD:
                 elif myuid == 1:
                     self.qbqbsq()
                 elif myuid is None:
-                    self.sender.reply(f'超时退出！')
+                    self.sender.reply('超时退出！')
                 else:
                     ts = sg.bucketGet('dd_hqcsh', myuid)
                     if ts == '' or ts == '{}':
@@ -644,7 +616,7 @@ class JD:
                                 n += 1
                                 id_dict[n] = {'bz': k, 'ck': y['ck'], 'sqsj': y['sqsj']}
                                 msg += f'{n}、{k}\n授权时间: ⏰{y["sqsj"]}\n======================\n'
-                        msg += f'回复序号选择账号,退出【q】！'
+                        msg += '回复序号选择账号,退出【q】！'
                         self.sender.reply(msg)
                         xz = self.sender.listen(60000)
                         xz_list = []
@@ -653,15 +625,15 @@ class JD:
                         if xz == 'q' or xz == 'Q':
                             self.sender.reply("退出！")
                         elif xz is None:
-                            self.sender.reply(f'超时退出！')
+                            self.sender.reply('超时退出！')
                         elif xz == '0':
-                            msg = f'请输入给所有账号授权的天数！！\n回复序号,退出【q】！'
+                            msg = '请输入给所有账号授权的天数！！\n回复序号,退出【q】！'
                             self.sender.reply(msg)
                             sjts = self.sender.listen(60000)
                             if sjts == 'q' or sjts == 'Q':
                                 self.sender.reply("退出！")
                             elif sjts is None:
-                                self.sender.reply(f'超时退出！')
+                                self.sender.reply('超时退出！')
                             elif isinstance(int(sjts), int):
                                 success_count = 0
                                 for user in ts:
@@ -686,7 +658,7 @@ class JD:
                                     tsqd = notify.split(',')
                                     sg.notifyMasters(msg, tsqd)
                             else:
-                                self.sender.reply(f'输入天数有误，退出！')
+                                self.sender.reply('输入天数有误，退出！')
                         elif int(xz) in xz_list:
                             zh = id_dict[int(xz)]
                             self.bz = zh['bz']
@@ -699,7 +671,7 @@ class JD:
                             if sjts == 'q' or sjts == 'Q':
                                 self.sender.reply("退出！")
                             elif sjts is None:
-                                self.sender.reply(f'超时退出！')
+                                self.sender.reply('超时退出！')
                             elif isinstance(int(sjts), int):
                                 dqsj = datetime.now().strftime("%Y-%m-%d")
                                 if self.sqsj > dqsj:
@@ -730,7 +702,6 @@ class JD:
                 exit(0)
 
     def qbqbsq(self):
-        """一键授权所有用户"""
         try:
             ts = sg.bucketAllKeys('dd_hqcsh')
             if not ts:
@@ -749,13 +720,13 @@ class JD:
                 self.sender.reply("退出！")
                 return
             elif sjts is None:
-                self.sender.reply(f'超时退出！')
+                self.sender.reply('超时退出！')
                 return
 
             try:
                 sjts = int(sjts)
             except:
-                self.sender.reply(f'输入的天数无效，必须是数字！')
+                self.sender.reply('输入的天数无效，必须是数字！')
                 return
 
             success_count = 0
@@ -872,7 +843,6 @@ class JD:
             self.sender.reply(f'一键授权发生错误: {str(e)}')
 
     def dssq(self, type, index):
-        """打赏授权"""
         if type == 2:
             try:
                 try:
@@ -1087,7 +1057,7 @@ class JD:
                 exit(0)
 
     def jc(self):
-        msg = f"抓包：车生活小程序\n域名：https://channel.cheryfs.cn/下请求头里面的accountId数据\n说明：一天50积分左右，月积分2000+，可以抢购兑换ek或者现金\n上车指令: 车生活上车\n管理指令: 车生活管理\n查询指令: 车生活查询\n入口指令: 车生活入口"
+        msg = "抓包：车生活小程序\n域名：https://channel.cheryfs.cn/下请求头里面的accountId数据\n说明：一天50积分左右，月积分2000+，可以抢购兑换ek或者现金\n上车指令: 车生活上车\n管理指令: 车生活管理\n查询指令: 车生活查询\n入口指令: 车生活入口"
         self.sender.reply(msg)
 
     def rk(self):
@@ -1134,7 +1104,6 @@ class JD:
             exit(0)
 
     def submit_to_qinglong(self, account_name):
-        """提交变量到青龙"""
         tong = sg.bucketGet("dd_hqcsh", self.user)
         if tong:
             tong = _sg_literal(tong)
@@ -1223,4 +1192,4 @@ if __name__ == "__main__":
     elif '车生活版本'in message:
         if sender.isAdmin():
             sender.reply(
-                f"🔔当前版本V7.8\n======================\n用户指令:\n上车指令: 车生活上车\n管理指令: 车生活管理\n查询指令: 车生活查询\n入口指令：车生活入口\n教程指令：车生活教程\n检测指令：车生活检测\n======================\n管理员指令:\n插件配置: 车生活配置\n账号授权: 车生活授权\n======================")
+                "🔔当前版本V7.8\n======================\n用户指令:\n上车指令: 车生活上车\n管理指令: 车生活管理\n查询指令: 车生活查询\n入口指令：车生活入口\n教程指令：车生活教程\n检测指令：车生活检测\n======================\n管理员指令:\n插件配置: 车生活配置\n账号授权: 车生活授权\n======================")

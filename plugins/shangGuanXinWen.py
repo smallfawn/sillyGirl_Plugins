@@ -13,9 +13,13 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -85,35 +89,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'sgxw_config_sgxw_qlname': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割'),
@@ -130,9 +105,6 @@ import os
 import json
 import time
 import hashlib
-import random
-import string
-import base64
 import requests
 from datetime import datetime
 
@@ -152,7 +124,6 @@ PLUGIN_CONFIG = {
 
 
 def get_user_content():
-    """获取用户配置内容"""
     sgxw_osname = sg.bucketGet('sgxw_config', 'sgxw_osname') or 'S_SGXW'
     sgxw_qlname = sg.bucketGet('sgxw_config', 'sgxw_qlname') or 'S_SGXW'
     sgxw_managecommand = sg.bucketGet('sgxw_config', 'sgxw_managecommand') or '上观管理'
@@ -174,28 +145,18 @@ def get_user_content():
             randomquerycommand, randomsigncommand, sgxwVipmoney, sgxwcoin)
 
 def mask_phone(phone):
-    """手机号脱敏处理"""
     if not phone or len(phone) != 11:
         return phone
     return f"{phone[:3]}****{phone[7:]}"
 
-def generate_random_base64(length=32):
-    """生成随机base64字符串"""
-    random_bytes = ''.join(random.choices(string.ascii_letters + string.digits, k=length)).encode()
-    return base64.b64encode(random_bytes).decode()
 
 def generate_signature(raw_str: str) -> str:
-    """生成MD5签名"""
     try:
         return hashlib.md5(raw_str.encode(), usedforsecurity=True).hexdigest()
     except TypeError:
         return hashlib.md5(raw_str.encode()).hexdigest()
 
 def verify_account(username, password):
-    """验证账号有效性，登录上观新闻
-    username: 手机号
-    password: 密码
-    """
     try:
         timestamp = int(time.time() * 1000)
         fixed_token = sg.bucketGet("sgxw_config", "fixed_token") or FIXED_TOKEN
@@ -241,7 +202,6 @@ def verify_account(username, password):
         return {"success": False, "message": str(e)}
 
 def bind_account():
-    """绑定上观新闻账号"""
     sender.reply("""
 =====上观新闻登录=====
 请按照提示依次输入账号信息
@@ -331,7 +291,6 @@ def bind_account():
 ==================""")
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
         sender.reply(f"""
 =====未绑定账号=====
@@ -447,7 +406,6 @@ def query_accounts():
         sender.reply(f"❌ 查询失败: {str(e)}")
 
 def manage_account():
-    """账号管理功能"""
     if not uservalue:
         sender.reply(f"""
 =====未绑定账号=====
@@ -602,11 +560,8 @@ def authorize_multiple_accounts(usernames):
 def authorize_account(username, account_info):
     return True
 
-def pay_order(project, months, money):
-    return True
 
 def get_ql_token(host, client_id, client_secret):
-    """获取青龙 token"""
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
         response = requests.get(url)
@@ -618,9 +573,6 @@ def get_ql_token(host, client_id, client_secret):
         return None
 
 def Addenvs(username, env_value, env_name="S_SGXW", account_info=None):
-    """添加青龙变量
-    env_name: 环境变量名称，默认S_SGXW
-    """
     try:
         qlconfig = sg.bucketGet('sgxw_config', 'sgxw_qlname')
         if not qlconfig:
@@ -736,13 +688,12 @@ def Addenvs(username, env_value, env_name="S_SGXW", account_info=None):
         return False, error_msg
 
 def update_ql_env(username, account_info):
-    """更新青龙环境变量"""
     password = account_info.get('password', '')
     user_id = account_info.get('user_id', '')
     remark = account_info.get('remark', '')
 
     if not password or not user_id:
-        print(f"更新青龙变量失败: 账号信息不完整")
+        print("更新青龙变量失败: 账号信息不完整")
         return False
 
     env_value = f"{remark}#{username}#{password}"
@@ -753,7 +704,6 @@ def update_ql_env(username, account_info):
     return success
 
 def delete_ql_env(username, env_name="S_SGXW"):
-    """删除青龙环境变量"""
     try:
         ql_config = sg.bucketGet('sgxw_config', 'sgxw_qlname')
         if not ql_config:
@@ -792,7 +742,6 @@ def delete_ql_env(username, env_name="S_SGXW"):
         return False
 
 def show_tutorial():
-    """显示插件使用教程"""
     tutorial = """
 =====上观新闻使用教程=====
 1. 基本功能:
@@ -820,7 +769,6 @@ def show_tutorial():
     sender.reply(tutorial)
 
 def check_order(order_id=None):
-    """查询订单状态"""
     if not order_id:
         sender.reply("""
 =====订单查询=====

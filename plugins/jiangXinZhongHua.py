@@ -13,9 +13,12 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -47,15 +50,6 @@ def _sg_run(coro):
     future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
 
-def _sg_literal(v, default=None):
-    if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
-    t=str(v or "").strip()
-    if not t: return [] if default is None else default
-    for p in (_sg_json.loads, (_sg_ast.literal_eval if _sg_ast else None)):
-        if p:
-            try: return p(t)
-            except Exception: pass
-    return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
     s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
@@ -85,35 +79,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_JXZH_panel_type': form.string().title('面板类型').default('').description('对接面板：qinglong=青龙，daidai=呆呆（DaiDaiPanel），不填默认为青龙'),
@@ -559,43 +524,8 @@ def get_order_list(token, status='3', page=1, keywords=''):
         }
 
 
-def wx_exchange_code_for_token(code):
-    params = {
-        'appid': PROJECT_CONFIG['appid'],
-        'secret': 'b6b2767963bec470ec2505c8da5eec47',
-        'code': code,
-        'grant_type': 'authorization_code',
-    }
-    try:
-        resp = requests.get('https://api.weixin.qq.com/sns/oauth2/access_token', params=params, timeout=10)
-        result = load_json_response(resp)
-        if 'access_token' in result:
-            return {
-                'access_token': result['access_token'],
-                'refresh_token': result.get('refresh_token', ''),
-                'openid': result['openid'],
-                'unionid': result.get('unionid', ''),
-            }
-        return None
-    except Exception as e:
-        print(f"微信换取token失败: {e}")
-        return None
 
 
-def wx_get_userinfo(access_token, openid):
-    try:
-        resp = requests.get(
-            'https://api.weixin.qq.com/sns/userinfo',
-            params={'access_token': access_token, 'openid': openid},
-            timeout=10,
-        )
-        result = load_json_response(resp)
-        if 'openid' in result:
-            return {'nickname': result.get('nickname', ''), 'picurl': result.get('headimgurl', '')}
-        return None
-    except Exception as e:
-        print(f"获取微信用户信息失败: {e}")
-        return None
 
 
 def exchange_token(wx_code):
@@ -711,8 +641,6 @@ def mask_phone(phone):
     return phone
 
 
-def parse_accounts(account_data):
-    return dedupe_phones(str(account_data or '').split(','))
 
 
 def parse_selection(choice, max_index: int) -> list:
@@ -927,7 +855,6 @@ def get_dd_config():
 panel_token_cache = None
 
 def QLtoken(QLurl, ClientID, ClientSecret):
-    """获取青龙token"""
     url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
     try:
         response = requests.get(url)
@@ -941,7 +868,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
 
 
 def DDtoken(DDurl, AppKey, AppSecret):
-    """获取呆呆面板token"""
     url = f'{DDurl.rstrip("/")}/api/open-api/token'
     data = {"app_key": AppKey, "app_secret": AppSecret}
     try:
@@ -954,7 +880,6 @@ def DDtoken(DDurl, AppKey, AppSecret):
 
 
 def get_panel_token():
-    """获取面板token（带缓存）"""
     global panel_token_cache
     if panel_token_cache:
         return panel_token_cache
@@ -969,7 +894,6 @@ def get_panel_token():
 
 
 def get_panel_headers(content_type="application/json"):
-    """获取面板API请求头"""
     token = get_panel_token()
     return {
         "Authorization": f"Bearer {token}",
@@ -979,7 +903,6 @@ def get_panel_headers(content_type="application/json"):
 
 
 def get_panel_base_url():
-    """获取面板基础URL"""
     if use_daidai:
         DDurl, _, _ = get_dd_config()
         return DDurl
@@ -989,7 +912,6 @@ def get_panel_base_url():
 
 
 def allenvs(osname, account):
-    """查找环境变量"""
     if use_daidai:
         return dd_allenvs(osname, account)
 
@@ -1013,7 +935,6 @@ def allenvs(osname, account):
 
 
 def dd_allenvs(osname, account):
-    """呆呆面板查找环境变量"""
     url = f"{get_panel_base_url()}/api/envs"
     headers = get_panel_headers()
     params = {"keyword": str(account), "page_size": 100}
@@ -1033,7 +954,6 @@ def dd_allenvs(osname, account):
 
 
 def delenvs(id):
-    """删除环境变量"""
     if id is None:
         return
     if use_daidai:
@@ -1048,7 +968,6 @@ def delenvs(id):
 
 
 def Addenvs(osname, value, account, phone, target_userid=None, expire_time=None):
-    """添加或更新环境变量"""
     phone = mask_phone(phone)
     actual_userid = target_userid if target_userid else userid
     expire_info = f'丨到期:{expire_time}' if expire_time else ''
@@ -1068,7 +987,6 @@ def Addenvs(osname, value, account, phone, target_userid=None, expire_time=None)
 
 
 def QLupdate(osname, value, account, qlid, phone, target_userid, expire_info):
-    """更新青龙环境变量"""
     url = f"{get_panel_base_url()}/open/envs"
     data = {
         "value": value,
@@ -1081,7 +999,6 @@ def QLupdate(osname, value, account, qlid, phone, target_userid, expire_info):
 
 
 def QLzt(osname, value, account, phone, target_userid, expire_info):
-    """添加青龙环境变量"""
     url = f"{get_panel_base_url()}/open/envs"
     data = [{
         "value": value,
@@ -1093,7 +1010,6 @@ def QLzt(osname, value, account, phone, target_userid, expire_info):
 
 
 def DDcreate(osname, value, account, phone, target_userid, expire_info):
-    """添加呆呆环境变量"""
     url = f"{get_panel_base_url()}/api/envs"
     data = {
         "value": value,
@@ -1107,7 +1023,6 @@ def DDcreate(osname, value, account, phone, target_userid, expire_info):
 
 
 def DDupdate(osname, value, account, env_id, phone, target_userid, expire_info):
-    """更新呆呆环境变量"""
     url = f"{get_panel_base_url()}/api/envs/{env_id}"
     data = {
         "value": value,
@@ -1165,7 +1080,6 @@ def jxzh_parse_payment_result(ddzf):
 
 
 def jxzh_empower(empowertime, months_int):
-    """按配置「授权天数」×月数延长到期日"""
     today_time = datetime.now().strftime("%Y-%m-%d")
     today_date = datetime.now().date()
     day = int(months_int) * jxzh_auth_days
@@ -1187,7 +1101,6 @@ def jxzh_token_value_for_account(account):
 
 
 def jxzh_zf(project, months_int, accountVip, token, phone, account):
-    """匠心用户授权支付（与顺丰逻辑一致，配置来自插件框）"""
     try:
         money = Decimal(months_int) * jxzhVipmoney
         if money == 0:
@@ -1381,7 +1294,6 @@ def jxzh_zf(project, months_int, accountVip, token, phone, account):
 
 
 def jxzh_login():
-    """匠心扫码登录"""
     try:
         sender.reply("=====匠心扫码登录=====\n⌛ 正在加载二维码...\n⏳ 请稍候...\n==================")
         qr_data = get_qr_code()
@@ -1466,7 +1378,6 @@ def jxzh_login():
 
 
 def jxzh_query_detail_lines(account, today_time):
-    """单账号接口详情行（不含总标题），供单个/批量查询复用"""
     accountVip = get_auth(account)
     auth_status, auth_time = get_auth_status(accountVip, today_time)
     login_mobile = mask_phone(account) if len(account) >= 11 else account
@@ -1534,7 +1445,6 @@ def format_order_product_titles(order_items) -> str:
 
 
 def jxzh_logistics_detail_lines(account):
-    """单账号物流详情行（不含总标题），供单个/批量物流复用"""
     token = jxzh_token_value_for_account(account)
     userinfo = get_task_userinfo(token) if token else None
     display_name = get_account_display_name(account, userinfo)
@@ -1591,7 +1501,6 @@ def jxzh_logistics_detail_lines(account):
 
 
 def jxzh_query():
-    """查询账号信息"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -1758,43 +1667,8 @@ def create_address(token, name, mobile, address, province_id, city_id, area_id, 
         return {}
 
 
-def search_address(token, province_str, keyword):
-    try:
-        result = signed_post_with_fallback(
-            ADDRESS_SEARCH_URL,
-            headers=get_base_headers(),
-            extra={
-                'token': token,
-                'provinceStr': province_str,
-                'keyword': keyword,
-            },
-            use_app_style=False,
-            timeout=10,
-        )
-        if result.get('code') == 1:
-            data = result.get('data') or []
-            return data if isinstance(data, list) else []
-        return []
-    except Exception as e:
-        print(f"搜索地址失败: {e}")
-        return []
 
 
-def get_area_code(token, location):
-    try:
-        result = signed_post_with_fallback(
-            ADDRESS_AREA_CODE_URL,
-            headers=get_base_headers(),
-            extra={'token': token, 'location': str(location)},
-            use_app_style=False,
-            timeout=10,
-        )
-        if result.get('code') == 1 and result.get('data'):
-            return result['data']
-        return {}
-    except Exception as e:
-        print(f"获取区域编码失败: {e}")
-        return {}
 
 
 def get_area_list(token, area_type, pid='0'):
@@ -1952,7 +1826,6 @@ PAGE_SIZE = 10
 
 
 def _render_product_page(display_list: list, page_idx: int, total: int, title_prefix: str):
-    """渲染一页商品列表，返回当前页的 product 子列表"""
     start = page_idx * PAGE_SIZE
     end = min(start + PAGE_SIZE, len(display_list))
     page_items = display_list[start:end]
@@ -1987,7 +1860,6 @@ def _render_product_page(display_list: list, page_idx: int, total: int, title_pr
 
 
 def _search_and_select_product(token):
-    """关键词搜索并选择商品（支持翻页），返回选中的 product dict 或 None"""
     sender.reply("🔍 请输入商品关键词搜索\n回复 0 查看全部商品列表\n回复 q 退出")
     keyword = get_user_choice("", 120000, True)
     if not keyword:
@@ -2046,7 +1918,6 @@ def _search_and_select_product(token):
 
 
 def jxzh_exchange():
-    """匠心积分兑换商品"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n🔕 发送「{jxzh_signcommand}」绑定", "error"))
@@ -2238,7 +2109,6 @@ def jxzh_exchange():
 
 
 def jxzh_batch_exchange():
-    """批量兑换：选择多个账号 + 同一商品，一键下单"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送「{jxzh_signcommand}」绑定", "error"))
@@ -2365,7 +2235,6 @@ def jxzh_batch_exchange():
 
 
 def jxzh_logistics():
-    """查询待收货订单物流"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -2489,7 +2358,7 @@ def jxzh_batch_zf(project: str, months_int: int, accounts: list, today_time: str
                 months_int,
                 success_count,
                 fail_count,
-                [f"💰 金额：免费"],
+                ["💰 金额：免费"],
             )
         )
         return fail_count == 0 and success_count > 0
@@ -2760,7 +2629,6 @@ def prompt_batch_manage_action(selected_accounts: list) -> str:
 
 
 def jxzh_manage():
-    """账号管理主函数"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -2886,7 +2754,6 @@ def jxzh_admin_auth():
 
 
 def jxzh_logoff():
-    """匠心账号注销（列出账号，支持多选/全选）"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -2983,7 +2850,6 @@ def jxzh_logoff():
 
 
 def jxzh_clear():
-    """清理账号授权（用户自主清理）"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", "未找到任何账号信息", "error"))
@@ -3025,7 +2891,6 @@ def jxzh_clear():
 
 
 def jxzh_ck_login():
-    """匠心CK批量登录，格式：备注#ck，每行一个"""
     sender.reply(
         "=====匠心CK登录=====\n"
         "📋 请发送CK信息，格式：\n"
@@ -3114,7 +2979,6 @@ def jxzh_ck_login():
 
 
 def jxzh_upload():
-    """上传已授权且未过期的账号数据到面板"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -3282,7 +3146,6 @@ def _select_area_step(token, area_type, pid, label, show_all_threshold=20):
 
 
 def _address_add_flow(token):
-    """单账号新增地址"""
     addr_info = _collect_address_info(token)
     if not addr_info:
         return
@@ -3324,7 +3187,6 @@ def _address_add_flow(token):
 
 
 def _collect_address_info(token):
-    """收集一份完整的地址信息（省市区街+详细地址+门牌号），返回 dict 或 None"""
     sender.reply("=====填写收货地址=====\n请输入收货人姓名（回复 q 取消）")
     name = get_user_choice("", 120000, True)
     if not name:
@@ -3404,7 +3266,6 @@ def _show_accounts_selection(accounts: list, title: str) -> str:
 
 
 def _address_batch_flow(accounts: list):
-    """批量给多个账号设置同一个收货地址"""
     choice = _show_accounts_selection(accounts, "批量设置地址")
     if not choice:
         return
@@ -3527,7 +3388,6 @@ def _address_delete_flow(token, address_list):
 
 
 def jxzh_address():
-    """收货地址管理"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -3601,7 +3461,6 @@ def jxzh_address():
 
 
 def jxzh_batch_address():
-    """批量设置地址（独立指令入口）"""
     accounts = get_user_phones(userid)
     if not accounts:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
@@ -3613,7 +3472,6 @@ def jxzh_batch_address():
 
 
 def jxzh_tutorial():
-    """显示使用教程"""
     tutorial_msg = """=====匠心使用教程=====
 ------------------
 📱 登录指令: 匠心登录

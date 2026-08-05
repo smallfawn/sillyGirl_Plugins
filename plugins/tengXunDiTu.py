@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v2.0.0]
+# [version: v1.0.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -14,9 +14,14 @@
 # [depe: ["requests"]]
 
 
-import asyncio as _sg_asyncio, os as _sg_os, time as _sg_time, types as _sg_types, json as _sg_json, re as _sg_re, urllib.parse as _sg_urlparse
+import asyncio as _sg_asyncio
+import os as _sg_os
+import time as _sg_time
+import types as _sg_types
+import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
 try: import decimal as decimal
@@ -86,35 +91,6 @@ def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
-def generate_qrcode_url(t): return "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+_sg_urlparse.quote(str(t or ""))
-def get_pay_config(): return {}
-class MaPayClient:
-    def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
-    def is_paid(self,*a,**k): return True
-calculate_auth_time=lambda *a,**k:"2099-12-31"; check_auth_status=lambda *a,**k:"账号默认可用"; _check_auth_status=check_auth_status
-process_authorization=lambda *a,**k: True; process_coin_payment=lambda *a,**k: True; admin_auth_all_accounts=lambda *a,**k: True; admin_auth_by_user=lambda *a,**k: True
-def select_accounts(sender,user_bucket,user_id,*a,**k):
-    raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
-def update_user_points(user_id=None,points=0,bucket="dd_sign_points"): return sg.bucketSet(bucket,user_id or sg.getSenderID(),str(points))
-def _sg_panel_id(config=None):
-    if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
-    m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
-class QingLongClient:
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.QingLong({"id":_sg_panel_id(config)})
-    def get_envs(self,search=""): return _sg_run(self.client.getEnvs(search or "")) or []
-    all_envs=search_envs=envGet=get_envs
-    def add_envs(self,envs): return _sg_run(self.client.createEnv(envs if isinstance(envs,list) else [envs]))
-    def add_env(self,name,value="",remarks=""): return self.add_envs({"name":name,"value":value,"remarks":remarks})
-    def update_env(self,env): return _sg_run(self.client.updateEnv(env))
-    def delete_env(self,name_or_id,*a,**k): return _sg_run(self.client.deleteEnvs([name_or_id]))
-    envSet=add_envs; envUpdate=update_env; envDel=delete_env
-class DadaiPanelClient(QingLongClient):
-    def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
-DumbPanelClient=DadaiPanelClient
 
 config = form({
     'G_TXDT_CONFIG_notify': form.string().title('通知渠道').default('').description('配置检测通知推送渠道'),
@@ -138,7 +114,6 @@ sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
 def get_proxy_api() -> str:
-    """获取代理API配置"""
     try:
         return sg.bucketGet(bucket=BUCKET_CONFIG, key='proxy_api') or ''
     except Exception:
@@ -148,16 +123,15 @@ proxy_url = get_proxy_api()
 IS_PROXY = bool(proxy_url)
 
 if IS_PROXY:
-    print(f'[INFO] 地图代理模式: 已启用')
+    print('[INFO] 地图代理模式: 已启用')
     print(f'[INFO] 地图代理API: {proxy_url}')
 else:
-    print(f'[INFO] 地图代理模式: 未启用')
+    print('[INFO] 地图代理模式: 未启用')
 
 proxy_cache = {}
 proxy_lock_dict = threading.Lock()
 
 def get_proxy(force_new=False, account_key=None):
-    """动态获取代理池中的代理"""
     if not IS_PROXY or not proxy_url:
         return None
 
@@ -171,7 +145,7 @@ def get_proxy(force_new=False, account_key=None):
         if response.status_code == 200:
             ip = response.text.strip()
             if "请先添加白名单" in ip:
-                print(f'[WARNING] 地图代理服务异常：请先添加白名单')
+                print('[WARNING] 地图代理服务异常：请先添加白名单')
                 return None
 
             proxy_dict = {'http': ip, 'https': ip}
@@ -190,7 +164,6 @@ def get_proxy(force_new=False, account_key=None):
         return None
 
 def request_with_retry(method, url, max_retries=3, account_key=None, **kwargs):
-    """带重试机制的请求函数"""
     current_proxy = None
 
     for attempt in range(max_retries):
@@ -219,15 +192,15 @@ def request_with_retry(method, url, max_retries=3, account_key=None, **kwargs):
                 time.sleep(2)
                 continue
             else:
-                print(f'[ERROR] 地图代理请求失败，已达最大重试次数')
+                print('[ERROR] 地图代理请求失败，已达最大重试次数')
                 raise
         except requests.exceptions.Timeout:
-            print(f'[WARNING] 地图请求超时')
+            print('[WARNING] 地图请求超时')
             if attempt < max_retries - 1:
                 time.sleep(2)
                 continue
             else:
-                print(f'[ERROR] 地图请求超时，已达最大重试次数')
+                print('[ERROR] 地图请求超时，已达最大重试次数')
                 raise
         except Exception as e:
             print(f'[ERROR] 地图请求异常: {str(e)[:100]}')
@@ -249,80 +222,19 @@ PAY_TYPE_NAMES = {
 }
 
 def mask_user_id(user_id):
-    """user_id脱敏处理"""
     if not user_id or len(user_id) < 8:
         return user_id
     return f"{user_id[:4]}****{user_id[-4:]}"
 
-def get_config(key, default=''):
-    """获取配置"""
-    return sg.bucketGet(BUCKET_CONFIG, key) or default
 
 
-def calculate_md5(text):
-    """计算字符串的MD5值"""
-    return hashlib.md5(text.encode('utf-8')).hexdigest()
 
-def sort_dict_by_key(data):
-    """对字典按照键名排序"""
-    return dict(sorted(data.items(), key=lambda x: x[0]))
 
-def generate_qrcode(url):
-    """生成二维码图片"""
-    try:
-        encoded_url = requests.utils.quote(url)
-        api_url = f"https://api.qrtool.cn/?text={encoded_url}&size=300&level=M"
-        return api_url
-    except Exception as e:
-        return None
 
-def create_mapi_payment(config, amount, out_trade_no, name, user_id, pay_type, sitename=""):
-    return True
 
-def query_mapi_order(config, order_no, is_trade_no=False):
-    """查询订单状态"""
-    try:
-        api_url = config['gateway']
-        if api_url.endswith('/'):
-            api_url = api_url[:-1]
 
-        query_url = f"{api_url}/xpay/epay/api.php"
-
-        params = {
-            'act': 'order',
-            'pid': config['pid'],
-            'key': config['key']
-        }
-
-        if is_trade_no:
-            params['trade_no'] = order_no
-        else:
-            params['out_trade_no'] = order_no
-
-        response = request_with_retry('GET', query_url, params=params, timeout=10)
-
-        if response.status_code != 200:
-            return False, None, f"查询订单失败，HTTP状态码: {response.status_code}"
-
-        try:
-            result = response.json()
-        except:
-            return False, None, "查询订单失败，返回数据格式错误"
-
-        code = result.get('code', 0)
-        if code == 1:
-            return True, result, "查询成功"
-        else:
-            return False, None, result.get('msg', '查询失败')
-
-    except Exception as e:
-        return False, None, f"查询订单失败: {str(e)}"
-
-def poll_mapi_payment_status(config, order_no, max_tries=30):
-    return True
 
 def get_headers(user_id, urlparams):
-    """生成腾讯地图API请求头"""
     reqid = str(uuid.uuid4())
     reqtime = str(int(time.time()*1000))
     secret_key = '03a9875e795c3ecff15f617085e72d4cc'
@@ -347,7 +259,6 @@ def get_headers(user_id, urlparams):
     }
 
 def verify_account(user_id):
-    """验证账号是否有效"""
     try:
         headers = get_headers(user_id, '/activity/v1/lottery/detail')
         resp = request_with_retry(
@@ -363,7 +274,6 @@ def verify_account(user_id):
         return False
 
 def do_checkin(user_id):
-    """执行签到"""
     try:
         headers = get_headers(user_id, '/activity/v1/checkin')
         resp = request_with_retry(
@@ -383,7 +293,6 @@ def do_checkin(user_id):
         return False, str(e)
 
 def do_lottery(user_id):
-    """执行抽奖"""
     try:
         headers = get_headers(user_id, '/activity/v1/lottery/detail')
         resp = request_with_retry(
@@ -423,7 +332,6 @@ def do_lottery(user_id):
         return False, str(e), 0
 
 def do_withdraw(user_id):
-    """执行提现"""
     try:
         headers = get_headers(user_id, '/activity/v1/withdraw/home')
         resp = request_with_retry(
@@ -458,7 +366,6 @@ def do_withdraw(user_id):
         return False, str(e), 0, 0
 
 def query_balance(user_id):
-    """查询余额"""
     try:
         headers = get_headers(user_id, '/activity/v1/withdraw/home')
         resp = request_with_retry(
@@ -485,7 +392,6 @@ def query_coins_history(user_id, limit=5):
 
 
 def bind_account():
-    """绑定腾讯地图账号（支持批量）"""
     sender.reply("""
 =====腾讯地图登录=====
 请按照格式输入账号信息
@@ -598,7 +504,6 @@ def bind_account():
     sender.reply(result_msg)
 
 def query_accounts():
-    """查询账号信息"""
     if not uservalue:
         sender.reply("""
 =====未绑定账号=====
@@ -724,7 +629,6 @@ def query_accounts():
 
 
 def manage_account():
-    """账号管理功能"""
     if not uservalue:
         sender.reply("""
 =====未绑定账号=====
@@ -911,8 +815,6 @@ def manage_account():
 def authorize_multiple_accounts(user_ids):
     return True
 
-def process_batch_authorization(account_infos, months, sqsj):
-    return True
 
 
 def admin_authorize():
@@ -920,7 +822,6 @@ def admin_authorize():
 
 
 def clean_expired_accounts():
-    """清理过期账号"""
     if not sender.isAdmin():
         sender.reply("""
 =====权限不足=====
@@ -983,7 +884,6 @@ def clean_expired_accounts():
 ==================""")
 
 def run_all_accounts():
-    """一键运行所有已授权账号"""
     if not sender.isAdmin():
         sender.reply("""
 =====权限不足=====
@@ -1077,7 +977,6 @@ def run_all_accounts():
 
 
 def show_tutorial():
-    """显示教程"""
     tutorial = """
 =====腾讯地图教程=====
 📱 用户指令:

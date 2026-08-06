@@ -1,9 +1,9 @@
 //[title: IP变动通知]
 //[name: ipChange]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: smallfawn]
-//[version: v1.1.0]
+//[version: v1.1.1]
 //[public: true]
 //[admin: true]
 //[rule: ^(IP|IP查询|ip)$]
@@ -14,10 +14,11 @@
 // [depe: []]
 //[origin: smallfawn/Bncr_Plugins]
 
-const { sender: s, Bucket, form } = require("sillygirl");
+const { sender: s, Bucket, plugin } = require("sillygirl");
 
-const config = new form({
-  endpoint: form.string().title("公网 IP 接口").default("https://api64.ipify.org"),
+const config = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+  endpoint: plugin.Form.string().title("公网 IP 接口").default("https://api64.ipify.org"),
 });
 const store = new Bucket("ipChange");
 

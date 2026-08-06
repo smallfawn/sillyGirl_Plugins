@@ -3,13 +3,13 @@
 # [language: python]
 # [class: 任务]
 # [author: dandan8]
-# [version: v1.0.1]
+# [version: v1.0.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
 # [rule: ^卡看(教程|登录|管理|查询|刷进度)$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
-# [description: 卡看 插件，]
+# [description: 卡看账号登录、查询、进度任务、面板同步与管理]
 # [depe: ["pycryptodome","requests","urllib3"]]
 import asyncio as _sg_asyncio
 import os as _sg_os
@@ -17,38 +17,25 @@ import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-check_auth_status = lambda *args, **kwargs: "账号默认可用"
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -61,16 +48,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -83,17 +70,17 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'dd_kakan_config_Qinglong': form.string().title('青龙面板配置').default('').description('青龙面板地址、应用ID、应用密钥，用中文丨分隔'),
-    'dd_kakan_config_env_name': form.string().title('青龙变量名').default('').description('青龙容器内卡看的环境变量名'),
-    'dd_kakan_config_admin_ids': form.string().title('管理员ID列表').default('').description('管理员ID，逗号分隔'),
-    'dd_kakan_config_proxy_url': form.string().title('代理提取链接').default('').description('查询时使用的代理提取链接，不填则不使用代理'),
+config = plugin.Form({
+    'dd_kakan_config_Qinglong': plugin.Form.string().title('青龙面板配置').default('').description('青龙面板地址、应用ID、应用密钥，用中文丨分隔'),
+    'dd_kakan_config_env_name': plugin.Form.string().title('青龙变量名').default('').description('青龙容器内卡看的环境变量名'),
+    'dd_kakan_config_admin_ids': plugin.Form.string().title('管理员ID列表').default('').description('管理员ID，逗号分隔'),
+    'dd_kakan_config_proxy_url': plugin.Form.string().title('代理提取链接').default('').description('查询时使用的代理提取链接，不填则不使用代理'),
 })
 _CONFIG_FIELD_MAP = {
     ('dd_kakan_config', 'Qinglong'): 'dd_kakan_config_Qinglong',
@@ -104,20 +91,17 @@ _CONFIG_FIELD_MAP = {
 
 """
 卡看插件 - 青龙面板对接版本
-支持账号管理、授权控制、青龙同步
+支持账号管理、查询、进度任务和青龙同步
 任务在青龙中执行，插件只负责账号管理
 """
-
 
 import requests
 import json
 import time
 import random
 import base64
-import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
-from decimal import Decimal
 from urllib.parse import quote_plus, urlparse, parse_qs, unquote
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
@@ -129,7 +113,6 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 print('卡看助手 v1.0.0 加载中...')
-
 
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
@@ -151,7 +134,6 @@ WELFARE_URL = 'https://kakan-welfare.zhangyue.com'
 
 def format_number(num):
     return f"{num:,}"
-
 
 class SignatureManager:
     _rsa_key = None
@@ -620,84 +602,15 @@ def get_proxy(proxy_url: str) -> tuple:
     return {}, '本地'
 
 def get_plugin_config():
-    Qinglong = sg.bucketGet(bucket='dd_kakan_config', key='Qinglong')
-    env_name = sg.bucketGet(bucket='dd_kakan_config', key='env_name') or 'kakan'
-    coin_price = sg.bucketGet(bucket='dd_kakan_config', key='coin_price')
-    money_price = sg.bucketGet(bucket='dd_kakan_config', key='money_price')
-    zsm = sg.bucketGet(bucket='dd_kakan_config', key='zsm')
-    coin_bucket = sg.bucketGet(bucket='dd_kakan_config', key='coin_bucket') or DEFAULT_COIN_BUCKET
-    admin_ids_str = sg.bucketGet(bucket='dd_kakan_config', key='admin_ids') or ''
-
-    if not Qinglong:
-        sender.reply("""==================
-    配置错误
-==================
-❌ 未配置青龙信息
-------------------
-请在插件配置中填写:
-Host丨ClientID丨ClientSecret
-• 使用中文丨分隔
-• 示例:
-http://ql.example.com丨abcd丨1234
-==================""")
-        exit(0)
-
-    qllist = Qinglong.split('丨')
-    if len(qllist) != 3:
-        sender.reply("""==================
-    格式错误
-==================
-❌ 青龙配置格式错误
-------------------
-正确格式:
-Host丨ClientID丨ClientSecret
-==================""")
-        exit(0)
-
-    QLurl = qllist[0].strip()
-    ClientID = qllist[1].strip()
-    ClientSecret = qllist[2].strip()
-
-    if not all([QLurl, ClientID, ClientSecret]):
-        sender.reply("""==================
-    参数错误
-==================
-❌ 青龙配置参数不完整
-------------------
-请确保以下参数都已填写:
-• 青龙面板地址
-• 应用ID(ClientID)
-• 应用密钥(ClientSecret)
-==================""")
-        exit(0)
-
-    if not QLurl.startswith(('http://', 'https://')):
-        sender.reply(f"""==================
-    地址错误
-==================
-❌ 青龙地址格式错误
-------------------
-当前地址: {QLurl}
-正确格式:
-• http://qinglong.example.com
-• https://ql.example.com:5700
-==================""")
-        exit(0)
-
-    coin_price = int(coin_price or '9999')
-
-    try:
-        money_price = Decimal(money_price or '0')
-    except:
-        money_price = Decimal('0')
-
-    admin_ids = [aid.strip() for aid in admin_ids_str.split(',') if aid.strip()]
-
-    proxy_url = sg.bucketGet(bucket='dd_kakan_config', key='proxy_url') or ''
-
-    wechat_enabled = money_price > 0 and zsm
-
-    return QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url
+    raw=sg.bucketGet('dd_kakan_config','Qinglong') or ''
+    parts=[x.strip() for x in raw.split('丨')]
+    if len(parts)!=3 or not all(parts):
+        sender.reply('❌ 请配置青龙面板：Host丨ClientID丨ClientSecret')
+        raise SystemExit
+    if not parts[0].startswith(('http://','https://')):
+        sender.reply('❌ 青龙地址格式错误')
+        raise SystemExit
+    return (*parts,sg.bucketGet('dd_kakan_config','env_name') or 'kakan',sg.bucketGet('dd_kakan_config','proxy_url') or '')
 
 class QingLongAPI:
 
@@ -846,11 +759,6 @@ def delete_account_data(remark: str):
     sg.bucketDel(bucket='dd_kakan_token', key=remark)
     True
 
-def get_account_auth(remark: str) -> str:
-    return '2099-12-31'
-
-def set_account_auth(remark: str, expire_date: str):
-    return True
 
 
 def get_unique_remark(base_remark: str, user_id: str) -> str:
@@ -872,50 +780,15 @@ def get_unique_remark(base_remark: str, user_id: str) -> str:
         if counter > 100:
             return f"{base_remark}_{int(time.time())}"
 
-def sync_to_qinglong(api: QingLongAPI, env_name: str, remark: str, account_data: dict, expire_date: str, user_id: str):
-    try:
-        remarks = f"卡看:{remark}丨用户:{user_id}"
-        if expire_date:
-            remarks += f"丨到期:{expire_date}"
-        remarks += "丨卡看管理"
-
-        value = json.dumps(account_data, ensure_ascii=False)
-
-        existing_env = api.find_env_by_remark(env_name, remark)
-
-        if existing_env:
-            env_id = existing_env.get('id')
-            env_status = existing_env.get('status')
-
-            success = api.update_env(env_id, env_name, value, remarks)
-
-            if success and env_status != 0:
-                api.enable_env([env_id])
-                return {'success': True, 'action': '更新并启用'}
-
-            return {'success': success, 'action': '更新'}
-        else:
-            success = api.add_env(env_name, value, remarks)
-            return {'success': success, 'action': '添加'}
-
-    except Exception as e:
-        return {'success': False, 'message': str(e)}
-
-def remove_from_qinglong(api: QingLongAPI, env_name: str, remark: str) -> bool:
-    try:
-        existing_env = api.find_env_by_remark(env_name, remark)
-        if existing_env:
-            env_id = existing_env.get('id')
-            return api.delete_env([env_id])
-        return True
-    except:
-        return False
-
-
-
-def handle_authorize(remarks: list, api: QingLongAPI, env_name: str, coin_price: int,
-                    money_price: Decimal, zsm: str, coin_bucket: str, wechat_enabled: bool):
-    return True
+def sync_to_qinglong(api, env_name, remark, account_data, user_id):
+    value=json.dumps(account_data,ensure_ascii=False)
+    remarks=f'卡看:{remark}丨用户:{user_id}'
+    old=api.find_env_by_remark(env_name,remark)
+    if old:
+        env_id=old.get('id');ok=api.update_env(env_id,env_name,value,remarks)
+        if ok:api.enable_env([env_id])
+        return ok
+    return api.add_env(env_name,value,remarks)
 
 
 
@@ -960,58 +833,7 @@ def parse_batch_selection(input_str: str, max_count: int) -> list:
     return sorted(list(indices))
 
 def cmd_help():
-    QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
-
-    help_msg = """=====卡看教程=====
-📱 用户指令:
-• 卡看登录 - 短信验证码登录
-• 卡看管理 - 管理授权
-• 卡看查询 - 实时查询
-• 卡看刷进度 - 攒钱罐提现（刷进度）
-• 卡看教程 - 查看教程
-------------------"""
-
-    if userid in admin_ids:
-        help_msg += """
-🔧 管理员指令:
-• 卡看管理 - 包含管理员面板
-------------------"""
-
-    help_msg += """
-💡 登录方式（短信验证码）:
-📝 格式: 手机号
-📝 示例: 13800138000
-(自动使用脱敏手机号作为备注)
-
-⚠️ 建议私聊登录，保护账号安全
-------------------
-💰 功能说明:
-• 账号管理和批量登录
-• 授权管理（积分/微信支付）
-• 实时查询账号状态和金币
-• 自动同步账号到青龙面板
-• 任务在青龙中执行，插件只负责账号管理
-------------------
-🎯 使用流程:
-1. 发送"卡看登录"绑定账号
-2. 发送"卡看管理"进行授权
-3. 青龙自动执行任务
-4. 发送"卡看查询"实时查看账号信息
-------------------
-🎯 授权说明:
-• 授权价格: """ + str(coin_price) + """积分/天"""
-
-    if wechat_enabled:
-        help_msg += "\n• 微信支付: " + str(money_price) + "元/天"
-
-    help_msg += """
-------------------
-⏰ 过期说明:
-• 授权到期后需续费才能使用
-• 到期后青龙任务立即停止
-• 建议提前续费，避免服务中断
-=================="""
-    sender.reply(help_msg)
+    sender.reply('=====卡看教程=====\n卡看登录：短信验证码登录\n卡看查询：查询金币与余额\n卡看管理：同步或删除账号\n卡看刷进度：执行攒钱罐任务\n==================')
 
 def mask_phone(phone: str) -> str:
     if len(phone) == 11:
@@ -1019,1056 +841,118 @@ def mask_phone(phone: str) -> str:
     return phone[:3] + "****" + phone[-4:] if len(phone) > 7 else phone
 
 def cmd_login():
-    sender.reply("""=====卡看登录=====
-
-请输入手机号
-示例: 13800138000
-(将发送短信验证码)
-
-💡 批量输入 (每行一个):
-13800138000
-13800138001
-
-⚠️ 建议私聊登录，保护账号安全
-⭐ 输入q退出操作
-==================""")
-
-    try:
-        user_input = sender.input(180000, 1000, False)
-    except Exception as e:
-        print(f"[错误] input()调用失败: {str(e)}")
-        user_input = sender.listen(180000)
-
-    if not user_input:
-        sender.reply('⏰ 输入超时!')
-        return
-
-    if user_input.lower() == 'q':
-        sender.reply('✅ 已取消登录')
-        return
-
-    lines = [line.strip() for line in user_input.strip().split('\n') if line.strip()]
-
-    if not lines:
-        sender.reply("""❌ 未检测到有效手机号
-------------------
-请输入11位手机号
-==================""")
-        return
-
-    time.sleep(0.5)
-    for _ in range(min(len(lines) + 2, 10)):
-        try:
-            sender.recallMessage(1)
-            time.sleep(0.1)
-        except:
-            break
-
-    QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
-
-    success_list = []
-    fail_list = []
-    sms_pending = []
-
-    for line in lines:
-        phone = line.split("#", 1)[0].strip()
-        if len(phone) == 11 and phone.startswith('1'):
-            remark = mask_phone(phone)
-            sms_pending.append({"remark": remark, "phone": phone, "display_name": remark})
-        else:
-            fail_list.append({"name": line[:11], "reason": "手机号格式错误"})
-
-    if sms_pending:
-        sender.reply(f"""检测到 {len(sms_pending)} 个手机号登录
-将逐个发送验证码，请耐心等待...
-==================""")
-
-        kakan_api = KaKanAPI()
-
-        for item in sms_pending:
-            remark = item['remark']
-            phone = item['phone']
-            display_name = item.get('display_name', remark)
-
-            device_info = DeviceManager.generate_device_info(phone=phone)
-
-            sender.reply(f"📱 {display_name}: 正在发送验证码到 {mask_phone(phone)}...")
-
-            success, result, interval = kakan_api.send_sms_code(phone, device_info)
-
-            if success:
-                sender.reply(f"""=====验证码已发送=====
-📱 账号: {display_name}
-📱 手机: {mask_phone(phone)}
-⏰ 剩余次数: {result}
-------------------
-请在60秒内输入验证码
-💡 直接输入验证码
-⚠️ 输入q跳过此账号
-==================""")
-
-                try:
-                    code_input = sender.input(60000, 5000, False)
-                except:
-                    code_input = None
-
-                if not code_input or code_input.lower() == 'q':
-                    fail_list.append({"name": display_name, "reason": "用户取消"})
-                    continue
-
-                code_parts = code_input.split('#', 1)
-                if len(code_parts) == 2:
-                    code = code_parts[1].strip()
-                else:
-                    code = code_input.strip()
-
-                if not code or len(code) < 4:
-                    fail_list.append({"name": display_name, "reason": "验证码格式错误"})
-                    continue
-
-                success, user_info = kakan_api.login_by_phone(phone, code, device_info)
-
-                if success and user_info:
-                    device_info['usr'] = user_info.get('user_id', device_info.get('usr', ''))
-                    if 'zyeid' in user_info:
-                        device_info['zyeid'] = user_info['zyeid']
-
-                    final_remark = get_unique_remark(remark, userid)
-                    if final_remark != remark:
-                        display_name = f"{final_remark} (原:{remark})"
-                    remark = final_remark
-
-                    account_data = {
-                        'user_id': user_info.get('user_id'),
-                        'encrypt_user_id': user_info.get('encrypt_user_id'),
-                        'session_id': user_info.get('session_id'),
-                        'device_info': device_info,
-                        'wechat_id': '',
-                        'name': user_info.get('name', ''),
-                        'login_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-                        'login_type': 'sms'
-                    }
-
-                    save_account_data(remark, account_data)
-                    set_account_auth(remark, '未授权')
-
-                    user_accounts = get_user_accounts(userid)
-                    if remark not in user_accounts:
-                        user_accounts.append(remark)
-                        save_user_accounts(userid, user_accounts)
-
-                    success_list.append({"name": display_name, "type": "短信登录", "user_id": user_info.get('user_id', '')[:8] + '...'})
-                else:
-                    error = user_info.get('error', '未知错误') if user_info else '登录失败'
-                    fail_list.append({"name": display_name, "reason": error})
-            else:
-                fail_list.append({"name": display_name, "reason": f"发送验证码失败: {result}"})
-
-    is_batch = len(lines) > 1
-    msg = "=====登录结果=====\n"
-    msg += f"{'批量' if is_batch else ''}处理: {len(lines)}个账号\n"
-    msg += f"✅ 成功: {len(success_list)}个\n"
-    msg += f"❌ 失败: {len(fail_list)}个\n"
-    msg += "==================\n\n"
-
-    if success_list:
-        msg += "✅ 成功账号:\n"
-        for s in success_list:
-            msg += f"• {s['name']} ({s['type']}) - {s['user_id']}\n"
-        msg += "\n"
-
-    if fail_list:
-        msg += "❌ 失败账号:\n"
-        for f in fail_list[:5]:
-            msg += f"• {f['name']}: {f['reason']}\n"
-        msg += "\n"
-
-    msg += "🔒 已撤回您的隐私信息"
-
-    sender.reply(msg)
-
-    if success_list:
-        sender.reply("""
-是否立即进行授权？
-[y] 立即授权
-[n] 稍后授权
-==================""")
-
-        choice = sender.input(60000, 5000, False)
-        if choice and choice.lower() == 'y':
-            cmd_manage()
-        else:
-            sender.reply('✅ 已保存账号，稍后可发送"卡看管理"进行授权')
-
-def cmd_manage():
-    user_accounts = get_user_accounts(userid)
-
-    if not user_accounts:
-        sender.reply("""📭 暂无绑定账号
-
-💡 请先发送"卡看登录"绑定账号""")
-        return
-
-    QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
-
-    is_admin_user = userid in admin_ids
-
-    message = '------------------\n功能选项:\n00、一键授权所有账号\n01、批量选择授权\n02、批量删除账号\n'
-    if is_admin_user:
-        message += '03、管理员面板\n'
-    message += '==================\n'
-
-    count = 1
-    for remark in user_accounts:
-        auth_status = get_account_auth(remark)
-        status_display, is_valid = check_auth_status(auth_status)
-
-        message += f"""[{count}] {remark}
-    到期: {status_display}
-"""
-        count += 1
-
-    sender.reply(f"""=====卡看管理=====
-{message}------------------
-📝 选择账号: 输入序号（多选用英文逗号分隔）
-💡 示例: 1 或 1,3 或 1-3
-⚠️ 输入"q"退出操作
-==================""")
-
-    choice = sender.input(120000, 5000, False)
-    if not choice or choice.lower() == 'q':
-        sender.reply('✅ 已取消操作')
-        return
-
-    api = QingLongAPI(QLurl, ClientID, ClientSecret)
-
-    if choice == '00':
-        handle_authorize(user_accounts, api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-    elif choice == '01':
-        handle_batch_select_authorize(user_accounts, api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-    elif choice == '02':
-        handle_batch_delete(user_accounts, api, env_name)
-    elif choice == '03' and is_admin_user:
-        admin_panel(api, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled)
-    else:
-        indices = parse_batch_selection(choice, len(user_accounts))
-        if indices:
-            if len(indices) == 1:
-                handle_single_account(user_accounts[indices[0]], api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-            else:
-                selected = [user_accounts[i] for i in indices]
-                handle_authorize(selected, api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-        else:
-            sender.reply('❌ 输入错误，请检查序号是否正确')
-
-def handle_batch_select_authorize(user_accounts: list, api: QingLongAPI, env_name: str,
-                                   coin_price: int, money_price: Decimal, zsm: str,
-                                   coin_bucket: str, wechat_enabled: bool):
-    return True
-
-def handle_single_account(remark: str, api: QingLongAPI, env_name: str, coin_price: int,
-                          money_price: Decimal, zsm: str, coin_bucket: str, wechat_enabled: bool):
-    auth_status = get_account_auth(remark)
-    status_display, is_valid = check_auth_status(auth_status)
-
-    account_data = get_account_data(remark)
-    login_type = account_data.get('login_type', '未知') if account_data else '未知'
-
-    sender.reply(f"""=====账号详情=====
-📱 备注: {remark}
-🔐 授权: {status_display}
-📝 登录方式: {login_type}
-------------------
-[1] 📅 授权账号
-[2] 🔄 更新账号
-[3] ❌ 删除账号
-
-请选择操作序号
-==================""")
-
-    op_choice = sender.input(120000, 5000, False)
-    if not op_choice or op_choice.lower() == 'q':
-        sender.reply('✅ 已取消操作')
-        return
-
-    if op_choice == '1':
-        handle_authorize([remark], api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-    elif op_choice == '2':
-        handle_update_account(remark, api, env_name)
-    elif op_choice == '3':
-        sender.reply("""=====删除确认=====
-⚠️ 是否删除该账号?
-------------------
-[y] 确认删除
-[n] 取消操作
-==================""")
-
-        confirm = sender.input(60000, 5000, False)
-        if confirm and confirm.lower() == 'y':
-            remove_from_qinglong(api, env_name, remark)
-            delete_account_data(remark)
-
-            user_accounts = get_user_accounts(userid)
-            if remark in user_accounts:
-                user_accounts.remove(remark)
-                save_user_accounts(userid, user_accounts)
-
-            sender.reply('✅ 账号已删除')
-        else:
-            sender.reply('✅ 已取消删除')
-
-def handle_update_account(remark: str, api: QingLongAPI, env_name: str):
-    sender.reply(f"""=====更新账号=====
-📱 账号备注: {remark}
-------------------
-请输入手机号:
-示例: 13800138000
-(将发送验证码)
-
-⚠️ 输入"q"退出操作
-⚠️ 建议私聊更新，保护账号安全
-==================""")
-
-    try:
-        user_input = sender.input(120000, 1000, False)
-    except Exception as e:
-        print(f"[错误] input()调用失败: {str(e)}")
-        user_input = sender.listen(120000)
-
-    if not user_input:
-        sender.reply('⏰ 输入超时!')
-        return
-
-    if user_input.lower() == 'q':
-        sender.reply('✅ 已取消更新')
-        return
-
-    data = user_input.strip()
-
-    time.sleep(0.5)
-    for _ in range(3):
-        try:
-            sender.recallMessage(1)
-            time.sleep(0.1)
-        except:
-            break
-
-    if len(data) != 11 or not data.startswith('1'):
+    sender.reply('请输入手机号；q 退出')
+    phone=(sender.input(180000,1000,False) or '').strip()
+    if phone.lower()=='q':return
+    if len(phone)!=11 or not phone.isdigit():
         sender.reply('❌ 手机号格式错误')
         return
-
-    kakan_api = KaKanAPI()
-    device_info = DeviceManager.generate_device_info(phone=data)
-
-    sender.reply(f"📱 正在发送验证码到 {data}...")
-
-    success, result, interval = kakan_api.send_sms_code(data, device_info)
-
-    if success:
-        sender.reply(f"""=====验证码已发送=====
-📱 手机: {data}
-⏰ 剩余次数: {result}
-------------------
-请在60秒内输入验证码
-⚠️ 输入q取消操作
-==================""")
-
-        try:
-            code_input = sender.input(60000, 5000, False)
-        except:
-            code_input = None
-
-        if not code_input or code_input.lower() == 'q':
-            sender.reply('✅ 已取消更新')
-            return
-
-        code = code_input.strip()
-
-        if not code or len(code) < 4:
-            sender.reply('❌ 验证码格式错误')
-            return
-
-        success, user_info = kakan_api.login_by_phone(data, code, device_info)
-
-        if success and user_info:
-            device_info['usr'] = user_info.get('user_id', device_info.get('usr', ''))
-            if 'zyeid' in user_info:
-                device_info['zyeid'] = user_info['zyeid']
-
-            new_account_data = {
-                'user_id': user_info.get('user_id'),
-                'encrypt_user_id': user_info.get('encrypt_user_id'),
-                'session_id': user_info.get('session_id'),
-                'device_info': device_info,
-                'wechat_id': '',
-                'name': user_info.get('name', ''),
-                'login_time': time.strftime('%Y-%m-%d %H:%M:%S'),
-                'login_type': 'sms'
-            }
-
-            save_account_data(remark, new_account_data)
-
-            auth_status = get_account_auth(remark)
-            sync_success = True
-
-            if auth_status not in ['未授权', '授权过期']:
-                auth_status_checked, is_valid = check_auth_status(auth_status)
-                if is_valid:
-                    result = sync_to_qinglong(api, env_name, remark, new_account_data, auth_status, userid)
-                    sync_success = result.get('success', False)
-
-            if sync_success:
-                sender.reply(f"""=====更新成功=====
-✅ 账号信息已更新
-📱 备注: {remark}
-👤 用户: {user_info.get('name', '未知')}
-------------------
-🔒 已撤回您的隐私信息
-==================""")
-            else:
-                sender.reply("""❌ 更新失败
-------------------
-本地数据已更新，但同步青龙失败
-请稍后重试或检查配置
-==================""")
-        else:
-            error = user_info.get('error', '未知错误') if user_info else '登录失败'
-            sender.reply(f'❌ 登录失败: {error}')
-    else:
-        sender.reply(f'❌ 发送验证码失败: {result}')
-
-def handle_batch_delete(accounts: list, api: QingLongAPI, env_name: str):
-    message = ""
-    for idx, remark in enumerate(accounts, 1):
-        auth_status = get_account_auth(remark)
-        status_display, is_valid = check_auth_status(auth_status)
-        status_icon = "✅" if is_valid else "❌"
-        message += f"{idx}. {remark} {status_icon} {status_display}\n"
-
-    sender.reply(f"""=====批量删除账号=====
-📱 共 {len(accounts)} 个账号
-------------------
-{message}------------------
-📝 请选择要删除的账号
-💡 多选用英文逗号分隔: 1,3,5
-💡 连续选择: 1-3
-💡 输入"0"全选
-⚠️ 输入"q"退出
-==================""")
-
-    choice = sender.input(120000, 5000, False)
-    if not choice or choice.lower() == 'q':
-        sender.reply('✅ 已取消操作')
+    url,cid,secret,env_name,_=get_plugin_config();api=KaKanAPI();device=DeviceManager.generate_device_info(phone=phone)
+    ok,result,_=api.send_sms_code(phone,device)
+    if not ok:
+        sender.reply(f'❌ 验证码发送失败：{result}')
         return
-
-    indices = parse_batch_selection(choice, len(accounts))
-
-    if not indices:
-        sender.reply('❌ 输入错误，请检查序号是否正确')
+    sender.reply('验证码已发送，请输入验证码')
+    code=(sender.input(60000,5000,False) or '').strip()
+    if not code or code.lower()=='q':return
+    ok,user=api.login_by_phone(phone,code,device)
+    if not ok or not user:
+        sender.reply(f'❌ 登录失败：{user.get("error","未知错误") if isinstance(user,dict) else user}')
         return
+    device['usr']=user.get('user_id',device.get('usr',''));device.update({k:user[k] for k in ('zyeid',) if k in user})
+    remark=get_unique_remark(mask_phone(phone),userid)
+    data={'user_id':user.get('user_id'),'encrypt_user_id':user.get('encrypt_user_id'),'session_id':user.get('session_id'),'device_info':device,'name':user.get('name',''),'login_time':time.strftime('%Y-%m-%d %H:%M:%S'),'login_type':'sms'}
+    save_account_data(remark,data);accounts=get_user_accounts(userid)
+    if remark not in accounts:accounts.append(remark);save_user_accounts(userid,accounts)
+    synced=sync_to_qinglong(QingLongAPI(url,cid,secret),env_name,remark,data,userid)
+    sender.reply(f'✅ {remark} 登录成功；面板'+('已同步' if synced else '同步失败'))
 
-    selected = [accounts[i] for i in indices]
-
-    sender.reply(f"""=====删除确认=====
-⚠️ 危险操作警告！
-------------------
-📱 将删除 {len(selected)} 个账号:
-{chr(10).join([f'• {remark}' for remark in selected])}
-------------------
-此操作将：
-1. 删除青龙面板中的环境变量
-2. 清除本地账号数据
-3. 清除授权信息
-
-⚠️ 此操作不可恢复！
-------------------
-确认删除请回复【y】
-取消请回复【n】
-==================""")
-
-    confirm = sender.input(60000, 5000, False)
-    if confirm and confirm.lower() == 'y':
-        sender.reply('🔄 正在批量删除...')
-
-        success_count = 0
-        for remark in selected:
-            try:
-                remove_from_qinglong(api, env_name, remark)
-                delete_account_data(remark)
-                success_count += 1
-            except:
-                pass
-
-        remaining_accounts = [a for a in accounts if a not in selected]
-        save_user_accounts(userid, remaining_accounts)
-
-        if remaining_accounts:
-            sender.reply(f"""=====删除完成=====
-✅ 成功删除: {success_count}/{len(selected)}个
-------------------
-📱 剩余账号: {len(remaining_accounts)}个
-💡 可发送"卡看管理"继续管理
-==================""")
-        else:
-            sender.reply(f"""=====删除完成=====
-✅ 成功删除: {success_count}/{len(selected)}个
-------------------
-📭 您的所有账号已清空
-💡 可发送"卡看登录"重新添加
-==================""")
-    else:
-        sender.reply('✅ 已取消删除')
-
-def admin_panel(api: QingLongAPI, env_name: str, coin_price: int, money_price: Decimal,
-                zsm: str, coin_bucket: str, admin_ids: list, wechat_enabled: bool):
-    sender.reply("""=====卡看管理后台=====
-👑 管理员模式
-
-请选择操作:
-
-00、批量授权 - 给所有用户批量开通/续费
-01、指定用户授权 - 为指定用户的账号授权
-02、账号检测 - 检测所有账号状态
-03、数据清理 - 清理过期30天账号
-04、青龙同步 - 手动同步至青龙面板
-
-发送 q 退出
-==================""")
-
-    choice = sender.input(60000, 5000, False)
-    if not choice or choice.lower() == 'q':
+def cmd_manage():
+    accounts=get_user_accounts(userid)
+    if not accounts:
+        sender.reply('❌ 暂无账号，请先发送 卡看登录')
         return
+    sender.reply('=====卡看管理=====\n'+'\n'.join(f'[{i}] {a}' for i,a in enumerate(accounts,1))+'\n回复序号；q退出')
+    choice=sender.input(120000,5000,False)
+    if not str(choice).isdigit():return
+    i=int(choice)-1
+    if i not in range(len(accounts)):return
+    remark=accounts[i];data=get_account_data(remark)
+    sender.reply('[1] 同步面板 [2] 查看配置 [3] 删除账号')
+    action=sender.input(120000,5000,False)
+    url,cid,secret,env_name,_=get_plugin_config();api=QingLongAPI(url,cid,secret)
+    if action=='1':sender.reply('✅ 同步成功' if data and sync_to_qinglong(api,env_name,remark,data,userid) else '❌ 同步失败')
+    elif action=='2':sender.reply(json.dumps(data,ensure_ascii=False) if data else '❌ 数据不存在')
+    elif action=='3':
+        sender.reply('确认删除请回复 y')
+        if (sender.input(60000,5000,False) or '').lower()=='y':
+            old=api.find_env_by_remark(env_name,remark)
+            if old:api.delete_env([old.get('id')])
+            accounts.remove(remark);save_user_accounts(userid,accounts);delete_account_data(remark);sender.reply('✅ 已删除')
 
-    if choice == '00':
-        admin_batch_authorize_all(api, env_name)
-    elif choice == '01':
-        admin_authorize_specific_user(api, env_name, coin_price, money_price, zsm, coin_bucket, wechat_enabled)
-    elif choice == '02':
-        admin_check_all()
-    elif choice == '03':
-        admin_cleanup(api, env_name)
-    elif choice == '04':
-        admin_sync_all(api, env_name)
-    else:
-        sender.reply('❌ 无效选择')
 
-def admin_authorize_specific_user(api: QingLongAPI, env_name: str, coin_price: int,
-                                   money_price: Decimal, zsm: str, coin_bucket: str, wechat_enabled: bool):
-    return True
 
-def admin_batch_authorize_all(api: QingLongAPI, env_name: str):
-    return True
 
-def admin_check_all():
-    users = sg.bucketAllKeys('dd_kakan_user')
-    if not users:
-        sender.reply('❌ 未找到任何绑定的卡看账号')
-        return
 
-    sender.reply('🔍 正在检测所有账号...')
-    normal_count = 0
-    expired_count = 0
-    unauthorized_count = 0
-    today = datetime.datetime.now()
 
-    for user in users:
-        accountlist = sg.bucketGet('dd_kakan_user', user)
-        if not accountlist:
-            continue
-        try:
-            accounts = _sg_literal(accountlist)
-            for remark in accounts:
-                auth_status = get_account_auth(remark) or '未授权'
-                if auth_status == '未授权':
-                    unauthorized_count += 1
-                elif auth_status == '授权过期':
-                    expired_count += 1
-                else:
-                    try:
-                        expire_date = datetime.datetime.strptime(auth_status, '%Y-%m-%d')
-                        if expire_date < today:
-                            expired_count += 1
-                        else:
-                            normal_count += 1
-                    except:
-                        unauthorized_count += 1
-        except:
-            pass
 
-    sender.reply(f"""=====检测结果汇总=====
-✅ 正常: {normal_count}个
-⏰ 过期: {expired_count}个
-🔒 未授权: {unauthorized_count}个
-==================""")
 
-def admin_cleanup(api: QingLongAPI, env_name: str):
-    users = sg.bucketAllKeys('dd_kakan_user')
-    if not users:
-        sender.reply('❌ 未找到任何用户数据')
-        return
 
-    sender.reply('🔍 正在扫描过期账号...')
-    expired_list = []
-    today = datetime.datetime.now()
 
-    for user in users:
-        accountlist = sg.bucketGet('dd_kakan_user', user)
-        if not accountlist:
-            continue
-        try:
-            accounts = _sg_literal(accountlist)
-            for remark in accounts:
-                auth_status = get_account_auth(remark) or '未授权'
-                if auth_status not in ['未授权', '授权过期']:
-                    try:
-                        expire_date = datetime.datetime.strptime(auth_status, '%Y-%m-%d')
-                        if (today - expire_date).days > 30:
-                            expired_list.append({'user': user, 'remark': remark})
-                    except:
-                        pass
-        except:
-            pass
-
-    if not expired_list:
-        sender.reply('✅ 没有需要清理的过期账号')
-        return
-
-    sender.reply(f"""=====清理确认=====
-⚠️ 发现 {len(expired_list)} 个过期超过30天的账号
-此操作将删除青龙环境变量和本地数据
-
-确认清理请回复【y】
-取消请回复【n】
-==================""")
-
-    confirm = sender.input(30000, 5000, False)
-    if confirm and confirm.lower() == 'y':
-        sender.reply('🔄 正在清理...')
-        success_count = 0
-
-        for item in expired_list:
-            try:
-                existing_env = api.find_env_by_remark(env_name, item['remark'])
-                if existing_env:
-                    api.delete_env([existing_env.get('id')])
-
-                delete_account_data(item['remark'])
-
-                accountlist = sg.bucketGet('dd_kakan_user', item['user'])
-                if accountlist:
-                    accounts = _sg_literal(accountlist)
-                    if item['remark'] in accounts:
-                        accounts.remove(item['remark'])
-                        if accounts:
-                            sg.bucketSet('dd_kakan_user', item['user'], str(accounts))
-                        else:
-                            sg.bucketDel('dd_kakan_user', item['user'])
-                success_count += 1
-            except:
-                pass
-
-        sender.reply(f"""=====清理完成=====
-✅ 成功清理: {success_count}/{len(expired_list)}
-==================""")
-    else:
-        sender.reply('✅ 已取消清理')
-
-def admin_sync_all(api: QingLongAPI, env_name: str):
-    sender.reply('🔄 正在同步账号到青龙面板...')
-
-    users = sg.bucketAllKeys('dd_kakan_user')
-    if not users:
-        sender.reply('❌ 未找到任何绑定的卡看账号')
-        return
-
-    total_count = 0
-    success_count = 0
-    fail_count = 0
-
-    for user in users:
-        accountlist = sg.bucketGet('dd_kakan_user', user)
-        if not accountlist:
-            continue
-
-        try:
-            accounts = _sg_literal(accountlist)
-            for remark in accounts:
-                total_count += 1
-
-                account_data = get_account_data(remark)
-                if not account_data:
-                    fail_count += 1
-                    continue
-
-                auth_status = get_account_auth(remark) or '未授权'
-
-                try:
-                    result = sync_to_qinglong(api, env_name, remark, account_data, auth_status, user)
-                    if result.get('success'):
-                        success_count += 1
-                    else:
-                        fail_count += 1
-                except:
-                    fail_count += 1
-        except:
-            pass
-
-    sender.reply(f"""=====同步完成=====
-📊 总计: {total_count}个账号
-✅ 成功: {success_count}个
-❌ 失败: {fail_count}个
-------------------
-💡 提示：
-• 成功同步的账号已更新到青龙
-• 失败的账号请检查账号数据
-==================""")
 
 def cmd_query():
-    user_accounts = get_user_accounts(userid)
-
-    if not user_accounts:
-        sender.reply("""📭 暂无绑定账号
-
-💡 请先发送"卡看登录"绑定账号""")
+    accounts=get_user_accounts(userid)
+    if not accounts:
+        sender.reply('❌ 暂无账号，请先发送 卡看登录')
         return
-
-    QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
-
-    QingLongAPI(QLurl, ClientID, ClientSecret)
-
-    proxy, proxy_info = get_proxy(proxy_url)
-
-    if len(user_accounts) > 1:
-        message = ""
-        for idx, remark in enumerate(user_accounts, 1):
-            auth_status = get_account_auth(remark)
-            status_display, is_valid = check_auth_status(auth_status)
-            status_icon = "✅" if is_valid else "❌"
-            message += f"{idx}. {remark} {status_icon}\n"
-
-        sender.reply(f"""=====卡看查询=====
-📱 共 {len(user_accounts)} 个账号
-------------------
-{message}------------------
-📝 请选择要查询的账号
-💡 多选用英文逗号分隔: 1,3,5
-💡 连续选择: 1-3
-💡 输入"0"查询全部
-⚠️ 输入"q"退出
-==================""")
-
-        choice = sender.input(120000, 5000, False)
-        if not choice or choice.lower() == 'q':
-            sender.reply('✅ 已取消操作')
-            return
-
-        indices = parse_batch_selection(choice, len(user_accounts))
-
-        if not indices:
-            sender.reply('❌ 输入错误，请检查序号是否正确')
-            return
-
-        selected = [user_accounts[i] for i in indices]
-    else:
-        selected = user_accounts
-
-    sender.reply(f"🔍 正在查询 {len(selected)} 个账号...\n请稍候...")
-    results = []
-
-    kakan_api = KaKanAPI()
-
+    selected=accounts
+    if len(accounts)>1:
+        sender.reply('=====卡看查询=====\n'+'\n'.join(f'[{i}] {a}' for i,a in enumerate(accounts,1))+'\n[0] 全部')
+        choice=sender.input(120000,5000,False)
+        indexes=parse_batch_selection(choice,len(accounts))
+        if not indexes:return
+        selected=[accounts[i] for i in indexes]
+    *_,proxy_url=get_plugin_config();proxy,proxy_info=get_proxy(proxy_url);api=KaKanAPI();results=[]
     for remark in selected:
-        account_data = get_account_data(remark)
-        if not account_data:
-            results.append(f"❌ {remark}: 账号数据丢失")
-            continue
-
-        device_info = account_data.get('device_info', {})
-        session_info = {
-            'user_id': account_data.get('user_id'),
-            'encrypt_user_id': account_data.get('encrypt_user_id'),
-            'session_id': account_data.get('session_id')
-        }
-
-        auth_status = get_account_auth(remark)
-        status_display, is_valid = check_auth_status(auth_status)
-
-        if not is_valid:
-            results.append(f"""❌ {remark}: 授权已过期
-🔐 {status_display}
-💡 请发送"卡看管理"进行续费
-   价格: {coin_price}积分/天
-------------------
-续费后将自动恢复：
-• 查询功能
-• 青龙自动任务""")
-            continue
-
-        success, user_info = kakan_api.get_user_info(device_info, session_info, proxy=proxy)
-
-        if not success:
-            results.append(f"❌ {remark}: Token已失效")
-            continue
-
-        success, gold_info = kakan_api.get_gold_account(device_info, session_info, proxy=proxy)
-
-        info = f"📱 {remark}\n"
-
-        expire_str = get_account_auth(remark)
-        try:
-            expire_date = datetime.datetime.strptime(expire_str, '%Y-%m-%d')
-            days_left = (expire_date - datetime.datetime.now()).days
-            info += f"🔐 授权至{expire_str} (剩{days_left}天)\n"
-        except:
-            info += f"🔐 {status_display}\n"
-
-        if user_info:
-            total_coin = user_info.get('total_coin', 0)
-            total_cash = user_info.get('total_cash', 0)
-            info += f"💰 金币: {format_number(total_coin)}\n"
-            info += f"💵 余额: {total_cash}元\n"
-
-        if gold_info:
-            total_gold = gold_info.get('total_gold_num', 0)
-            total_rmb = gold_info.get('total_rmb', '0')
-            info += f"🎯 金币账户: {format_number(total_gold)} (约{total_rmb}元)\n"
-
-        results.append(info)
-
-    query_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    final_msg = f"=====查询结果=====\n{chr(10).join(results)}------------------\n🌐 代理: {proxy_info}\n⏰ 查询时间: {query_time}\n=================="
-    sender.reply(final_msg)
+        data=get_account_data(remark) or {};device=data.get('device_info',{});session={k:data.get(k) for k in ('user_id','encrypt_user_id','session_id')}
+        ok,user=api.get_user_info(device,session,proxy=proxy)
+        if not ok:
+            results.append(f'❌ {remark}: 登录失效');continue
+        _,gold=api.get_gold_account(device,session,proxy=proxy)
+        results.append(f'📱 {remark}\n💰 金币: {format_number((user or {}).get("total_coin",0))}\n💵 余额: {(user or {}).get("total_cash",0)}元\n🎯 金币账户: {format_number((gold or {}).get("total_gold_num",0))}')
+    sender.reply('=====查询结果=====\n'+'\n------------------\n'.join(results)+f'\n🌐 代理: {proxy_info}')
 
 def execute_single_account_progress(kakan_api, remark, count, proxy):
-    account_data = get_account_data(remark)
-    if not account_data:
-        return {'remark': remark, 'success': False, 'msg': '账号数据丢失'}
-
-    device_info = account_data.get('device_info', {})
-    session_info = {
-        'user_id': account_data.get('user_id'),
-        'encrypt_user_id': account_data.get('encrypt_user_id'),
-        'session_id': account_data.get('session_id')
-    }
-
-    if not device_info:
-        return {'remark': remark, 'success': False, 'msg': '设备信息丢失'}
-
-    if not session_info.get('user_id') or not session_info.get('session_id'):
-        return {'remark': remark, 'success': False, 'msg': '会话信息丢失'}
-
-    auth_status = get_account_auth(remark)
-    _, is_valid = check_auth_status(auth_status)
-    if not is_valid:
-        return {'remark': remark, 'success': False, 'msg': '授权已过期'}
-
-    success_count = 0
-    fail_count = 0
-    last_error = None
-
-    print(f"[{remark}] 开始执行攒钱罐提现任务，计划执行 {count} 次")
-
+    data=get_account_data(remark) or {};device=data.get('device_info',{});session={k:data.get(k) for k in ('user_id','encrypt_user_id','session_id')}
+    if not device or not session.get('session_id'):return {'remark':remark,'success':False,'msg':'账号数据缺失'}
+    success=0;last=''
     for i in range(count):
         try:
-            success, result = kakan_api.receive_task(
-                device_info,
-                session_info,
-                task_id=3812,
-                receive_type='4',
-                act_id=1021,
-                proxy=proxy
-            )
-            if success:
-                success_count += 1
-                print(f"[{remark}] 第{i+1}/{count}次成功")
-            else:
-                fail_count += 1
-                error = result.get('error', '未知错误') if result else '未知错误'
-                last_error = error
-                print(f"[{remark}] 第{i+1}/{count}次失败: {error}")
-
-            if i < count - 1:
-                interval = random.uniform(2, 4)
-                time.sleep(interval)
-        except Exception as e:
-            fail_count += 1
-            last_error = str(e)
-            print(f"[{remark}] 第{i+1}/{count}次异常: {str(e)}")
-
-    print(f"[{remark}] 攒钱罐提现完成，成功: {success_count}，失败: {fail_count}")
-
-    return {
-        'remark': remark,
-        'success': True,
-        'success_count': success_count,
-        'fail_count': fail_count,
-        'total': count,
-        'last_error': last_error
-    }
+            ok,result=kakan_api.receive_task(device,session,task_id=3812,receive_type='4',act_id=1021,proxy=proxy)
+            success+=int(ok)
+            if not ok:last=(result or {}).get('error','执行失败')
+            if i<count-1:time.sleep(random.uniform(2,4))
+        except Exception as e:last=str(e)
+    return {'remark':remark,'success':success>0,'success_count':success,'fail_count':count-success,'total':count,'msg':last}
 
 def cmd_progress():
-    user_accounts = get_user_accounts(userid)
-
-    if not user_accounts:
-        sender.reply("""📭 暂无绑定账号
-
-💡 请先发送"卡看登录"绑定账号""")
+    accounts=get_user_accounts(userid)
+    if not accounts:
+        sender.reply('❌ 暂无账号')
         return
-
-    QLurl, ClientID, ClientSecret, env_name, coin_price, money_price, zsm, coin_bucket, admin_ids, wechat_enabled, proxy_url = get_plugin_config()
-
-    valid_accounts = []
-    for remark in user_accounts:
-        auth_status = get_account_auth(remark)
-        _, is_valid = check_auth_status(auth_status)
-        if is_valid:
-            valid_accounts.append(remark)
-
-    if not valid_accounts:
-        sender.reply("""❌ 没有已授权的账号
-
-💡 请先发送"卡看管理"进行授权""")
-        return
-
-    if len(valid_accounts) > 1:
-        message = """=====卡看刷进度=====
-📱 已授权账号列表:
-------------------
-"""
-        for idx, remark in enumerate(valid_accounts, 1):
-            auth_status = get_account_auth(remark)
-            _, is_valid = check_auth_status(auth_status)
-            status = "✅" if is_valid else "❌"
-            message += f"{idx}. {remark} {status}\n"
-
-        message += """------------------
-📝 请选择账号（多选用逗号分隔）
-💡 输入"0"选择全部已授权账号
-⚠️ 输入"q"退出
-=================="""
-
-        sender.reply(message)
-        choice = sender.input(120000, 5000, False)
-
-        if not choice or choice.lower() == 'q':
-            sender.reply('✅ 已取消操作')
-            return
-
-        try:
-            if choice.strip() == '0':
-                selected = valid_accounts
-            else:
-                indices = [int(x.strip()) for x in choice.split(',')]
-                selected = [valid_accounts[i-1] for i in indices if 1 <= i <= len(valid_accounts)]
-
-                if not selected:
-                    sender.reply('❌ 无有效选择')
-                    return
-        except:
-            sender.reply('❌ 输入格式错误')
-            return
-    else:
-        selected = valid_accounts
-
-    sender.reply(f"""=====刷进度设置=====
-📱 已选择 {len(selected)} 个账号
-------------------
-📝 请输入刷取次数 (1-100)
-💡 推荐: 30-50次
-⚠️ 输入"q"退出
-==================""")
-
-    count_input = sender.input(120000, 5000, False)
-
-    if not count_input or count_input.lower() == 'q':
-        sender.reply('✅ 已取消操作')
-        return
-
-    try:
-        count = int(count_input)
-        if count < 1 or count > 100:
-            sender.reply('❌ 次数必须在1-100之间')
-            return
-    except:
-        sender.reply('❌ 输入格式错误')
-        return
-
-    sender.reply(f"""=====确认执行=====
-📱 账号数量: {len(selected)}个
-🔄 刷取次数: {count}次/账号
-------------------
-确认执行请回复【y】
-取消请回复【n】
-==================""")
-
-    confirm = sender.input(60000, 5000, False)
-    if not confirm or confirm.lower() != 'y':
-        sender.reply('✅ 已取消操作')
-        return
-
-    kakan_api = KaKanAPI()
-
-    max_workers = 10
-    total_accounts = len(selected)
-    batch_num = (total_accounts + max_workers - 1) // max_workers
-
-    all_results = []
-    start_time = time.time()
-
-    sender.reply(f"🔄 开始执行刷进度任务...\n📊 共 {total_accounts} 个账号，分 {batch_num} 批执行")
-
-    for batch_idx in range(batch_num):
-        batch_start = batch_idx * max_workers
-        batch_end = min(batch_start + max_workers, total_accounts)
-        batch_accounts = selected[batch_start:batch_end]
-
-        batch_proxy, batch_proxy_info = get_proxy(proxy_url)
-
-        sender.reply(f"📦 第 {batch_idx + 1}/{batch_num} 批: 账号 {batch_start + 1}-{batch_end}\n🌐 代理: {batch_proxy_info}")
-
-        with ThreadPoolExecutor(max_workers=len(batch_accounts)) as executor:
-            futures = {
-                executor.submit(execute_single_account_progress, kakan_api, remark, count, batch_proxy): remark
-                for remark in batch_accounts
-            }
-
-            for future in as_completed(futures):
-                try:
-                    result = future.result()
-                    all_results.append(result)
-
-                    if result['success']:
-                        sender.reply(f"✅ {result['remark']}: 成功{result['success_count']}/{result['total']}次")
-                    else:
-                        sender.reply(f"❌ {result['remark']}: {result['msg']}")
-                except Exception as e:
-                    remark = futures[future]
-                    all_results.append({'remark': remark, 'success': False, 'msg': str(e)})
-                    sender.reply(f"❌ {remark}: 执行异常")
-
-        if batch_idx < batch_num - 1:
-            time.sleep(2)
-
-    end_time = time.time()
-    elapsed = end_time - start_time
-    minutes = int(elapsed // 60)
-    seconds = int(elapsed % 60)
-
-    success_accounts = sum(1 for r in all_results if r['success'])
-    fail_accounts = sum(1 for r in all_results if not r['success'])
-
-    total_success = sum(r.get('success_count', 0) for r in all_results if r['success'])
-    total_fail = sum(r.get('fail_count', 0) for r in all_results if r['success'])
-
-    sender.reply(f"""=====执行完成=====
-✅ 成功账号: {success_accounts}个
-❌ 失败账号: {fail_accounts}个
-------------------
-📊 总成功次数: {total_success}次
-📊 总失败次数: {total_fail}次
-⏰ 总耗时: {minutes}分{seconds}秒
-💡 使用独立代理IP
-==================""")
+    sender.reply('选择账号序号（0=全部）：\n'+'\n'.join(f'[{i}] {a}' for i,a in enumerate(accounts,1)))
+    indexes=parse_batch_selection(sender.input(120000,5000,False),len(accounts))
+    if not indexes:return
+    selected=[accounts[i] for i in indexes]
+    sender.reply('请输入次数（1-100）')
+    try:count=int(sender.input(120000,5000,False))
+    except:return
+    if count not in range(1,101):return
+    *_,proxy_url=get_plugin_config();proxy,_=get_proxy(proxy_url);api=KaKanAPI()
+    with ThreadPoolExecutor(max_workers=min(10,len(selected))) as pool:
+        futures=[pool.submit(execute_single_account_progress,api,a,count,proxy) for a in selected]
+        for f in as_completed(futures):
+            r=f.result();sender.reply(f'{"✅" if r["success"] else "❌"} {r["remark"]}: {r.get("success_count",0)}/{r.get("total",count)} {r.get("msg","")}')
 
 msg = sender.getMessage()
 

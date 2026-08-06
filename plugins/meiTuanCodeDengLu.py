@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 工具]
 # [author: sillyGirl]
-# [version: v1.1.2]
+# [version: v1.1.4]
 # [public: true]
 # [admin: true]
 # [rule: raw ^\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\s*(登录|取[Tt]oken)?\s*([^\s]+)?\s*$]
@@ -30,7 +30,7 @@ from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence, Tuple
 SmallCat = Any
 
-from sillygirl import container, form, sender as s, utils
+from sillygirl import container, plugin, sender as s, user
 
 try:
     import ast as _sg_ast
@@ -40,7 +40,6 @@ try:
     import decimal as decimal
 except Exception:
     decimal = None
-
 
 MTG_BASE64_ALPHABET = "ZmserbBoHQtNP+wOcza/LpngG8yJq42KWYj0DSfdikx3VT16IlUAFM97hECvuRX5"
 MURMUR_M = 1540483477
@@ -64,11 +63,11 @@ DEFAULTS = {
     "debug": False,
 }
 
-plugin_config = form(
+plugin_config = plugin.Form(
     {
-        "enable": form.boolean().title("是否启用").default(True),
+        "enable": plugin.Form.boolean().title("是否启用").default(True),
         "smallcat_id": (
-            form.integer()
+            plugin.Form.integer()
             .title("smallcat 编号")
             .description("后台 smallcat 页面里的编号，从 1 开始；AUTH 使用面板配置")
             .widget("smallcat-panel")
@@ -76,7 +75,7 @@ plugin_config = form(
             .default(1)
         ),
         "account_mode": (
-            form.string()
+            plugin.Form.string()
             .title("openid 获取模式")
             .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
             .options(["authorized", "manual"])
@@ -84,45 +83,45 @@ plugin_config = form(
             .default("authorized")
         ),
         "manual_openids": (
-            form.string()
+            plugin.Form.string()
             .title("手动 openid")
             .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
             .widget("textarea")
             .default("")
         ),
         "account_selector": (
-            form.string()
+            plugin.Form.string()
             .title("执行账号")
             .description("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
             .default("")
         ),
         "proxy_url": (
-            form.string()
+            plugin.Form.string()
             .title("业务请求代理")
             .description("默认留空直连；仅在明确需要时填写 http/https 代理")
             .default("")
         ),
         "request_timeout": (
-            form.integer().title("请求超时秒数").min(5).max(90).default(25)
+            plugin.Form.integer().title("请求超时秒数").min(5).max(90).default(25)
         ),
         "sync_panel": (
-            form.select([
+            plugin.Form.select([
                 {"label": "不同步", "value": "none"},
                 {"label": "同步青龙", "value": "qinglong"},
                 {"label": "同步呆呆", "value": "daidai"},
             ]).title("同步目标").description("青龙/呆呆容器编号会根据后台容器列表动态渲染").default("none")
         ),
         "qinglong_id": (
-            form.integer().title("青龙编号").description("后台青龙页面里的编号，从 1 开始").widget("qinglong-panel").min(1).default(1)
+            plugin.Form.integer().title("青龙编号").description("后台青龙页面里的编号，从 1 开始").widget("qinglong-panel").min(1).default(1)
         ),
         "daidai_id": (
-            form.integer().title("呆呆编号").description("后台呆呆页面里的编号，从 1 开始").widget("daidai-panel").min(1).default(1)
+            plugin.Form.integer().title("呆呆编号").description("后台呆呆页面里的编号，从 1 开始").widget("daidai-panel").min(1).default(1)
         ),
-        "ql_env_name": form.string().title("环境变量名").default("MT_TOKEN"),
+        "ql_env_name": plugin.Form.string().title("环境变量名").default("MT_TOKEN"),
         "ql_remarks": (
-            form.string().title("变量备注").description("留空自动使用账号名称或 userId").default("")
+            plugin.Form.string().title("变量备注").description("留空自动使用账号名称或 userId").default("")
         ),
-        "debug": form.boolean().title("调试日志").default(False),
+        "debug": plugin.Form.boolean().title("调试日志").default(False),
     }
 )
 import httpx
@@ -130,13 +129,10 @@ import httpx
 class _Undefined:
     pass
 
-
 UNDEFINED = _Undefined()
-
 
 def js_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
-
 
 def js_str(value: Any) -> str:
     if value is UNDEFINED:
@@ -153,14 +149,11 @@ def js_str(value: Any) -> str:
         return ",".join(js_str(x) for x in value)
     return str(value)
 
-
 def js_encode_uri_component(value: Any) -> str:
     return urllib.parse.quote(js_str(value), safe="-_.!~*'()")
 
-
 def mtg_fixed_encode(value: Any) -> str:
     return urllib.parse.quote(js_str(value), safe="-_.~")
-
 
 def bytes_from_js_uri(value: Any) -> List[int]:
     encoded = js_encode_uri_component(value)
@@ -174,7 +167,6 @@ def bytes_from_js_uri(value: Any) -> List[int]:
             out.append(ord(encoded[i]))
             i += 1
     return out
-
 
 def parse_query_like_js(query: str, missing_as_undefined: bool = False) -> List[List[str]]:
     if not query:
@@ -191,7 +183,6 @@ def parse_query_like_js(query: str, missing_as_undefined: bool = False) -> List[
             value = urllib.parse.unquote(parts[1].replace("+", " "))
             result.append([key, value])
     return result
-
 
 def push_encoded_pairs(target: List[List[str]], source: Any, object_mode: bool = False) -> None:
     if object_mode:
@@ -210,7 +201,6 @@ def push_encoded_pairs(target: List[List[str]], source: Any, object_mode: bool =
         for key, value in source or []:
             target.append([mtg_fixed_encode(key), mtg_fixed_encode(value)])
 
-
 def parse_url_by_jsguard_regex(url: str) -> Tuple[str, str]:
     matched = re.match(
         r"^(?:([A-Za-z]+):)?(\/{0,3})([0-9.\-A-Za-z]+)(?::(\d+))?(?:\/([^?#]*))?(?:\?([^#]*))?(?:#(.*))?$",
@@ -224,7 +214,6 @@ def parse_url_by_jsguard_regex(url: str) -> Tuple[str, str]:
         if matched.group(6):
             query = matched.group(6)
     return path, query
-
 
 def build_signed_request_bytes(
     method: str,
@@ -290,28 +279,22 @@ def build_signed_request_bytes(
     }
     return signed_bytes, debug
 
-
 def u32(value: int) -> int:
     return value & 0xFFFFFFFF
-
 
 def int_to_be4(value: int) -> List[int]:
     value = u32(value)
     return [(value >> 24) & 255, (value >> 16) & 255, (value >> 8) & 255, value & 255]
 
-
 def hex_to_bytes_loose(hex_text: str) -> List[int]:
     return [int(hex_text[i : i + 2], 16) for i in range(0, len(hex_text), 2)]
-
 
 def bytes_to_hex(byte_values: Iterable[int]) -> str:
     return "".join(f"{item & 255:02x}" for item in byte_values)
 
-
 def js_multiply_m(value: int) -> int:
     value = u32(value)
     return u32(MURMUR_M * (value & 0xFFFF) + (((MURMUR_M * ((value >> 16) & 0xFFFF)) & 0xFFFF) << 16))
-
 
 def mtg_hash_ge(byte_values: Sequence[int], seed: int) -> int:
     remain = len(byte_values)
@@ -340,7 +323,6 @@ def mtg_hash_ge(byte_values: Sequence[int], seed: int) -> int:
     value = js_multiply_m(value ^ (value >> 13))
     return u32((value ^ (value >> 15)) ^ MURMUR_M)
 
-
 def mtg_crc32_gn(byte_values: Sequence[int]) -> int:
     table: List[int] = []
     for item in range(256):
@@ -354,11 +336,9 @@ def mtg_crc32_gn(byte_values: Sequence[int]) -> int:
         crc = u32(table[(crc ^ (item & 255)) & 255] ^ (crc >> 8))
     return u32(0x12477CDF ^ crc)
 
-
 def md5_word_array(byte_values: Sequence[int]) -> List[int]:
     digest = hashlib.md5(bytes(byte_values)).digest()
     return list(struct.unpack("<4I", digest))
-
 
 def md5_hex_from_words(words: Sequence[int]) -> str:
     out: List[int] = []
@@ -366,7 +346,6 @@ def md5_hex_from_words(words: Sequence[int]) -> str:
         word = u32(word)
         out.extend([word & 255, (word >> 8) & 255, (word >> 16) & 255, (word >> 24) & 255])
     return bytes_to_hex(out)
-
 
 def mtg_custom_base64(byte_values: Sequence[int]) -> str:
     result: List[str] = []
@@ -394,7 +373,6 @@ def mtg_custom_base64(byte_values: Sequence[int]) -> str:
         )
     return "".join(result)
 
-
 def mtg_rc4_variant(key: Sequence[int], text: str) -> List[int]:
     state = list(range(256))
     j = 0
@@ -411,7 +389,6 @@ def mtg_rc4_variant(key: Sequence[int], text: str) -> List[int]:
         state[i], state[j] = state[j], state[i]
         out.append(ord(ch) ^ state[(state[i] + state[j]) % 256])
     return out
-
 
 def build_qn(
     appid: str,
@@ -443,7 +420,6 @@ def build_qn(
     if b10 is not UNDEFINED:
         qn["b10"] = b10
     return qn
-
 
 def build_mtgsig(
     method: str,
@@ -540,7 +516,6 @@ def build_mtgsig(
     }
     return mtgsig, debug
 
-
 def build_windows_system_object(
     *,
     model: str = "microsoft",
@@ -610,13 +585,11 @@ def build_windows_system_object(
         ]
     )
 
-
 def make_jsguard_random_letters() -> str:
     letters: List[str] = []
     for _ in range(7):
         letters.append(chr(random.randrange(25) | ord("A")))
     return "".join(letters)
-
 
 def make_local_dfpid(
     timestamp_ms: Optional[int] = None,
@@ -647,7 +620,6 @@ def make_local_dfpid(
     crc_prefix = str(zlib.crc32(base.encode("utf-8")) & 0xFFFFFFFF)[:4]
     return base + crc_prefix
 
-
 def make_dfpid(
     timestamp_ms: Optional[int] = None,
     seed: str = "PYMTGSIG",
@@ -657,7 +629,6 @@ def make_dfpid(
 ) -> str:
     letters = (seed.upper().replace("_", "") + "AAAAAAA")[:7]
     return make_local_dfpid(timestamp_ms=timestamp_ms, openid=openid, system_object=system_object, random_letters=letters)
-
 
 def make_session_id(platform: str = "windows", mmp: bool = False) -> str:
     hex_chars = list("0123456789abcdef")
@@ -678,7 +649,6 @@ def make_session_id(platform: str = "windows", mmp: bool = False) -> str:
     }.get((platform or "").lower(), 9)
     return raw_uuid32 + "0" + str(platform_index)
 
-
 def aes_cbc_pkcs7_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
     pad_len = 16 - (len(data) % 16)
     padded = data + bytes([pad_len]) * pad_len
@@ -691,7 +661,6 @@ def aes_cbc_pkcs7_encrypt(data: bytes, key: bytes, iv: bytes) -> bytes:
 
         encryptor = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
         return encryptor.update(padded) + encryptor.finalize()
-
 
 def build_dfp_system_array(system_object: "OrderedDict[str, Any]") -> List[Any]:
     fields = [
@@ -729,7 +698,6 @@ def build_dfp_system_array(system_object: "OrderedDict[str, Any]") -> List[Any]:
         else:
             result.append(value)
     return result
-
 
 def build_siua(
     *,
@@ -776,7 +744,6 @@ def build_siua(
     gz = gzip.compress(plain, compresslevel=6, mtime=now_ms // 1000)
     encrypted = aes_cbc_pkcs7_encrypt(gz, b"z7Jut6Ywr2Pe5Nhx", b"0807060504030201")
     return "w1.6" + base64.b64encode(encrypted).decode("ascii")
-
 
 def build_pure_identity(
     *,
@@ -825,10 +792,8 @@ def build_pure_identity(
         ]
     )
 
-
 def clean_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()
-
 
 def compact_json(value: Any, limit: int = 500) -> str:
     try:
@@ -836,7 +801,6 @@ def compact_json(value: Any, limit: int = 500) -> str:
     except Exception:
         text = str(value)
     return text if len(text) <= limit else text[:limit] + "..."
-
 
 def decode_json_strings(value: Any, depth: int = 0) -> Any:
     if depth > 8 or not isinstance(value, str):
@@ -848,7 +812,6 @@ def decode_json_strings(value: Any, depth: int = 0) -> Any:
         return decode_json_strings(json.loads(text), depth + 1)
     except Exception:
         return value
-
 
 def decode_json_tree(value: Any, depth: int = 0) -> Any:
     if depth > 10:
@@ -862,7 +825,6 @@ def decode_json_tree(value: Any, depth: int = 0) -> Any:
         return {key: decode_json_tree(item, depth + 1) for key, item in value.items()}
     return value
 
-
 def response_message(payload: Any) -> str:
     value = decode_json_tree(payload)
     if not isinstance(value, dict):
@@ -873,7 +835,6 @@ def response_message(payload: Any) -> str:
             return clean_text(item if not isinstance(item, (dict, list)) else compact_json(item, 400))
     nested = value.get("data")
     return response_message(nested) if nested is not None and nested is not value else ""
-
 
 def smallcat_error(payload: Any) -> str:
     value = decode_json_tree(payload)
@@ -889,7 +850,6 @@ def smallcat_error(payload: Any) -> str:
         return outer + "：" + nested
     return outer or nested or "SmallCat 接口返回失败状态"
 
-
 def unwrap_smallcat(payload: Any) -> Any:
     value = decode_json_tree(payload)
     if not isinstance(value, dict):
@@ -902,7 +862,6 @@ def unwrap_smallcat(payload: Any) -> Any:
     if "code" in value and "data" in value and str(value.get("code")) in {"0", "200", "201"}:
         return decode_json_tree(value["data"])
     return value
-
 
 def find_deep_value(value: Any, keys: Sequence[str], pattern: str = "", depth: int = 0) -> str:
     if depth > 12 or value is None:
@@ -929,7 +888,6 @@ def find_deep_value(value: Any, keys: Sequence[str], pattern: str = "", depth: i
                 return found
     return ""
 
-
 def as_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
@@ -937,14 +895,12 @@ def as_bool(value: Any) -> bool:
         return value != 0
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
-
 def positive_int(value: Any, fallback: int) -> int:
     try:
         number = int(value)
         return number if number > 0 else fallback
     except Exception:
         return fallback
-
 
 def normalize_config(raw: Any) -> Dict[str, Any]:
     source = raw if isinstance(raw, dict) else {}
@@ -969,7 +925,6 @@ def normalize_config(raw: Any) -> Dict[str, Any]:
         raise RuntimeError("环境变量名格式异常")
     return config
 
-
 def parse_command(content: str) -> Dict[str, str]:
     matched = re.fullmatch(
         r"\s*(?:美团|meituan)\s*(?:登录|取token)?\s*([^\s]+)?\s*",
@@ -982,7 +937,6 @@ def parse_command(content: str) -> Dict[str, str]:
     if len(code) > 4096:
         raise RuntimeError("CODE 长度异常")
     return {"code": code}
-
 
 def normalize_accounts(payload: Any) -> List[Dict[str, Any]]:
     value = unwrap_smallcat(payload)
@@ -1001,10 +955,8 @@ def normalize_accounts(payload: Any) -> List[Dict[str, Any]]:
             accounts.append(account)
     return accounts
 
-
 def split_openids(value: Any) -> set[str]:
     return {item for item in re.split(r"[,，;；\s]+", str(value or "")) if item}
-
 
 async def load_smallcat_accounts(smallcat: SmallCat, config: Dict[str, Any]) -> List[Dict[str, Any]]:
     wanted = split_openids(config["manual_openids"]) if config["account_mode"] == "manual" else await authorized_openids()
@@ -1012,14 +964,13 @@ async def load_smallcat_accounts(smallcat: SmallCat, config: Dict[str, Any]) -> 
     accounts = normalize_accounts(payload)
     return [account for account in accounts if account["openid"] in wanted] if wanted else accounts
 
-
 async def authorized_openids() -> set[str]:
-    users = await utils.userList()
+    users = await user.getUserList()
     allowed: set[str] = set()
-    for user in users if isinstance(users, list) else []:
-        if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
+    for account_user in users if isinstance(users, list) else []:
+        if not isinstance(account_user, dict) or account_user.get("disabled") or not account_user.get("authorized"):
             continue
-        bindings = user.get("bindings") if isinstance(user.get("bindings"), dict) else {}
+        bindings = account_user.get("bindings") if isinstance(account_user.get("bindings"), dict) else {}
         for openid in bindings.get("smallcat_openids") or []:
             value = str(openid or "").strip()
             if value:
@@ -1027,7 +978,6 @@ async def authorized_openids() -> set[str]:
     if not allowed:
         raise RuntimeError("没有普通用户授权的 SmallCat 账号")
     return allowed
-
 
 def select_accounts(accounts: List[Dict[str, Any]], selector: str) -> List[Dict[str, Any]]:
     enabled = [account for account in accounts if not account.get("disabled")]
@@ -1053,13 +1003,11 @@ def select_accounts(accounts: List[Dict[str, Any]], selector: str) -> List[Dict[
             return [account]
     raise RuntimeError(f"SmallCat 未找到账号：{text}")
 
-
 def account_name(account: Dict[str, Any]) -> str:
     return str(
         account.get("displayName") or account.get("nickname") or account.get("name")
         or account.get("remark") or account.get("openid") or "账号"
     ).strip()
-
 
 def _login_params() -> "OrderedDict[str, Any]":
     return OrderedDict(
@@ -1078,7 +1026,6 @@ def _login_params() -> "OrderedDict[str, Any]":
         ]
     )
 
-
 async def get_wx_code(smallcat: SmallCat, openid: str) -> str:
     raw = await smallcat.getCode({"openid": openid, "appid": MEITUAN_APPID})
     try:
@@ -1089,7 +1036,6 @@ async def get_wx_code(smallcat: SmallCat, openid: str) -> str:
     if not code:
         raise RuntimeError("SmallCat wx.login 响应缺少 code：" + compact_json(raw, 600))
     return code
-
 
 def build_login_request(code: str) -> Tuple[str, bytes, Dict[str, str], Dict[str, Any]]:
     params = _login_params()
@@ -1121,7 +1067,6 @@ def build_login_request(code: str) -> Tuple[str, bytes, Dict[str, str], Dict[str
     body = urllib.parse.urlencode(payload).encode("utf-8")
     return full_url, body, headers, {"identity": identity, "signature": debug}
 
-
 def create_http_client(proxy_url: str, timeout: int):
     options: Dict[str, Any] = {"timeout": float(timeout), "verify": False}
     if proxy_url:
@@ -1133,7 +1078,6 @@ def create_http_client(proxy_url: str, timeout: int):
         if proxy:
             options["proxies"] = proxy
         return httpx.AsyncClient(**options)
-
 
 async def meituan_code_login(code: str, proxy_url: str = "", timeout: int = 25, debug_enabled: bool = False) -> Dict[str, Any]:
     full_url, body, headers, debug = build_login_request(code)
@@ -1188,7 +1132,6 @@ async def meituan_code_login(code: str, proxy_url: str = "", timeout: int = 25, 
         result["debug"] = {"http_status": response.status_code, **debug["signature"]}
     return result
 
-
 def env_items(payload: Any) -> List[Dict[str, Any]]:
     value = decode_json_tree(payload)
     if isinstance(value, dict):
@@ -1197,12 +1140,10 @@ def env_items(payload: Any) -> List[Dict[str, Any]]:
         value = value.get("items") or value.get("list") or value.get("data") or []
     return [item for item in value if isinstance(item, dict)] if isinstance(value, list) else []
 
-
 async def sync_panel_env(config: Dict[str, Any], result: Dict[str, Any], label: str) -> str:
     if config["sync_panel"] == "daidai":
         return await sync_env(config, container.DaiDai({"id": config["daidai_id"]}), result, label)
     return await sync_env(config, container.QingLong({"id": config["qinglong_id"]}), result, label)
-
 
 async def sync_env(config: Dict[str, Any], panel: Any, result: Dict[str, Any], label: str) -> str:
     env_name = config["ql_env_name"]
@@ -1234,17 +1175,14 @@ async def sync_env(config: Dict[str, Any], panel: Any, result: Dict[str, Any], l
     await panel.createEnv(env)
     return "已创建"
 
-
 def sync_panel_label(config: Dict[str, Any]) -> str:
     return "呆呆" if config.get("sync_panel") == "daidai" else "青龙"
-
 
 def mask_identifier(value: Any, keep: int = 5) -> str:
     text = str(value or "")
     if len(text) <= keep * 2:
         return text
     return text[:keep] + "***" + text[-keep:]
-
 
 async def run_account(smallcat: SmallCat, account: Dict[str, Any], config: Dict[str, Any]) -> str:
     label = account_name(account)
@@ -1274,7 +1212,6 @@ async def run_account(smallcat: SmallCat, account: Dict[str, Any], config: Dict[
         lines.append(f"结果：失败 | {exc}")
     return "\n".join(lines)
 
-
 async def run_direct_code(code: str, config: Dict[str, Any]) -> str:
     lines = ["[INFO] ▶ CODE 来源：命令参数"]
     result = await meituan_code_login(code, config["proxy_url"], config["request_timeout"], config["debug"])
@@ -1290,7 +1227,6 @@ async def run_direct_code(code: str, config: Dict[str, Any]) -> str:
             lines.append(f"[WARNING] {sync_panel_label(config)}同步失败：{exc}")
     lines.append("结果：成功")
     return "\n".join(lines)
-
 
 async def main() -> None:
     if not await s.isAdmin():
@@ -1315,7 +1251,6 @@ async def main() -> None:
         await s.reply("\n\n".join(outputs))
     except Exception as exc:
         await s.reply("美团Code登录执行失败：" + str(exc))
-
 
 if os.environ.get("MEITUAN_PLUGIN_TEST") != "1":
     asyncio.run(main())

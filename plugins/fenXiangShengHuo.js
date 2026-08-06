@@ -17,7 +17,7 @@ const crypto = require('node:crypto');
 const http = require('node:http');
 const https = require('node:https');
 const zlib = require('node:zlib');
-const { sender: s, Bucket, form, console } = require('sillygirl');
+const { sender: s, Bucket, plugin, console } = require('sillygirl');
 
 let userIdx = 0;
 let strSplitor = '#';
@@ -31,13 +31,13 @@ const DEFAULTS = {
   request_timeout: 20000,
 };
 
-const pluginConfig = new form({
-  enable: form.boolean().title('是否启用').default(DEFAULTS.enable),
-  cron_run: form.boolean().title('定时自动运行').description('cron 触发时自动执行粉象一键运行').default(DEFAULTS.cron_run),
-  random_user: form.boolean().title('任务账号乱序').description('管理员一键运行时是否随机账号顺序').default(DEFAULTS.random_user),
-  sign_date: form.string().title('临时签到期数').description('粉象临时签到 activityId，默认沿用旧插件').default(DEFAULTS.sign_date),
-  sign_end_date: form.string().title('临时签到结束日期').description('格式如 20260504').default(DEFAULTS.sign_end_date),
-  request_timeout: form.integer().title('接口超时毫秒').min(3000).max(120000).default(DEFAULTS.request_timeout),
+const pluginConfig = new plugin.Form({
+  enable: plugin.Form.boolean().title('是否启用').default(DEFAULTS.enable),
+  cron_run: plugin.Form.boolean().title('定时自动运行').description('cron 触发时自动执行粉象一键运行').default(DEFAULTS.cron_run),
+  random_user: plugin.Form.boolean().title('任务账号乱序').description('管理员一键运行时是否随机账号顺序').default(DEFAULTS.random_user),
+  sign_date: plugin.Form.string().title('临时签到期数').description('粉象临时签到 activityId，默认沿用旧插件').default(DEFAULTS.sign_date),
+  sign_end_date: plugin.Form.string().title('临时签到结束日期').description('格式如 20260504').default(DEFAULTS.sign_end_date),
+  request_timeout: plugin.Form.integer().title('接口超时毫秒').min(3000).max(120000).default(DEFAULTS.request_timeout),
 });
 
 let runtimeConfig = Object.assign({}, DEFAULTS);

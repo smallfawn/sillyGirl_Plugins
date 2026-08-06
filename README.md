@@ -30,13 +30,14 @@ Action 会在提交插件后自动扫描依赖并回写 `[depe: ...]`：
 
 ## 运行时约定
 
-- NodeJS/Python 插件优先使用 SillyGirl 内联函数：`sender`、`Bucket`、`container`、`utils`、`form`；新增代码不要再封装重复运行时。
+- NodeJS/Python 插件优先使用 SillyGirl 内联函数：`sender`、`Bucket`、`plugin.Form`、`user.Form`、`user`、`container`、`utils`；新增代码不要再封装重复运行时。
 - Python 插件统一按 Python 3.12 运行时维护；不要使用 Python 3.13/3.14 专属语法或标准库 API。
 - 青龙/呆呆/smallcat 容器能力走 `container` 或运行时兼容封装读取后台容器配置，不再随插件安装额外文件。
 - 新增或维护插件只写 `[title: xxx]`、`[name: 文件名]`、`[rule: xxx]`、`[depe: [...]]` 这类头部注释；不再写 at 符号元数据或 param 注释。
 - `[version: ...]` 固定使用 `v1.x.y` 三段版本号（例如 `v1.0.0`）；主版本固定为 `1`，`x`、`y` 只能是 `0-9`，补丁位到 `10` 时十进制进位（如 `v1.1.10` 写成 `v1.2.0`）。
 - 仓库内不放私钥、WxPusher AppToken、接口签名 Token；确实需要时放到插件配置表单。
 - 插件需要持久化文本、JSON、CSV 等数据时，统一写入傻妞存储桶，不直接读写本地文件。
+- 带 `[cron: ...]` 的插件必须在顶层 `plugin.Form` 声明 boolean 字段 `enable`。该字段是插件总开关；关闭后消息、定时和启动触发都跳过，但保留 Cron 表达式，重新开启后自动恢复。
 
 ## 插件清单
 
@@ -58,4 +59,4 @@ Action 会在提交插件后自动扫描依赖并回写 `[depe: ...]`：
 
 SillyGirl 使用 `sender.pushAdmin(content, options)` 推送管理员；定时任务也可以继续使用 `sender.reply()`，实际投递目标取决于任务 Sender 的平台和接收人配置。
 
-配置表单统一使用 SillyGirl v2 链式写法：`const config = new form({ token: form.string().title("Token").default("") })`，插件安装时会自动注册到后台「插件配置」。
+插件配置统一使用 `new plugin.Form({...})`；Home 普通用户参数使用 `new user.Form({...})`。用户表单可通过 `required/match/err` 校验、通过 `multiple/keyBy` 处理多次提交，插件使用 `user.getUserList({ withRecords: true })` 或 `user.getUser(...)` 读取当前插件的数据。

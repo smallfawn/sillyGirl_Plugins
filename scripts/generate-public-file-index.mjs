@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const root = process.cwd();
 const pluginsDir = path.join(root, "plugins");
@@ -8,6 +10,7 @@ const repo = process.env.GITHUB_REPOSITORY || "smallfawn/sillyGirl_Plugins";
 const branch = process.env.GITHUB_REF_NAME || "main";
 const repoUrl = `https://github.com/${repo}`;
 const pluginExts = new Set([".js", ".py"]);
+const execFileAsync = promisify(execFile);
 
 function normalizeMetaKey(key) {
   const normalized = String(key || "").trim().toLowerCase();
@@ -51,6 +54,24 @@ function parseDependencies(value) {
   }
 }
 
+async function pluginPublishedAt(pluginFile, relativePath) {
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      ["log", "--follow", "--format=%aI", "--", relativePath],
+      { cwd: root, encoding: "utf8", windowsHide: true },
+    );
+    const history = String(stdout || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    const value = history.at(-1);
+    if (value && !Number.isNaN(Date.parse(value))) return new Date(value).toISOString();
+  } catch {
+    // 未安装 Git 或文件尚未提交时使用文件时间，确保本地新插件也能进入“最新发布”。
+  }
+  const info = await stat(pluginFile);
+  const value = info.birthtimeMs > 0 ? info.birthtime : info.mtime;
+  return value.toISOString();
+}
+
 const files = await readdir(pluginsDir, { withFileTypes: true });
 const pluginFiles = files
   .filter((entry) => entry.isFile() && pluginExts.has(path.extname(entry.name).toLowerCase()))
@@ -67,6 +88,7 @@ for (const pluginFile of pluginFiles) {
   const author = meta.author || repo.split("/")[0];
   const id = pluginId(`${repo}@${branch}/${relativePath}`);
   const rawBase = `https://raw.githubusercontent.com/${repo}/${branch}`;
+  const createAt = await pluginPublishedAt(pluginFile, relativePath);
   result[id] = {
     id,
     name,
@@ -84,6 +106,7 @@ for (const pluginFile of pluginFiles) {
     dependencies: parseDependencies(meta.depe),
     type: meta.type || pluginType(pluginFile),
     origin: repoUrl,
+    create_at: createAt,
   };
 }
 

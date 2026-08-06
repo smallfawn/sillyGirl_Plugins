@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v1.0.3]
+# [version: v1.0.5]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -17,7 +17,11 @@ import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
+
+_runtime_config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+})
 try:
     import ast as _sg_ast
 except Exception:
@@ -31,48 +35,29 @@ _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
-    def call(name,*a,**k): return _sg_run(getattr(s,name)(*a,**k))
-    def listen(timeout=60000,*a,**k):
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
+    def wait(timeout=60000,*a,**k):
         try:
-            r=call("listen", {"timeout": int(timeout or 0)})
-            return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(
-        getUserID=lambda:call("getUserId"), getUserId=lambda:call("getUserId"), getMessage=lambda:call("getContent"), getContent=lambda:call("getContent"),
-        getUserName=lambda:call("getUserName"), getNickname=lambda:call("getUserName"), getChatID=lambda:call("getChatId"), getChatId=lambda:call("getChatId"),
-        getImtype=lambda:call("getPlatform"), getPlatform=lambda:call("getPlatform"), getMessageID=lambda:call("getMessageId"), getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""), getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),
-        isAdmin=lambda:bool(call("isAdmin")), reply=lambda msg="":call("reply", str(msg)), replyImage=lambda url="":call("reply", str(url) if str(url).startswith("[") else f"[CQ:image,file={url}]"),
-        listen=listen, input=listen, waitInput=listen, setContinue=lambda *a,**k:call("continue_"), breakIn=lambda *a,**k:call("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]
-        return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,13 +70,11 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; platform=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); group=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); content=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title)
-    return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(content or "")}))
-def _sg_notify(msg,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(msg), {"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
-    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
+    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -123,12 +106,8 @@ senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
-
-
-
 def has_bucket_value(value):
     return value is not None and str(value).strip() != ""
-
 
 def bucket_get_first(primary_bucket, key, legacy_buckets=None, default=""):
     value = sg.bucketGet(primary_bucket, key)
@@ -136,14 +115,11 @@ def bucket_get_first(primary_bucket, key, legacy_buckets=None, default=""):
         return value
     return default
 
-
 def bucket_set_primary(primary_bucket, key, value):
     sg.bucketSet(primary_bucket, key, value)
 
-
 def bucket_del_all(primary_bucket, key, legacy_buckets=None):
     sg.bucketDel(primary_bucket, key)
-
 
 def bucket_all_keys_merged(primary_bucket, legacy_buckets=None):
     merged = []
@@ -152,7 +128,6 @@ def bucket_all_keys_merged(primary_bucket, legacy_buckets=None):
             if item not in merged:
                 merged.append(item)
     return merged
-
 
 def parse_bucket_phone_list(raw):
     text = str(raw or "").strip()
@@ -173,11 +148,7 @@ def parse_bucket_phone_list(raw):
             phones.append(current)
     return list(dict.fromkeys(phones))
 
-
 FEIHE_API_APP_KEY = str(bucket_get_first(BUCKET_CONFIG, "appKey") or "").strip() or "TwUQ01lKS1Km5zlV2f7amsZc5EQYkTbv"
-
-
-
 
 class MomClubClient:
     def __init__(self, authorization):
@@ -343,7 +314,6 @@ class MomClubClient:
             time.sleep(random.randint(2, 4))
 
         return {"completed": completed, "messages": messages}
-
 
 class FeiHeAuto:
     def __init__(self, access_token):
@@ -524,7 +494,6 @@ class FeiHeAuto:
             return None
         return None
 
-
 def run_feihe_task_list(task_list, client):
     completed = 0
     for task in task_list or []:
@@ -541,7 +510,6 @@ def run_feihe_task_list(task_list, client):
         time.sleep(1)
         time.sleep(random.randint(3, 6))
     return completed
-
 
 def fetch_feihe_snapshot(access_token):
     client = FeiHeAuto(access_token)
@@ -564,7 +532,6 @@ def fetch_feihe_snapshot(access_token):
         "grade_name": sanitize_text(base_info.get("memberLevelName") or user_info.get("memberLevelName") or "飞鹤会员"),
         "new_token": client.token,
     }
-
 
 def run_feihe_account(access_token):
     client = FeiHeAuto(access_token)
@@ -599,7 +566,6 @@ def run_feihe_account(access_token):
         "new_token": new_token,
     }
 
-
 def run_momclub_account(authorization):
     client = MomClubClient(authorization)
     member_info_before = client.get_member_info()
@@ -620,24 +586,15 @@ def run_momclub_account(authorization):
         "points_after": points_after,
     }
 
-
-
-
 def safe_int(value, default=0):
     try:
         return int(str(value).strip())
     except Exception:
         return default
 
-
-
-
-
-
 def sanitize_text(value):
     text = str(value or "").strip()
     return text.replace("#", "-").replace("|", "-").replace("丨", "-").replace("\r", " ").replace("\n", " ")
-
 
 def mask_phone(phone):
     phone = str(phone or "").strip()
@@ -645,12 +602,8 @@ def mask_phone(phone):
         return phone
     return "{}****{}".format(phone[:3], phone[-4:])
 
-
 def today_date():
     return datetime.now().date()
-
-
-
 
 def read_input(prompt="", timeout=120000):
     if prompt:
@@ -663,12 +616,10 @@ def read_input(prompt="", timeout=120000):
         return None
     return text
 
-
 def get_user_phones(user_id=None):
     user_id = user_id or userid
     raw = sg.bucketGet(BUCKET_USER, user_id) or ""
     return parse_bucket_phone_list(raw)
-
 
 def save_user_phones(phones, user_id=None):
     user_id = user_id or userid
@@ -679,20 +630,17 @@ def save_user_phones(phones, user_id=None):
     else:
         bucket_del_all(BUCKET_USER, user_id)
 
-
 def add_user_phone(phone, user_id=None):
     phones = get_user_phones(user_id)
     if phone not in phones:
         phones.append(phone)
         save_user_phones(phones, user_id)
 
-
 def remove_user_phone(phone, user_id=None):
     phones = get_user_phones(user_id)
     if phone in phones:
         phones.remove(phone)
         save_user_phones(phones, user_id)
-
 
 def get_token_info(phone):
     raw = bucket_get_first(BUCKET_TOKEN, phone) or ""
@@ -704,7 +652,6 @@ def get_token_info(phone):
         "authorization": authorization,
         "display_name": mask_phone(phone),
     }
-
 
 def save_project_tokens(phone, feihe_token=None, authorization=None):
     current = get_token_info(phone)
@@ -719,19 +666,6 @@ def save_project_tokens(phone, feihe_token=None, authorization=None):
         return
     bucket_set_primary(BUCKET_TOKEN, phone, "{}#{}".format(new_feihe_token, new_authorization))
 
-
-def get_auth(phone):
-    return '2099-12-31'
-
-
-def save_auth(phone, expire_date):
-    return True
-
-
-def is_authorized(phone):
-    return True
-
-
 def get_owner_of_phone(phone):
     users = bucket_all_keys_merged(BUCKET_USER) or []
     for user_id in users:
@@ -739,19 +673,15 @@ def get_owner_of_phone(phone):
             return user_id
     return None
 
-
 def get_feihe_token(phone):
     return str(get_token_info(phone).get("feihe_token") or "").strip()
-
 
 def save_feihe_token(phone, access_token):
     save_project_tokens(phone, feihe_token=access_token)
 
-
 def get_today_earned(phone):
     key = "{}_{}".format(phone, today_date().strftime("%Y%m%d"))
     return safe_int(sg.bucketGet("dd_xmyx_daily", key) or 0, 0)
-
 
 def add_today_earned(phone, points):
     if points <= 0:
@@ -759,7 +689,6 @@ def add_today_earned(phone, points):
     key = "{}_{}".format(phone, today_date().strftime("%Y%m%d"))
     current = get_today_earned(phone)
     sg.bucketSet("dd_xmyx_daily", key, str(current + points))
-
 
 def has_project_binding(phone, project_name):
     project = str(project_name or "").strip().lower()
@@ -769,11 +698,6 @@ def has_project_binding(phone, project_name):
     if project == "momclub":
         return bool(str(token_info.get("authorization") or "").strip())
     return False
-
-
-
-
-
 
 def parse_bind_line(raw_text):
     text = str(raw_text or "").strip()
@@ -792,14 +716,12 @@ def parse_bind_line(raw_text):
         }
     return {"project": "auto", "credential": text}
 
-
 def is_valid_bind_item(item):
     if not item:
         return False
     if str(item.get("project") or "").strip().lower() == "combined":
         return bool(str(item.get("feihe_token") or "").strip() or str(item.get("authorization") or "").strip())
     return bool(str(item.get("credential") or "").strip())
-
 
 def parse_bind_inputs(raw_text):
     items = []
@@ -827,7 +749,6 @@ def parse_bind_inputs(raw_text):
         unique_items.append(item)
     return unique_items
 
-
 def fetch_momclub_snapshot(authorization):
     member_info = MomClubClient(authorization).get_member_info()
     if not member_info:
@@ -842,7 +763,6 @@ def fetch_momclub_snapshot(authorization):
         "points": member_info.get("points", 0),
     }
 
-
 def bind_or_update_momclub_account(raw_text, old_phone=None):
     authorization = str(raw_text or "").strip()
     if not authorization:
@@ -856,13 +776,9 @@ def bind_or_update_momclub_account(raw_text, old_phone=None):
         if not old_phone or phone != old_phone:
             return False, "该账号已被其他用户绑定，请稍后重试"
     if old_phone and old_phone != phone:
-        old_auth = get_auth(old_phone)
         old_feihe_token = get_feihe_token(old_phone)
         bucket_del_all(BUCKET_TOKEN, old_phone)
-        bucket_del_all(BUCKET_AUTH, old_phone)
         remove_user_phone(old_phone, userid)
-        if old_auth and not get_auth(phone):
-            save_auth(phone, old_auth)
         if old_feihe_token and not get_feihe_token(phone):
             save_feihe_token(phone, old_feihe_token)
     display_name = mask_phone(phone)
@@ -878,7 +794,6 @@ def bind_or_update_momclub_account(raw_text, old_phone=None):
         "sync_message": "",
     }
 
-
 def bind_or_update_feihe_account(raw_text, old_phone=None):
     access_token = str(raw_text or "").strip()
     if not access_token:
@@ -893,14 +808,10 @@ def bind_or_update_feihe_account(raw_text, old_phone=None):
     if old_phone and phone != old_phone:
         old_token_info = get_token_info(old_phone)
         old_auth = old_token_info.get("authorization") or ""
-        old_expire = get_auth(old_phone)
         bucket_del_all(BUCKET_TOKEN, old_phone)
-        bucket_del_all(BUCKET_AUTH, old_phone)
         remove_user_phone(old_phone, userid)
         if old_auth and not get_token_info(phone).get("authorization"):
             save_project_tokens(phone, authorization=old_auth)
-        if old_expire and not get_auth(phone):
-            save_auth(phone, old_expire)
     existed = bool(get_feihe_token(phone))
     save_feihe_token(phone, snapshot.get("new_token") or access_token)
     add_user_phone(phone, userid)
@@ -912,7 +823,6 @@ def bind_or_update_feihe_account(raw_text, old_phone=None):
         "existed": existed,
         "sync_message": "",
     }
-
 
 def bind_combined_account(feihe_token, authorization, old_phone=None):
     feihe_token = str(feihe_token or "").strip()
@@ -941,12 +851,8 @@ def bind_combined_account(feihe_token, authorization, old_phone=None):
 
     existed = bool(get_feihe_token(phone) or get_token_info(phone).get("authorization"))
     if old_phone and old_phone != phone:
-        old_expire = get_auth(old_phone)
         bucket_del_all(BUCKET_TOKEN, old_phone)
-        bucket_del_all(BUCKET_AUTH, old_phone)
         remove_user_phone(old_phone, userid)
-        if old_expire and not get_auth(phone):
-            save_auth(phone, old_expire)
 
     effective_feihe_token = (feihe_snapshot.get("new_token") if feihe_snapshot else None) or feihe_token or None
     save_project_tokens(phone, feihe_token=effective_feihe_token, authorization=authorization or None)
@@ -969,7 +875,6 @@ def bind_combined_account(feihe_token, authorization, old_phone=None):
         "existed": existed,
         "sync_message": "",
     }
-
 
 def bind_project_item(item, old_phone=None):
     project = str(item.get("project") or "auto").strip().lower()
@@ -1003,35 +908,6 @@ def bind_project_item(item, old_phone=None):
     if ok:
         return True, feihe_result, "飞鹤"
     return False, "未识别到有效的星妈会 authorization 或飞鹤 token", ""
-
-
-def get_user_points(user_id=None):
-    return 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def authorize_single_account(phone, owner_userid=None, free_mode=False):
-    return True
-
 
 def bind_account():
     raw_text = read_input(
@@ -1101,7 +977,6 @@ def bind_account():
     lines.append("==================")
     sender.reply("\n".join(lines))
 
-
 def get_momclub_summary(phone):
     token_info = get_token_info(phone)
     authorization = str(token_info.get("authorization") or "").strip()
@@ -1136,7 +1011,6 @@ def get_momclub_summary(phone):
         "token_status": "正常" if member_info else "可能失效",
     }
 
-
 def get_feihe_summary(phone):
     access_token = get_feihe_token(phone)
     if not access_token:
@@ -1167,147 +1041,35 @@ def get_feihe_summary(phone):
         "token_status": "正常",
     }
 
-
 def format_project_binding_text(feihe_bound, momclub_bound):
     return "飞鹤{} ｜ 星妈会{}".format("✅" if feihe_bound else "❌", "✅" if momclub_bound else "❌")
 
-
-def build_account_identity_lines(display_name, phone, single_label="📱 账号", account_label="👤 账号", phone_label="📱 手机"):
-    display_text = str(display_name or "").strip() or mask_phone(phone)
-    phone_text = mask_phone(phone)
-    if display_text == phone_text:
-        return ["{}: {}".format(single_label, phone_text)]
-    return [
-        "{}: {}".format(account_label, display_text),
-        "{}: {}".format(phone_label, phone_text),
-    ]
-
-
-def get_auth_display(phone):
-    return '2099-12-31'
-
-
 def get_account_summary(phone):
-    momclub_summary = get_momclub_summary(phone)
-    feihe_summary = get_feihe_summary(phone)
-    auth_state, auth_text = get_auth_display(phone)
+    momclub = get_momclub_summary(phone)
+    feihe = get_feihe_summary(phone)
     return {
-        "display_name": momclub_summary.get("display_name") or feihe_summary.get("display_name") or mask_phone(phone),
-        "phone": mask_phone(phone),
-        "auth_state": auth_state,
-        "auth_text": auth_text,
-        "momclub": momclub_summary,
-        "feihe": feihe_summary,
-        "projects_text": format_project_binding_text(feihe_summary.get("bound"), momclub_summary.get("bound")),
+        "display_name": momclub.get("display_name") or feihe.get("display_name") or mask_phone(phone),
+        "phone": mask_phone(phone), "momclub": momclub, "feihe": feihe,
+        "projects_text": format_project_binding_text(feihe.get("bound"), momclub.get("bound")),
     }
 
-
 def get_manage_account_rows():
-    rows = []
-    for phone in get_user_phones():
-        momclub_bound = has_project_binding(phone, "momclub")
-        feihe_bound = has_project_binding(phone, "feihe")
-        status_text, expire_text = get_auth_display(phone)
-        rows.append({
-            "phone": phone,
-            "display_phone": mask_phone(phone),
-            "status_text": status_text,
-            "expire_text": expire_text,
-            "project_text": format_project_binding_text(feihe_bound, momclub_bound),
-        })
-    return rows
-
-
-def get_pending_authorization_phones(phones=None):
-    return True
-
-
-def build_manage_accounts_message():
-    rows = get_manage_account_rows()
-    points = get_user_points(userid)
-    authorized_count = sum(1 for row in rows if row["status_text"] == "已授权")
-    lines = [
-        "=====账号管理=====",
-        "📦 绑定账号: {}个".format(len(rows)),
-        "🔐 已授权: {}个".format(authorized_count),
-        "💠 当前积分: {}".format(points["total"]),
-        "------------------",
-    ]
-    for index, row in enumerate(rows, 1):
-        lines.append("【{}】📱 {}".format(index, row["display_phone"]))
-        lines.append("├ 绑定: {}".format(row["project_text"]))
-        lines.append("└ 授权: {}".format(row["expire_text"]))
-    lines.extend([
-        "------------------",
-        "快捷操作:",
-        "[0] 批量授权全部账号",
-        "[9999] 授权未授权账号",
-        "[9998] 删除全部账号",
-        "------------------",
-        "回复序号操作，q 退出",
-        "==================",
-    ])
-    return "\n".join(lines)
-
-
-def batch_authorize_accounts(phones, title):
-    return True
-
+    return [{
+        "phone": phone, "display_phone": mask_phone(phone),
+        "project_text": format_project_binding_text(has_project_binding(phone, "feihe"), has_project_binding(phone, "momclub")),
+    } for phone in get_user_phones()]
 
 def query_accounts():
     phones = get_user_phones()
     if not phones:
-        sender.reply("❌ 您还没有绑定任何账号，请先发送【星妈会登录】")
+        sender.reply("❌ 您还没有绑定账号，请先发送【星妈会登录】")
         return
-    lines = [
-        "=====星妈会查询=====",
-        "📦 账号: {}个 ｜ 🔐 已授权: {}个".format(
-            len(phones),
-            sum(1 for phone in phones if is_authorized(phone)),
-        ),
-        "------------------",
-    ]
+    lines = [f"=====星妈会查询=====\n📦 账号: {len(phones)} 个", "------------------"]
     for index, phone in enumerate(phones, 1):
-        summary = get_account_summary(phone)
-        momclub = summary["momclub"]
-        feihe = summary["feihe"]
+        summary = get_account_summary(phone); momclub = summary["momclub"]; feihe = summary["feihe"]
         points = feihe.get("points") if feihe.get("bound") and feihe.get("points") not in ("未绑定", "未知") else momclub.get("points")
-        today_earned = get_today_earned(phone)
-        pending = momclub.get("pending_tasks", "-") if momclub.get("bound") else "-"
-        lines.append("【{}】{} {}".format(index, summary["phone"], summary["projects_text"]))
-        lines.append("├ 授权: {} ｜ 积分: {}".format(summary["auth_text"], points))
-        lines.append("└ 今日: +{} ｜ 待做: {}".format(today_earned, pending))
-        if index != len(phones):
-            lines.append("------------------")
-    lines.append("==================")
-    sender.reply("\n".join(lines))
-
-
-
-
-def update_momclub_token(phone):
-    raw_text = read_input("=====更新星妈会 authorization=====\n请输入新的 authorization\n\n回复 q 取消\n==================")
-    if not raw_text:
-        sender.reply("✅ 已取消更新")
-        return
-    ok, result = bind_or_update_momclub_account(raw_text, old_phone=phone)
-    if not ok:
-        sender.reply("❌ {}".format(result))
-        return
-    sender.reply("✅ 星妈会 authorization 已更新\n{}\n🎖 等级: {}\n🎁 积分: {}\n{}".format("\n".join(build_account_identity_lines(result["display_name"], result["phone"])), result["grade_name"], result["points"], result["sync_message"] or ""))
-
-
-def update_feihe_token(phone):
-    raw_text = read_input("=====更新飞鹤 access_token=====\n请输入新的 access_token\n\n回复 q 取消\n==================")
-    if not raw_text:
-        sender.reply("✅ 已取消更新")
-        return
-    ok, result = bind_or_update_feihe_account(raw_text, old_phone=phone)
-    if not ok:
-        sender.reply("❌ {}".format(result))
-        return
-    sender.reply("✅ 飞鹤 token 已更新\n{}\n🎖 等级: {}\n🎁 积分: {}\n{}".format("\n".join(build_account_identity_lines(result["display_name"], result["phone"])), result["grade_name"], result["points"], result.get("sync_message") or ""))
-
+        lines.extend((f"【{index}】{summary['phone']} {summary['projects_text']}", f"├ 积分: {points}", f"└ 今日: +{get_today_earned(phone)}"))
+    sender.reply("\n".join(lines + ["=================="]))
 
 def delete_single_account(phone):
     confirm = read_input("=====删除账号确认=====\n📱 手机: {}\n回复 y 确认删除，回复 q 取消\n==================".format(mask_phone(phone)), 60000)
@@ -1318,23 +1080,6 @@ def delete_single_account(phone):
     bucket_del_all(BUCKET_AUTH, phone)
     remove_user_phone(phone, userid)
     sender.reply("✅ 账号已删除")
-
-
-def delete_all_accounts():
-    phones = get_user_phones()
-    if not phones:
-        sender.reply("❌ 没有可删除的账号")
-        return
-    confirm = read_input("=====删除全部账号=====\n共 {} 个账号\n回复 y 确认，回复 q 取消\n==================".format(len(phones)), 60000)
-    if not confirm or confirm.lower() != "y":
-        sender.reply("✅ 已取消删除全部账号")
-        return
-    for phone in list(phones):
-        bucket_del_all(BUCKET_TOKEN, phone)
-        bucket_del_all(BUCKET_AUTH, phone)
-        remove_user_phone(phone, userid)
-    sender.reply("✅ 已删除全部账号")
-
 
 def execute_account_projects(phone):
     result = {
@@ -1382,228 +1127,59 @@ def execute_account_projects(phone):
         add_today_earned(phone, result["earned_points"])
     return result
 
-
 def run_single_account(phone):
-    if not is_authorized(phone):
-        sender.reply("❌ 当前账号未授权，无法执行任务")
-        return
     if not has_project_binding(phone, "feihe") and not has_project_binding(phone, "momclub"):
         sender.reply("❌ 当前账号未绑定任何项目数据")
         return
-
     sender.reply("⏳ 正在执行账号任务，请稍候...")
-    run_result = execute_account_projects(phone)
-    if not run_result["projects"]:
-        sender.reply("❌ 当前账号没有可执行的项目")
-        return
-
-    lines = [
-        "=====运行完成=====",
-        "📱 手机: {}".format(run_result["display_phone"]),
-        "💰 总收益: {} 积分".format(run_result["earned_points"]),
-        "------------------",
-    ]
-    for item in run_result["projects"]:
-        lines.append("• {}: {}".format(item["name"], item["detail"]))
-    lines.append("==================")
-    sender.reply("\n".join(lines))
-
+    result = execute_account_projects(phone)
+    lines = ["=====运行完成=====", f"📱 手机: {result['display_phone']}", f"💰 总收益: {result['earned_points']} 积分", "------------------"]
+    lines.extend(f"• {item['name']}: {item['detail']}" for item in result["projects"])
+    sender.reply("\n".join(lines + ["=================="]))
 
 def get_all_authorized_phones():
-    return True
-
+    phones = []
+    for user_id in bucket_all_keys_merged(BUCKET_USER) or []:
+        phones.extend(get_user_phones(user_id))
+    return list(dict.fromkeys(phones))
 
 def run_all_accounts():
-    is_admin = sender.isAdmin()
-    if is_admin:
-        authorized_phones = get_all_authorized_phones()
-    else:
-        authorized_phones = [phone for phone in get_user_phones() if is_authorized(phone)]
-
-    if not authorized_phones:
-        sender.reply("❌ 没有已授权的账号")
+    phones = get_all_authorized_phones() if sender.isAdmin() else get_user_phones()
+    if not phones:
+        sender.reply("❌ 没有可运行的账号")
         return
-
-    mode_text = "【管理员模式·全部账号】" if is_admin else "【个人模式】"
-    sender.reply("⏳ {}开始一键运行，共 {} 个已授权账号，请耐心等待...".format(mode_text, len(authorized_phones)))
-
-    total_earned = 0
-    success_count = 0
-    fail_count = 0
-    detail_lines = []
-
-    for phone in authorized_phones:
+    success = failed = earned = 0; details = []
+    for phone in phones:
         if not has_project_binding(phone, "feihe") and not has_project_binding(phone, "momclub"):
-            fail_count += 1
-            detail_lines.append("• {}：未绑定任何项目".format(mask_phone(phone)))
-            continue
-        run_result = execute_account_projects(phone)
-        total_earned += run_result["earned_points"]
-        if run_result["success"]:
-            success_count += 1
-        else:
-            fail_count += 1
-        project_labels = []
-        for item in run_result["projects"]:
-            project_labels.append("{}(+{})".format(item["name"], item["earned_points"]))
-        detail_lines.append("• {}：{}".format(run_result["display_phone"], " / ".join(project_labels) or "无可执行项目"))
-        time.sleep(random.randint(2, 5))
-
-    sender.reply(
-        "=====星妈会一键运行=====\n"
-        "✅ 成功账号: {}\n"
-        "❌ 失败账号: {}\n"
-        "💰 总收益: {} 积分\n"
-        "------------------\n"
-        "{}\n"
-        "==================".format(success_count, fail_count, total_earned, "\n".join(detail_lines))
-    )
-
+            failed += 1; continue
+        result = execute_account_projects(phone); earned += result["earned_points"]
+        success += int(bool(result["success"])); failed += int(not result["success"])
+        details.append(f"• {result['display_phone']}：" + " / ".join(f"{x['name']}(+{x['earned_points']})" for x in result["projects"]))
+    sender.reply(f"=====星妈会一键运行=====\n✅ 成功: {success}\n❌ 失败: {failed}\n💰 总收益: {earned} 积分\n------------------\n" + "\n".join(details) + "\n==================")
 
 def manage_accounts():
-    phones = get_user_phones()
-    if not phones:
-        sender.reply("❌ 您还没有绑定任何账号，请先发送【星妈会登录】")
+    rows = get_manage_account_rows()
+    if not rows:
+        sender.reply("❌ 暂无账号")
         return
-    choice = read_input(build_manage_accounts_message())
-    if not choice:
-        sender.reply("✅ 已退出管理")
-        return
-    if choice == "0":
-        batch_authorize_accounts(phones, "所有账号")
-        return
-    if choice == "9998":
-        delete_all_accounts()
-        return
-    if choice == "9999":
-        pending_phones = get_pending_authorization_phones(phones)
-        if not pending_phones:
-            sender.reply("✅ 当前没有未授权账号")
-            return
-        batch_authorize_accounts(pending_phones, "未授权账号")
-        return
-    if not choice.isdigit():
-        sender.reply("❌ 无效选择")
-        return
-    index = int(choice) - 1
-    if index < 0 or index >= len(phones):
-        sender.reply("❌ 无效选择")
-        return
-    phone = phones[index]
-    token_info = get_token_info(phone)
-    feihe_bound = has_project_binding(phone, "feihe")
-    momclub_bound = has_project_binding(phone, "momclub")
-    identity_text = "\n".join(build_account_identity_lines(token_info.get("display_name") or mask_phone(phone), phone))
-    action = read_input(
-        "=====账号操作=====\n"
-        "{}\n"
-        "🧩 项目: 飞鹤{} / 星妈会{}\n"
-        "[1] 授权账号\n"
-        "[2] {}星妈会 authorization\n"
-        "[3] {}飞鹤 token\n"
-        "[4] 运行该账号\n"
-        "[5] 删除账号\n"
-        "回复序号选择，回复 q 返回\n"
-        "==================".format(
-            identity_text,
-            "✅" if feihe_bound else "❌",
-            "✅" if momclub_bound else "❌",
-            "更新" if momclub_bound else "绑定",
-            "更新" if feihe_bound else "绑定",
-        )
-    )
-    if not action:
-        sender.reply("✅ 已返回")
-        return
-    if action == "1":
-        authorize_single_account(phone)
-    elif action == "2":
-        update_momclub_token(phone)
-    elif action == "3":
-        update_feihe_token(phone)
-    elif action == "4":
-        run_single_account(phone)
-    elif action == "5":
-        delete_single_account(phone)
-    else:
-        sender.reply("❌ 无效选择")
-
-
-def admin_authorize():
-    return True
-
-
-def admin_backend():
-    if not sender.isAdmin():
-        sender.reply("❌ 您没有管理员权限")
-        return
-
-    choice = read_input(
-        "=====星妈会后台=====\n"
-        "[1] 授权管理\n"
-        "[2] 清理账号\n"
-        "回复序号选择，回复 q 取消\n"
-        "==================",
-        60000,
-    )
-    if not choice:
-        sender.reply("✅ 已退出后台")
-        return
-    if choice == "1":
-        admin_authorize()
-        return
-    if choice == "2":
-        clean_accounts()
-        return
-    sender.reply("❌ 无效选择")
-
-
-def clean_accounts():
-    if not sender.isAdmin():
-        sender.reply("❌ 您没有管理员权限")
-        return
-    users = bucket_all_keys_merged(BUCKET_USER) or []
-    if not users:
-        sender.reply("❌ 当前没有任何绑定用户")
-        return
-    cleaned_count = 0
-    kept_count = 0
-    for user_id in users:
-        valid_phones = []
-        for phone in get_user_phones(user_id):
-            if (has_project_binding(phone, "feihe") or has_project_binding(phone, "momclub")) and is_authorized(phone):
-                valid_phones.append(phone)
-                kept_count += 1
-                continue
-            bucket_del_all(BUCKET_TOKEN, phone)
-            bucket_del_all(BUCKET_AUTH, phone)
-            cleaned_count += 1
-        save_user_phones(valid_phones, user_id)
-    sender.reply("=====清理完成=====\n✅ 保留账号: {}\n🧹 清理账号: {}\n==================".format(kept_count, cleaned_count))
-
+    sender.reply("=====星妈会管理=====\n" + "\n".join(f"[{i}] {row['display_phone']} {row['project_text']}" for i, row in enumerate(rows, 1)) + "\n==================")
+    choice = read_input("请输入账号序号，输入 q 退出")
+    if not choice or choice.lower() == "q": return
+    if not choice.isdigit() or not 1 <= int(choice) <= len(rows):
+        sender.reply("❌ 序号无效"); return
+    phone = rows[int(choice)-1]["phone"]
+    sender.reply("[1] 运行账号\n[2] 删除账号")
+    action = read_input("请选择操作")
+    if action == "1": run_single_account(phone)
+    elif action == "2": delete_single_account(phone)
 
 def show_tutorial():
-    sender.reply(
-        "=====星妈会教程=====\n"
-        "📌 登录格式\n"
-        "飞鹤+星妈会：access_token#authorization\n"
-        "仅飞鹤：access_token\n"
-        "仅星妈会：authorization\n"
-        "批量提交：每行一条\n"
-        "------------------\n"
-        "📌 常用指令\n"
-        "星妈会登录：绑定或更新凭证\n"
-        "星妈会查询：查看绑定、积分、授权\n"
-        "星妈会管理：单账号授权/更新/删除/运行\n"
-        "星妈会一键运行：运行全部已授权账号\n"
-        "星妈会后台：管理员授权和清理\n"
-        "------------------\n"
-        "📌 抓包说明\n"
-        "星妈会 #小程序://星妈会/BhVspEnnMsRvDgz\n"
-        "飞鹤  #小程序://飞鹤丨北纬47度好物/QTaS9v3oLMMGxpx\n"
-        "=================="
-    )
-
+    sender.reply("""=====星妈会教程=====
+星妈会登录：绑定或更新飞鹤/星妈会账号
+星妈会查询：查询积分与项目状态
+星妈会管理：运行或删除账号
+星妈会一键运行：执行全部账号任务
+==================""")
 
 def cron_run_all():
     authorized_phones = get_all_authorized_phones()
@@ -1646,59 +1222,6 @@ def cron_run_all():
         )
     )
 
-
-def xmyx_cron_check():
-    users = bucket_all_keys_merged(BUCKET_USER) or []
-    today = str(today_date())
-    for uid in users:
-        try:
-            phones = get_user_phones(uid)
-            for phone in phones:
-                try:
-                    auth_expire = get_auth(phone)
-                    display_phone = mask_phone(phone)
-                    if not auth_expire or auth_expire <= today:
-                        push_msg = f"""
-=====星妈会账号通知=====
-📱 账号: {display_phone}
-⏰ 定时检测提醒
-------------------
-❌ 授权已过期
-💡 请及时续费授权
-=================="""
-                        for platform in ['wb', 'tg', 'qq', 'qb', 'wx']:
-                            try:
-                                sg.push(platform, '', uid, '', push_msg)
-                            except:
-                                pass
-                    else:
-                        try:
-                            expire_date = datetime.strptime(auth_expire, '%Y-%m-%d').date()
-                            days_left = (expire_date - datetime.now().date()).days
-                            if days_left <= 3:
-                                push_msg = f"""
-=====星妈会账号通知=====
-📱 账号: {display_phone}
-⏰ 定时检测提醒
-------------------
-⚠️ 授权即将到期
-📅 到期时间: {auth_expire}
-⏳ 剩余天数: {days_left}天
-💡 请及时续费授权
-=================="""
-                                for platform in ['wb', 'tg', 'qq', 'qb', 'wx']:
-                                    try:
-                                        sg.push(platform, '', uid, '', push_msg)
-                                    except:
-                                        pass
-                        except:
-                            pass
-                except:
-                    continue
-        except:
-            continue
-
-
 try:
     usermessage = sender.getMessage()
 except AttributeError:
@@ -1710,9 +1233,9 @@ except AttributeError:
     imtype = ""
 
 if imtype == 'fake':
-    xmyx_cron_check()
-elif not usermessage:
     cron_run_all()
+elif not usermessage:
+    sender.setContinue()
 elif re.search(r"星妈会登录", usermessage):
     bind_account()
 elif re.search(r"星妈会管理", usermessage):
@@ -1723,7 +1246,5 @@ elif re.search(r"星妈会一键运行", usermessage):
     run_all_accounts()
 elif re.search(r"星妈会教程", usermessage):
     show_tutorial()
-elif re.search(r"星妈会后台$", usermessage):
-    admin_backend()
 else:
     sender.setContinue()

@@ -3,7 +3,7 @@
 //[language: javascript]
 //[class: 工具]
 //[author: sillyGirl]
-//[version: v1.1.2]
+//[version: v1.1.3]
 //[public: true]
 //[admin: false]
 //[rule: ^\s*(饿了么Code|饿了么|[Ee][Ll][Mm])\s*(登录|换[Cc]ookie|取[Cc][Kk])?\s*([^\s]+)?\s*$]
@@ -22,9 +22,9 @@ const zlib = require('node:zlib');
 const {
   sender: s,
   console,
-  form,
+  plugin,
   container,
-  utils,
+  user
 } = require('sillygirl');
 
 
@@ -444,39 +444,39 @@ const DEFAULTS = {
   ql_remarks: '',
 };
 
-const pluginConfig = new form({
-  enable: form.boolean().title('是否启用').default(true),
-  smallcat_id: form.integer()
+const pluginConfig = new plugin.Form({
+  enable: plugin.Form.boolean().title('是否启用').default(true),
+  smallcat_id: plugin.Form.integer()
     .title('smallcat 编号')
     .description('命令不带 CODE 时使用；后台 smallcat 页面中的编号，从 1 开始')
     .widget('smallcat-panel')
     .min(1).default(1),
-  account_mode: form.string()
+  account_mode: plugin.Form.string()
     .title('openid 获取模式')
     .description('普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号')
     .options(['authorized', 'manual']).default('authorized'),
-  manual_openids: form.string()
+  manual_openids: plugin.Form.string()
     .title('手动 openid')
     .description('仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号，本插件使用第一个可用账号')
     .widget('textarea').default(''),
-  umid_token: form.string()
+  umid_token: plugin.Form.string()
     .title('固定 bx-umidtoken')
     .description('通常留空自动获取；网络环境取不到 UMID 时可手动填写')
     .widget('password').default(''),
-  request_timeout: form.integer()
+  request_timeout: plugin.Form.integer()
     .title('请求超时秒数').min(5).max(90).default(30),
-  sync_panel: form.select([
+  sync_panel: plugin.Form.select([
     { label: '不同步', value: 'none' },
     { label: '同步青龙', value: 'qinglong' },
     { label: '同步呆呆', value: 'daidai' },
   ]).title('同步目标').description('青龙/呆呆容器编号会根据后台容器列表动态渲染').default('none'),
-  qinglong_id: form.integer()
+  qinglong_id: plugin.Form.integer()
     .title('青龙面板编号').widget('qinglong-panel').min(1).default(1),
-  daidai_id: form.integer()
+  daidai_id: plugin.Form.integer()
     .title('呆呆面板编号').widget('daidai-panel').min(1).default(1),
-  ql_env_name: form.string()
+  ql_env_name: plugin.Form.string()
     .title('环境变量名').default('elmck'),
-  ql_remarks: form.string()
+  ql_remarks: plugin.Form.string()
     .title('变量备注').description('留空时自动使用饿了么账号信息').default(''),
 });
 
@@ -578,8 +578,8 @@ async function loadSmallcatAccountPayload(smallcat, cfg) {
 }
 
 async function authorizedOpenidSet() {
-  if (typeof userList !== 'function') throw new Error('当前 SillyGirl 版本缺少 userList');
-  const users = await utils.userList();
+  if (!user || typeof user.getUserList !== 'function') throw new Error('当前 SillyGirl 版本缺少 user.getUserList');
+  const users = await user.getUserList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;

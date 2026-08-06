@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: Jiang0529]
-# [version: v1.3.0]
+# [version: v1.3.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -17,50 +17,35 @@ import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -73,18 +58,19 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'ch_xy_config_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
-    'ch_xy_config_panel_config': form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
-    'ch_xy_config_panel_group': form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
-    'ch_xy_config_Qinglong': form.string().title('旧版青龙配置').default('').description('兼容旧版配置；新安装建议使用“对接面板类型/对接面板配置”'),
-    'ch_xy_config_osname': form.string().title('面板变量名').default('').description('青龙/呆呆面板内星芽短剧的环境变量名，默认 ch_xy'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'ch_xy_config_panel_type': plugin.Form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
+    'ch_xy_config_panel_config': plugin.Form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
+    'ch_xy_config_panel_group': plugin.Form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
+    'ch_xy_config_Qinglong': plugin.Form.string().title('旧版青龙配置').default('').description('兼容旧版配置；新安装建议使用“对接面板类型/对接面板配置”'),
+    'ch_xy_config_osname': plugin.Form.string().title('面板变量名').default('').description('青龙/呆呆面板内星芽短剧的环境变量名，默认 ch_xy'),
 })
 _CONFIG_FIELD_MAP = {
     ('ch_xy_config', 'panel_type'): 'ch_xy_config_panel_type',
@@ -106,7 +92,6 @@ import time
 import uuid
 import random
 
-
 HEX_DIGITS = '0123456789abcdef'
 DEFAULT_REQUEST_TIMEOUT = 10
 logger = logging.getLogger(__name__)
@@ -114,14 +99,11 @@ PLUGIN_NAMESPACE = 'ch_xy_config'
 QLurl, qltoken = None, None
 panel_client = None
 
-
 def xyauth(plaintext):
     return True
 
-
 def generate_android_id():
     return ''.join(random.choice(HEX_DIGITS) for _ in range(16))
-
 
 def android_id_to_device_id(android_id):
     if not android_id or android_id == "9774d56d68369ce":
@@ -129,12 +111,10 @@ def android_id_to_device_id(android_id):
     else:
         return "2" + str(uuid.uuid5(uuid.NAMESPACE_DNS, android_id)).replace("-", "")
 
-
 def getdid():
     android_id = generate_android_id()
     device_id = android_id_to_device_id(android_id)
     return android_id, device_id
-
 
 def mask_phone(phone):
     phone = safe_str(phone)
@@ -142,14 +122,11 @@ def mask_phone(phone):
         return phone
     return f'{phone[:3]}****{phone[7:]}'
 
-
 def mask_phone_list(phones):
     return '、'.join(mask_phone(phone) for phone in phones)
 
-
 def phone_digest(phone):
     return hashlib.sha256(safe_str(phone).encode('utf-8')).hexdigest()[:12]
-
 
 def extract_remark_user(remarks):
     if not remarks or '用户:' not in remarks:
@@ -159,11 +136,9 @@ def extract_remark_user(remarks):
     except Exception:
         return ''
 
-
 def build_ql_remark(phone, account_vip, owner_user=None, existing_remarks=None):
     owner = owner_user or extract_remark_user(existing_remarks) or user
     return f'星芽:{mask_phone(phone)}丨标识:{phone_digest(phone)}丨用户:{owner}丨授权时间:{account_vip}丨星芽管理'
-
 
 def remark_matches_phone(remarks, phone):
     remarks = safe_str(remarks)
@@ -187,23 +162,19 @@ def remark_matches_phone(remarks, phone):
     except Exception:
         return False
 
-
 def split_accounts(data):
     if not data:
         return []
     return [item for item in data.split('&') if item]
 
-
 def safe_str(value):
     return value or ''
-
 
 def bind_user_phone(user_id, phone):
     phones = split_accounts(sg.bucketGet("ch_xy_phone", user_id))
     if phone not in phones:
         phones.append(phone)
         sg.bucketSet("ch_xy_phone", user_id, '&'.join(phones))
-
 
 def unbind_user_phone(user_id, phone):
     phones = split_accounts(sg.bucketGet("ch_xy_phone", user_id))
@@ -230,9 +201,6 @@ def ValueErrors(value, count, sender_obj=None):
 ====================""")
         return None
 
-
-
-
 def normalize_panel_type(panel_type_value):
     value = str(panel_type_value or '').strip().lower()
     if value in ('呆呆', '呆呆面板', 'daidai', 'dd'):
@@ -241,7 +209,6 @@ def normalize_panel_type(panel_type_value):
         return 'qinglong'
     return ''
 
-
 def panel_type_label(panel_type_value=None):
     panel_type = normalize_panel_type(panel_type_value)
     if panel_type == 'daidai':
@@ -249,7 +216,6 @@ def panel_type_label(panel_type_value=None):
     if panel_type == 'qinglong':
         return '青龙面板'
     return '对接面板'
-
 
 def parse_panel_config():
     panel_type_raw = sg.bucketGet(PLUGIN_NAMESPACE, 'panel_type') or ''
@@ -322,7 +288,6 @@ def parse_panel_config():
     panel_group = safe_str(sg.bucketGet(PLUGIN_NAMESPACE, 'panel_group')).strip()
     return panel_type, host.rstrip('/'), key, secret, panel_group
 
-
 def get_qinglong_token(host, client_id, client_secret):
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
@@ -339,7 +304,6 @@ def get_qinglong_token(host, client_id, client_secret):
         raise RuntimeError(f"连接青龙面板失败: {str(e)}")
     except Exception as e:
         raise RuntimeError(f"获取青龙面板Token失败: {str(e)}")
-
 
 def get_daidai_token(host, app_key, app_secret):
     try:
@@ -361,7 +325,6 @@ def get_daidai_token(host, app_key, app_secret):
         raise RuntimeError(f"连接呆呆面板失败: {str(e)}")
     except Exception as e:
         raise RuntimeError(f"获取呆呆面板Token失败: {str(e)}")
-
 
 class PanelClient:
 
@@ -581,7 +544,6 @@ class PanelClient:
             return self.update_env(env_id, var_name, value, remarks)
         return self.add_env(var_name, value, remarks)
 
-
 def ensure_panel_connection():
     global panel_client, QLurl, qltoken
     if panel_client is None:
@@ -589,49 +551,30 @@ def ensure_panel_connection():
         QLurl, qltoken = panel_client.host, panel_client.token
     return panel_client
 
-
 def ensure_ql_connection():
     client = ensure_panel_connection()
     return client.host, client.token
 
-
-
-
-
-
-
-
-
-
-
-
 def clear_pending_ql_sync(phone):
     sg.bucketDel(bucket='ch_xy_ql_pending', key=phone)
-
 
 def addenvs_raise(osname, value, phone, owner_user=None):
     client = ensure_panel_connection()
     client.upsert_env_for_phone(osname, value, phone, owner_user=owner_user)
 
-
-
-
 def Addenvs(osname, value, phone, owner_user=None):
     return addenvs_raise(osname, value, phone, owner_user=owner_user)
-
 
 def allenvs(osname, account):
     client = ensure_panel_connection()
     env = client.find_env(osname, account)
     return PanelClient.env_id(env) if env else None
 
-
 def delenvs(id):
     if not id:
         return
     client = ensure_panel_connection()
     client.delete_env(id)
-
 
 def retry_pending_panel_sync(osname, phone_owner_map=None):
     phone_owner_map = phone_owner_map or {}
@@ -681,9 +624,6 @@ def retry_pending_panel_sync(osname, phone_owner_map=None):
 
     if success_count or fail_count:
         print(f"待同步面板变量补交完成: 成功 {success_count} 个，失败 {fail_count} 个")
-
-
-
 
 class ProxyManager:
     def __init__(self, session, is_proxy, proxy_url):
@@ -797,7 +737,6 @@ class ProxyManager:
 
     def post(self, url, **kwargs):
         return self._request_with_retry('POST', url, **kwargs)
-
 
 class Xingya:
     def __init__(self, user, sender):
@@ -1029,7 +968,7 @@ class Xingya:
                 ma_pay_data = sg.bucketGet('ch_xy_config', 'mzf')
                 parts = ma_pay_data.split('丨')
                 ma_pay_config = {
-                    'switch': '2099-12-31' or 'false',
+                    'switch': '2099-12-31',
                     'gateway': parts[0],
                     'pid': parts[1],
                     'key': parts[2],
@@ -1479,7 +1418,6 @@ class Xingya:
                         headers=headers,
                     )
 
-
                     if r['code'] == 'ok':
                         phone = r['data']['mobile']
                         token = r['data']['token']
@@ -1654,7 +1592,6 @@ class Xingya:
 
         self.sender.reply("❌ 输入无效，请输入正确的账号序号，多个序号可用逗号分隔")
 
-
     def guanli(self):
         parts = self.get_user_phones()
         if not parts:
@@ -1812,7 +1749,6 @@ class Xingya:
             else:
                 self.sender.reply("❌ 输入无效")
                 return
-
 
     def tixian(self):
         parts = self.get_user_phones()
@@ -2028,7 +1964,6 @@ if __name__ == "__main__":
         A.shouquan()
     elif imtype == 'fake':
 
-
         keys = sg.bucketAllKeys("ch_xy_phone")
         print(f"定时任务扫描用户数: {len(keys)}")
         phones = []
@@ -2075,7 +2010,6 @@ if __name__ == "__main__":
                                 data=payload,
                                 headers=headers,
                             )
-
 
                             if r['code'] == 'ok':
                                 token = r['data']['token']

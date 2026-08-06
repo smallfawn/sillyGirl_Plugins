@@ -16,18 +16,19 @@
 const http = require("http");
 const https = require("https");
 const ipp = require("ipp");
-const { promisify } = require("node:util");
+const {
+promisify } = require("node:util");
 const {
   sender: s,
-  console,
-  form,
+console,
+plugin
 } = require('sillygirl');
 
-const config = new form({
-  enable: form.boolean().title("是否开启该打印机脚本").default(false),
-  print_url: form.string().title("打印机 IPP 地址").description("格式：http://192.168.x.x:631/ipp/print"),
-  test_enable: form.boolean().title("是否开启每周自动打印测试图防止堵头").default(false),
-  test_image: form.string()
+const config = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否开启该打印机脚本").default(false),
+  print_url: plugin.Form.string().title("打印机 IPP 地址").description("格式：http://192.168.x.x:631/ipp/print"),
+  test_enable: plugin.Form.boolean().title("是否开启每周自动打印测试图防止堵头").default(false),
+  test_image: plugin.Form.string()
     .title("测试打印图片地址")
     .default("https://raw.githubusercontent.com/smallfawn/Bncr_Plugins/main/plugins/smallfawn/assets/printer_test.jpeg"),
 });

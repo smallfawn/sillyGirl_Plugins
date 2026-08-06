@@ -1,6 +1,6 @@
 //[title: 值得买]
 //[name: zhiDeMai]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: chuan85]
 //[version: v1.1.0]

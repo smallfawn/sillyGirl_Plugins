@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: 1934103887]
-# [version: v1.9.0]
+# [version: v1.9.1]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -17,37 +17,25 @@ import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -60,16 +48,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -82,24 +70,24 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'Joh_sf_config_WX': form.string().title('通知管理员WX').default('').description('运行结果会通知WX管理员，不填不推送'),
-    'Joh_sf_config_QQ': form.string().title('通知管理员QQ').default('').description('运行结果会通知QQ管理员，不填不推送'),
-    'Joh_sf_config_TG': form.string().title('通知管理员TG').default('').description('运行结果会通知TG管理员，不填不推送'),
-    'Joh_sf_config_dinshi': form.string().title('抢兑时间').default('').description('必须设置设置抢兑时间，格式为: 时:分:秒<br>例如：10:00:00表示10:00:00秒开始执行兑换请求<br>⚠️重要：<br>⚠️①计划任务添加自处理命令”运行抢兑”比如月饼是十点开始就定时30 59 9 * * *<br>到时插件会自动储存账号信息，到点直接请求兑换<br>⚠️②配参建议设置如：09:00:00,10:00:00,12:00:00,14:00:00,15:00:00,18:00:00  插件会自动判断是免单场还是秒杀场 <br>其他时间是免单券是9/12/15点、秒杀是10/14/18点<br>可以一股脑全部定时30 59 9,13,17 * * *和30 59 8,11,14 26-28 * *'),
-    'Joh_sf_config_choice': form.string().title('代理选择').default('').description('填1代理池，填2API代理<br>备用功能如非必要不用设置代理'),
-    'Joh_sf_config_proxy': form.string().title('代理池').default('').description('本地代理池链接'),
-    'Joh_sf_config_proxy_api': form.string().title('API代理').default('').description('API代理链接'),
-    'Joh_sf_config_mrd': form.string().title('是否开启会员日免单券').default('').description('填1开启填2关闭，默认开启'),
-    'Joh_sf_config_sc': form.string().title('是否开启商城实物').default('').description('填1开启填2关闭，默认开启'),
-    'Joh_sf_config_zk': form.string().title('是否开启超寄星期三6折券').default('').description('填1开启填2关闭，默认开启'),
-    'Joh_sf_config_sign_token': form.string().title('顺丰签名Token').default('').description('不填则抢兑签名请求不可用'),
+config = plugin.Form({
+    'Joh_sf_config_WX': plugin.Form.string().title('通知管理员WX').default('').description('运行结果会通知WX管理员，不填不推送'),
+    'Joh_sf_config_QQ': plugin.Form.string().title('通知管理员QQ').default('').description('运行结果会通知QQ管理员，不填不推送'),
+    'Joh_sf_config_TG': plugin.Form.string().title('通知管理员TG').default('').description('运行结果会通知TG管理员，不填不推送'),
+    'Joh_sf_config_dinshi': plugin.Form.string().title('抢兑时间').default('').description('必须设置设置抢兑时间，格式为: 时:分:秒<br>例如：10:00:00表示10:00:00秒开始执行兑换请求<br>⚠️重要：<br>⚠️①计划任务添加自处理命令”运行抢兑”比如月饼是十点开始就定时30 59 9 * * *<br>到时插件会自动储存账号信息，到点直接请求兑换<br>⚠️②配参建议设置如：09:00:00,10:00:00,12:00:00,14:00:00,15:00:00,18:00:00  插件会自动判断是免单场还是秒杀场 <br>其他时间是免单券是9/12/15点、秒杀是10/14/18点<br>可以一股脑全部定时30 59 9,13,17 * * *和30 59 8,11,14 26-28 * *'),
+    'Joh_sf_config_choice': plugin.Form.string().title('代理选择').default('').description('填1代理池，填2API代理<br>备用功能如非必要不用设置代理'),
+    'Joh_sf_config_proxy': plugin.Form.string().title('代理池').default('').description('本地代理池链接'),
+    'Joh_sf_config_proxy_api': plugin.Form.string().title('API代理').default('').description('API代理链接'),
+    'Joh_sf_config_mrd': plugin.Form.string().title('是否开启会员日免单券').default('').description('填1开启填2关闭，默认开启'),
+    'Joh_sf_config_sc': plugin.Form.string().title('是否开启商城实物').default('').description('填1开启填2关闭，默认开启'),
+    'Joh_sf_config_zk': plugin.Form.string().title('是否开启超寄星期三6折券').default('').description('填1开启填2关闭，默认开启'),
+    'Joh_sf_config_sign_token': plugin.Form.string().title('顺丰签名Token').default('').description('不填则抢兑签名请求不可用'),
 })
 _CONFIG_FIELD_MAP = {
     ('Joh_sf_config', 'WX'): 'Joh_sf_config_WX',
@@ -127,7 +115,6 @@ from urllib.parse import quote, unquote
 
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
 
 SIGN_TOKEN = ''
 SYS_CODE = 'MCS-MIMP-CORE'
@@ -165,7 +152,6 @@ GOODS_ENABLED = sg.bucketGet('Joh_sf_config', 'sc') != "2"
 SECKILL_ENABLED = sg.bucketGet('Joh_sf_config', 'ms') != "2"
 WEEKLY_60_ENABLED = sg.bucketGet('Joh_sf_config', 'zk') != "2"
 
-
 def is_phone_account(account_key: str) -> bool:
     return isinstance(account_key, str) and bool(
         re.fullmatch(r'1\d{10}|1\d{2}\*{4}\d{4}', account_key)
@@ -176,12 +162,10 @@ def build_proxies(proxy: Optional[str]) -> Optional[Dict[str, str]]:
         return None
     return {"http": proxy, "https": proxy}
 
-
 def mask_phone_number(phone: str) -> str:
     if isinstance(phone, str) and len(phone) == 11 and phone.isdigit():
         return phone[:3] + "****" + phone[7:]
     return phone
-
 
 def safe_eval_to_list(value) -> List[str]:
     if not value:
@@ -192,10 +176,8 @@ def safe_eval_to_list(value) -> List[str]:
     except Exception:
         return [value]
 
-
 def encode_link(link: str) -> str:
     return quote(link, safe=':/')
-
 
 def get_proxy() -> Optional[str]:
     choice = sg.bucketGet('Joh_sf_config', 'choice')
@@ -270,8 +252,6 @@ def fetch_member_level(url: str, proxy: Optional[str] = None) -> Optional[Tuple[
 def get_account_phone(account_key: str) -> Optional[str]:
     return sg.bucketGet('chuan_sf_phone', account_key)
 
-
-
 def get_user_account_keys(sender) -> List[str]:
     user_id = sender.getUserID()
     im_type = sender.getImtype()
@@ -299,7 +279,6 @@ def get_user_account_keys(sender) -> List[str]:
 
     return result
 
-
 def check_date_valid(date_str_bucket: Optional[str]) -> bool:
     if not date_str_bucket:
         return False
@@ -310,22 +289,17 @@ def check_date_valid(date_str_bucket: Optional[str]) -> bool:
     except Exception:
         return False
 
-
 def check_yuhua_sf_authorization(phone: str) -> bool:
     return check_date_valid('2099-12-31')
-
 
 def check_yzyxmm_authorization(phone: str) -> bool:
     return check_date_valid(sg.bucketGet('Yzyxmm_sf_Vip', phone))
 
-
 def check_dd_sf_authorization(phone: str) -> bool:
     return check_date_valid('2099-12-31')
 
-
 def check_chuan_sf_authorization(account_key: str) -> bool:
     return check_date_valid('2099-12-31')
-
 
 def check_authorization(account_key: str) -> bool:
     if is_phone_account(account_key):
@@ -336,7 +310,6 @@ def check_authorization(account_key: str) -> bool:
         )
     return check_chuan_sf_authorization(account_key)
 
-
 def get_account_link(account_key: str) -> Optional[str]:
     if is_phone_account(account_key):
         return (
@@ -346,14 +319,11 @@ def get_account_link(account_key: str) -> Optional[str]:
         )
     return sg.bucketGet('chuan_sf_accountId', account_key)
 
-
 def get_user_address(sender, phone_masked: str) -> Optional[str]:
     return sg.bucketGet('Joh_sf_dz', phone_masked)
 
-
 def set_user_address(sender, phone_masked: str, address: str) -> None:
     sg.bucketSet('Joh_sf_dz', phone_masked, address)
-
 
 def parse_address(address_str: str) -> Optional[Dict[str, str]]:
     try:
@@ -378,10 +348,8 @@ def parse_address(address_str: str) -> Optional[Dict[str, str]]:
     except Exception:
         return None
 
-
 def store_encoded_link(sender, phone_masked: str, encoded_link: str) -> None:
     sg.bucketSet('Joh_sf', phone_masked, encoded_link)
-
 
 class SFExpress:
     def __init__(self, encoded_link: str, phone_masked: str, index: int, sender):
@@ -716,7 +684,6 @@ class SFExpress:
                 results.append(f"秒杀{goods_name}失败: {str(e)}")
         return "\n".join(results)
 
-
 class IntegralQuery:
     def __init__(self, sender, account_key: str):
         self.sender = sender
@@ -797,7 +764,6 @@ class IntegralQuery:
             print(f'❌ 查询积分异常: {str(e)}')
             return None
 
-
 class GoodsQuery:
     def __init__(self, sender, encoded_link: str):
         self.sender = sender
@@ -869,7 +835,6 @@ class GoodsQuery:
                 break
         limited_goods = [g for g in all_goods if g.get('storeDaily', 0) > 0 and g.get('storeDailyReset', 0) > 0]
         return limited_goods
-
 
 class SeckillQuery:
     def __init__(self, sender, encoded_link: str):
@@ -962,7 +927,6 @@ class SeckillQuery:
             print('❌ 未查询到秒杀商品')
         return all_goods
 
-
 def push_to_admin(summary: str) -> None:
     try:
         admin_qq = sg.bucketGet('Joh_sf_config', 'QQ')
@@ -986,7 +950,6 @@ def push_to_admin(summary: str) -> None:
     except Exception as e:
         print(f"推送通知处理失败: {str(e)}")
 
-
 def find_user_id_by_account(bucket_name: str, account: str) -> Optional[str]:
     try:
         all_keys = sg.bucketAllKeys(bucket_name)
@@ -1000,7 +963,6 @@ def find_user_id_by_account(bucket_name: str, account: str) -> Optional[str]:
     except Exception as e:
         print(f"从 {bucket_name} 查询出错: {str(e)}")
         return None
-
 
 def push_to_user(phone_masked: str, result: str) -> None:
     try:
@@ -1034,7 +996,6 @@ def push_to_user(phone_masked: str, result: str) -> None:
             print(f"❌ 未找到账号 {phone_masked} 对应的 chuan_sf 账号")
     except Exception as e:
         print(f"推送通知处理失败: {str(e)}")
-
 
 def callback_choose_accounts(sender, account_keys: List[str]) -> Optional[List[str]]:
     accounts: List[Tuple[str, str]] = []
@@ -1085,7 +1046,6 @@ def callback_choose_accounts(sender, account_keys: List[str]) -> Optional[List[s
         sender.reply("❌ 所选账号均无法使用，请先完成授权")
         return None
     return valid
-
 
 def main(sender) -> None:
     try:

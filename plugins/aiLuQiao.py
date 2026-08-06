@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.3.0]
+# [version: v1.3.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -19,38 +19,26 @@ import types as _sg_types
 import json as _sg_json
 import re as _sg_re
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, plugin
 check_auth_status = lambda *args, **kwargs: "账号默认可用"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -63,16 +51,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,11 +73,12 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
+
 mask_account=lambda v: (str(v or "") if len(str(v or ""))<=7 else str(v or "")[:3]+"***"+str(v or "")[-4:])
 def select_accounts(sender,user_bucket,user_id,*a,**k):
     raw=sg.bucketGet(user_bucket,user_id,[]); raw=_sg_literal(raw,[]) if isinstance(raw,str) else raw; raw=(list(raw.keys()) or list(raw.values())) if isinstance(raw,dict) else raw; return (raw if isinstance(raw,list) else []),(raw if isinstance(raw,list) else [])
@@ -109,12 +98,13 @@ class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
 DumbPanelClient=DadaiPanelClient
 
-config = form({
-    's_alq_qlname': form.string().title('设置对接容器').default('').description('面板容器参数；use_daipanel=true 时此处应填写呆呆面板 Host丨AppKey丨AppSecret，不填则回退使用 默认配置 全局配置'),
-    's_alq_use_daipanel': form.boolean().title('使用呆呆面板').default(False).description('勾选后使用呆呆面板，不勾选使用青龙面板'),
-    's_alq_panel_group': form.string().title('呆呆面板分组').default('').description('仅 use_daipanel=true 时生效，填写后同步写入 group 字段'),
-    's_alq_osname': form.string().title('青龙变量名').default('S_ALQ').description('上传到面板的变量名'),
-    's_alq_notify': form.string().title('通知渠道').default('').description('检测通知推送渠道'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    's_alq_qlname': plugin.Form.string().title('设置对接容器').default('').description('面板容器参数；use_daipanel=true 时此处应填写呆呆面板 Host丨AppKey丨AppSecret，不填则回退使用 默认配置 全局配置'),
+    's_alq_use_daipanel': plugin.Form.boolean().title('使用呆呆面板').default(False).description('勾选后使用呆呆面板，不勾选使用青龙面板'),
+    's_alq_panel_group': plugin.Form.string().title('呆呆面板分组').default('').description('仅 use_daipanel=true 时生效，填写后同步写入 group 字段'),
+    's_alq_osname': plugin.Form.string().title('青龙变量名').default('S_ALQ').description('上传到面板的变量名'),
+    's_alq_notify': plugin.Form.string().title('通知渠道').default('').description('检测通知推送渠道'),
 })
 _CONFIG_FIELD_MAP = {
     ('s_alq', 'qlname'): 's_alq_qlname',
@@ -132,7 +122,6 @@ import time
 from datetime import datetime
 
 import requests
-
 
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
@@ -162,7 +151,6 @@ LEGACY_KEY_MAP = {
     "panel_group": ("panel_group",),
 }
 
-
 def _loads(raw, default=None):
     if default is None:
         default = {}
@@ -172,16 +160,11 @@ def _loads(raw, default=None):
     except Exception:
         return default
 
-
 def _today():
     return str(datetime.now().date())
 
-
 def _mask_account(account):
     return mask_account(str(account or ""))
-
-
-
 
 def _cfg(key, default=""):
     aliases = LEGACY_KEY_MAP.get(key, (key,))
@@ -192,15 +175,9 @@ def _cfg(key, default=""):
                 return value
     return default
 
-
-
-
-
-
 def _pkcs7_pad(raw_bytes, block_size=16):
     pad_len = block_size - (len(raw_bytes) % block_size)
     return raw_bytes + bytes([pad_len]) * pad_len
-
 
 def _aes_encrypt_text(text, key="ailuqiaoAb112112", iv="ailuqiaobagebaao"):
     try:
@@ -216,7 +193,6 @@ def _aes_encrypt_text(text, key="ailuqiaoAb112112", iv="ailuqiaobagebaao"):
     encryptor = cipher.encryptor()
     encrypted = encryptor.update(plain_bytes) + encryptor.finalize()
     return base64.b64encode(encrypted).decode("utf-8")
-
 
 def _get_user_accounts(user_id=None):
     user_id = str(user_id or userid)
@@ -235,7 +211,6 @@ def _get_user_accounts(user_id=None):
         pass
     return []
 
-
 def _save_user_accounts(accounts, user_id=None):
     user_id = str(user_id or userid)
     cleaned = list(dict.fromkeys(str(item).strip() for item in accounts if str(item).strip()))
@@ -244,14 +219,11 @@ def _save_user_accounts(accounts, user_id=None):
     else:
         sg.bucketDel(USER_BUCKET, user_id)
 
-
 def _get_token_info(account):
     return _loads(sg.bucketGet(TOKEN_BUCKET, str(account).strip()), {})
 
-
 def _save_token_info(account, account_info):
     sg.bucketSet(TOKEN_BUCKET, str(account).strip(), json.dumps(account_info, ensure_ascii=False))
-
 
 def _get_auth_text(account):
     auth_time = '2099-12-31'
@@ -261,13 +233,11 @@ def _get_auth_text(account):
         return f"已过期:{auth_time}"
     return f"到期:{auth_time}"
 
-
 def _select_accounts():
     accounts, selected = select_accounts(sender, USER_BUCKET, userid, AUTH_BUCKET, PLUGIN_NAME)
     if accounts is None and selected is None:
         return None, None
     return accounts or [], list(dict.fromkeys(selected or []))
-
 
 def _get_ql_client():
     osname = str(sg.bucketGet(CONFIG_BUCKET, "osname") or "S_ALQ").strip()
@@ -277,10 +247,8 @@ def _get_ql_client():
         return DumbPanelClient(osname, qlname) if qlname else DumbPanelClient(osname)
     return QingLongClient(osname, qlname) if qlname else QingLongClient(osname)
 
-
 def _get_panel_name():
     return "呆呆面板" if str(sg.bucketGet(CONFIG_BUCKET, "use_daipanel") or "").lower() == "true" else "青龙面板"
-
 
 def _build_panel_env(account, account_info):
     phone = str(account or "").strip()
@@ -288,13 +256,10 @@ def _build_panel_env(account, account_info):
     cookie = str((account_info or {}).get("cookie") or "").strip()
     if not phone or not uid or not cookie:
         return None
-    auth_time = '2099-12-31' or "未授权"
+    auth_time = '2099-12-31'
     panel_group = str(_cfg("panel_group", "") or "").strip()
     remarks = f"{PLUGIN_NAME}:{phone}|uid:{uid}|到期:{auth_time}"
     return phone, f"{uid}#{cookie}", remarks, panel_group
-
-
-
 
 def sync_ql_env(account, account_info):
     ql = _get_ql_client()
@@ -316,10 +281,8 @@ def sync_ql_env(account, account_info):
         return True, f"{panel_name}同步成功"
     return False, f"{panel_name}变量更新失败"
 
-
 def delete_ql_env(account):
     return _get_ql_client().delete_env(str(account or "").strip())
-
 
 class AiLuQiaoClient:
     def __init__(self, phone="", cookie=""):
@@ -481,7 +444,6 @@ class AiLuQiaoClient:
             "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-
 def _query_live_state(account, account_info):
     phone = str(account or "").strip()
     uid = str((account_info or {}).get("uid") or "").strip()
@@ -501,7 +463,6 @@ def _query_live_state(account, account_info):
         "record_error": "" if ok_records else records,
         "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
-
 
 def bind_account():
     sender.reply(
@@ -556,7 +517,7 @@ def bind_account():
         _save_user_accounts(accounts)
     _save_token_info(phone, account_info)
 
-    auth_time = str('2099-12-31' or "").strip()
+    auth_time = str('2099-12-31').strip()
     sync_text = '未授权，可发送"爱路桥管理"开通'
     if auth_time and auth_time >= _today():
         sync_ok, sync_msg = sync_ql_env(phone, account_info)
@@ -572,7 +533,6 @@ def bind_account():
         f"🔄 状态: {sync_text}\n"
         "=================="
     )
-
 
 def query_accounts():
     accounts, selected = _select_accounts()
@@ -627,14 +587,8 @@ def query_accounts():
 
     sender.reply("=====查询结果=====\n" + "\n------------------\n".join(blocks) + "\n==================")
 
-
-
-
-
-
 def authorize_accounts(accounts):
     return True
-
 
 def manage_account():
     accounts = _get_user_accounts()
@@ -710,7 +664,7 @@ def manage_account():
         fail_list = []
         today = _today()
         for account in selected:
-            auth_time = str('2099-12-31' or "").strip()
+            auth_time = str('2099-12-31').strip()
             if not auth_time or auth_time < today:
                 fail_list.append(f"{_mask_account(account)} -> 未授权或已过期")
                 continue
@@ -735,12 +689,8 @@ def manage_account():
 
     sender.reply("❌ 无效的选择")
 
-
-
-
 def ks_auth():
     return True
-
 
 def show_tutorial():
     sender.reply(
@@ -761,12 +711,9 @@ def show_tutorial():
         "=================="
     )
 
-
-
 def _is_target_message(message):
     text = str(message or "")
     return PLUGIN_NAME in text or "alq" in text.lower()
-
 
 def main():
     msg = str(sender.getMessage() or "")
@@ -795,7 +742,6 @@ def main():
         sender.reply(check_auth_status())
     else:
         sender.setContinue()
-
 
 if __name__ == "__main__":
     main()

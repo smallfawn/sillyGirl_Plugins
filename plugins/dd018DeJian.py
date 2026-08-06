@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: dandan8]
-# [version: v1.0.1]
+# [version: v1.0.3]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -17,50 +17,35 @@ import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -73,17 +58,18 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'dd_dejian_config_ql_config': form.string().title('青龙面板配置').default('').description('用于同步 DD_DJ_COOKIE 环境变量'),
-    'dd_dejian_config_ql_env_name': form.string().title('青龙变量名').default('').description('默认 DD_DJ_COOKIE'),
-    'dd_dejian_config_sms_wait_timeout': form.string().title('验证码等待秒').default('').description('默认 180'),
-    'dd_dejian_config_admin_ids': form.string().title('管理员用户ID').default('').description('逗号分隔，sender.isAdmin() 仍然有效'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'dd_dejian_config_ql_config': plugin.Form.string().title('青龙面板配置').default('').description('用于同步 DD_DJ_COOKIE 环境变量'),
+    'dd_dejian_config_ql_env_name': plugin.Form.string().title('青龙变量名').default('').description('默认 DD_DJ_COOKIE'),
+    'dd_dejian_config_sms_wait_timeout': plugin.Form.string().title('验证码等待秒').default('').description('默认 180'),
+    'dd_dejian_config_admin_ids': plugin.Form.string().title('管理员用户ID').default('').description('逗号分隔，sender.isAdmin() 仍然有效'),
 })
 _CONFIG_FIELD_MAP = {
     ('dd_dejian_config', 'ql_config'): 'dd_dejian_config_ql_config',
@@ -126,20 +112,14 @@ API_KEY = os.environ.get("DJ_API_KEY", "2026-06-18")
 DJ_BASE = "https://dj.palmestore.com"
 WELFARE_BASE = "https://welfare-dj.palmestore.com"
 
-
 class PluginError(Exception):
     pass
-
 
 def now_ts():
     return int(time.time())
 
-
 def today():
     return time.strftime("%Y-%m-%d")
-
-
-
 
 def safe_json_loads(raw, default=None):
     if raw is None or raw == "":
@@ -151,10 +131,8 @@ def safe_json_loads(raw, default=None):
     except Exception:
         return default
 
-
 def json_dumps(data):
     return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-
 
 def bucket_get(bucket, key, default=""):
     if sg is None:
@@ -165,7 +143,6 @@ def bucket_get(bucket, key, default=""):
     except Exception:
         return default
 
-
 def bucket_set(bucket, key, value):
     if sg is None:
         return False
@@ -175,7 +152,6 @@ def bucket_set(bucket, key, value):
     except Exception:
         return False
 
-
 def bucket_del(bucket, key):
     if sg is None:
         return False
@@ -184,7 +160,6 @@ def bucket_del(bucket, key):
         return True
     except Exception:
         return False
-
 
 def bucket_keys(bucket):
     if sg is None:
@@ -202,14 +177,11 @@ def bucket_keys(bucket):
     except Exception:
         return []
 
-
 def bucket_get_json(bucket, key, default=None):
     return safe_json_loads(bucket_get(bucket, key, ""), default)
 
-
 def bucket_set_json(bucket, key, value):
     return bucket_set(bucket, key, json_dumps(value))
-
 
 def parse_int(value, default=0, minimum=None, maximum=None):
     try:
@@ -222,7 +194,6 @@ def parse_int(value, default=0, minimum=None, maximum=None):
         n = min(maximum, n)
     return n
 
-
 def parse_bool(value, default=False):
     if value is None or value == "":
         return default
@@ -230,13 +201,11 @@ def parse_bool(value, default=False):
         return value
     return str(value).strip().lower() in ("1", "true", "yes", "y", "on", "开启")
 
-
 def parse_decimal(value, default="0"):
     try:
         return Decimal(str(value or default).strip())
     except (InvalidOperation, ValueError):
         return Decimal(default)
-
 
 def mask_text(text, keep=3):
     text = "" if text is None else str(text)
@@ -244,13 +213,11 @@ def mask_text(text, keep=3):
         return text[:1] + "***" if text else ""
     return text[:keep] + "***" + text[-keep:]
 
-
 def mask_phone(phone):
     phone = "" if phone is None else str(phone)
     if re.fullmatch(r"\d{11}", phone):
         return phone[:3] + "****" + phone[-4:]
     return mask_text(phone, 2)
-
 
 def short_error(exc):
     text = str(exc)
@@ -258,7 +225,6 @@ def short_error(exc):
     text = re.sub(r"(kt|token|zyeid)=([^&\s]+)", r"\1=***", text, flags=re.I)
     text = re.sub(r"(sign|timestamp|phone|p1|p7|p31|p35)=([^&\s]+)", r"\1=***", text, flags=re.I)
     return text[:120]
-
 
 def response_json(resp, label):
     try:
@@ -275,7 +241,6 @@ def response_json(resp, label):
         raise PluginError("%s请求失败：HTTP %s，%s" % (label, resp.status_code, msg))
     return data
 
-
 def response_json_with_context(resp, label, context=""):
     try:
         return response_json(resp, label)
@@ -284,10 +249,8 @@ def response_json_with_context(resp, label, context=""):
             raise PluginError("%s（%s）" % (str(exc), context))
         raise
 
-
 def account_display(account):
     return mask_phone(account.get("phone") or account.get("remark") or account.get("usr") or account.get("account_key"))
-
 
 def account_phone(account=None, session=None):
     account = account or {}
@@ -298,10 +261,8 @@ def account_phone(account=None, session=None):
             return value
     return ""
 
-
 def account_remark(account=None, session=None):
     return account_phone(account, session) or str((account or {}).get("usr") or (session or {}).get("usr") or "").strip()
-
 
 def config_read_key(key, default=""):
     value = bucket_get(BUCKET_CONFIG, key, None)
@@ -320,7 +281,6 @@ def config_read_key(key, default=""):
             pass
     return default
 
-
 def parse_ql_config(raw):
     raw = (raw or "").strip()
     if not raw:
@@ -330,7 +290,6 @@ def parse_ql_config(raw):
     if len(parts) < 3 or not parts[0] or not parts[1] or not parts[2]:
         raise PluginError("青龙配置格式应为：青龙地址丨应用ID丨应用密钥")
     return {"url": parts[0].rstrip("/"), "client_id": parts[1], "client_secret": parts[2]}
-
 
 def get_config():
     cfg = {
@@ -354,13 +313,11 @@ def get_config():
         cfg["ql_config"] = None
     return cfg
 
-
 def sender_reply(sender, text):
     try:
         sender.reply(str(text))
     except Exception:
         pass
-
 
 def format_panel(title, lines):
     body = ["=====%s=====" % title]
@@ -368,10 +325,8 @@ def format_panel(title, lines):
     body.append("==================")
     return "\n".join(body)
 
-
 def reply_panel(sender, title, lines):
     sender_reply(sender, format_panel(title, lines))
-
 
 def sender_input(sender, timeout_seconds=180):
     timeout_ms = int(timeout_seconds) * 1000
@@ -389,13 +344,11 @@ def sender_input(sender, timeout_seconds=180):
         return ""
     return str(value).strip()
 
-
 def get_user_id(sender):
     try:
         return str(sender.getUserID())
     except Exception:
         return ""
-
 
 def is_admin_user(sender, cfg):
     try:
@@ -406,7 +359,6 @@ def is_admin_user(sender, cfg):
     uid = get_user_id(sender)
     ids = [x.strip() for x in str(cfg.get("admin_ids") or "").split(",") if x.strip()]
     return uid in ids
-
 
 def cloud_sign(data, cfg=None):
     session = requests.Session()
@@ -422,17 +374,14 @@ def cloud_sign(data, cfg=None):
         raise PluginError("签名服务错误：%s" % result.get("msg"))
     return result.get("data") or {}
 
-
 def rsa_sha1_sign_cloud(params, cfg=None):
     timestamp = str(int(time.time() * 1000))
     data = cloud_sign({"type": "rsa-sha1", "params": params, "timestamp": timestamp}, cfg)
     return data["sign"], data["timestamp"]
 
-
 def rsa_encrypt_cloud(plaintext, cfg=None):
     data = cloud_sign({"type": "rsa-encrypt", "plaintext": plaintext}, cfg)
     return data["encrypted"]
-
 
 DEVICE_LIBRARY = [
     {"p16": "22041219C", "p34": "Redmi", "firm": "Redmi", "d1": "5.5.9.2", "build": "SP1A.210812.016", "android": "12", "model": "Redmi Note 11T Pro"},
@@ -459,12 +408,8 @@ DEVICE_LIBRARY = [
 APP_VERSIONS = ["5.5.9.2", "5.5.8.2", "5.5.7.2", "5.5.6.2", "5.5.5.2"]
 DEVICE_PROFILE_BY_P16 = {item["p16"]: item for item in DEVICE_LIBRARY}
 
-
 def gen_device_id():
     return hashlib.md5(uuid.uuid4().bytes).hexdigest()[:16]
-
-
-
 
 def p7_encrypt(src):
     if not src:
@@ -478,19 +423,14 @@ def p7_encrypt(src):
             result += ch
     return result
 
-
 def gen_smboxid():
     raw = "".join(random.choices(string.ascii_letters + string.digits, k=32))
     return base64.b64encode(raw.encode()).decode()[:88]
-
-
-
 
 def pick_device():
     device = random.choice(DEVICE_LIBRARY).copy()
     device["d1"] = random.choice(APP_VERSIONS)
     return device
-
 
 def build_login_device_params(phone):
     device = pick_device()
@@ -507,10 +447,8 @@ def build_login_device_params(phone):
         "_phone": phone, "_model": device["model"], "_build": device["build"], "_android": device["android"],
     }
 
-
 def device_cache_key(phone):
     return hashlib.sha1(str(phone).encode("utf-8")).hexdigest()[:24]
-
 
 def normalize_login_device_params(device_params):
     device_params = dict(device_params or {})
@@ -526,7 +464,6 @@ def normalize_login_device_params(device_params):
     device_params.setdefault("kt", "")
     device_params.setdefault("rgt", "7")
     return device_params
-
 
 def load_device_params(phone, cfg=None):
     if cfg is not None and cfg.get("_login_device_params"):
@@ -545,7 +482,6 @@ def load_device_params(phone, cfg=None):
         cfg["_login_device_params"] = device_params
     return device_params
 
-
 def build_native_ua_from_device(device_params):
     profile = DEVICE_PROFILE_BY_P16.get(device_params.get("p16", ""))
     android = device_params.get("_android") or (profile or {}).get("android") or "12"
@@ -553,11 +489,9 @@ def build_native_ua_from_device(device_params):
     build = device_params.get("_build") or (profile or {}).get("build") or "SP1A.210812.016"
     return "Dalvik/2.1.0 (Linux; U; Android %s; %s Build/%s)" % (android, model, build)
 
-
 def login_url_params(device):
     params = {k: v for k, v in (device or {}).items() if not k.startswith("_") and v is not None}
     return urlencode(params, quote_via=quote)
-
 
 def fetch_proxy(cfg):
     url = (cfg.get("proxy_api_url") or "").strip()
@@ -596,12 +530,10 @@ def fetch_proxy(cfg):
             return None
         raise PluginError("代理提取失败：%s" % short_error(exc))
 
-
 def request_proxy(cfg):
     if "_fixed_proxy" in cfg:
         return cfg.get("_fixed_proxy")
     return fetch_proxy(cfg)
-
 
 def normalize_proxy(proxy):
     proxy = (proxy or "").strip()
@@ -610,7 +542,6 @@ def normalize_proxy(proxy):
     if not proxy.startswith(("http://", "https://")):
         proxy = "http://" + proxy
     return {"http": proxy, "https": proxy}
-
 
 def describe_network_error(exc):
     text = short_error(exc)
@@ -627,7 +558,6 @@ def describe_network_error(exc):
         return "网络连接失败：%s" % text
     return text
 
-
 def post_dj_with_proxy_fallback(url, data, timeout, headers, cfg, label):
     session = requests.Session()
     session.trust_env = False
@@ -641,7 +571,6 @@ def post_dj_with_proxy_fallback(url, data, timeout, headers, cfg, label):
             except requests.RequestException as direct_exc:
                 raise PluginError("%s失败：代理失败后直连仍失败；%s" % (label, describe_network_error(direct_exc)))
         raise PluginError("%s失败：%s" % (label, describe_network_error(first_exc)))
-
 
 def send_sms(phone, cfg):
     device_params = load_device_params(phone, cfg)
@@ -673,7 +602,6 @@ def send_sms(phone, cfg):
         "得间短信接口",
     )
     return response_json(resp, "得间短信接口")
-
 
 def login_by_phone(phone, code, cfg):
     from Crypto.Cipher import DES as DES_Cipher
@@ -741,7 +669,6 @@ def login_by_phone(phone, code, cfg):
         "login_response": result,
     }
 
-
 def make_account_key(session):
     session = normalize_session_data(session)
     phone = str(session.get("phone") or "").strip()
@@ -753,11 +680,9 @@ def make_account_key(session):
     raw = "%s:%s" % (session.get("phone", ""), session.get("kt", ""))
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
-
 def get_user_account_keys(user_id):
     data = bucket_get_json(BUCKET_USER, str(user_id), [])
     return data if isinstance(data, list) else []
-
 
 def save_user_account_keys(user_id, keys):
     clean = []
@@ -766,11 +691,9 @@ def save_user_account_keys(user_id, keys):
             clean.append(key)
     return bucket_set_json(BUCKET_USER, str(user_id), clean)
 
-
 def get_account(account_key):
     data = bucket_get_json(BUCKET_ACCOUNT, account_key, None)
     return data if isinstance(data, dict) else None
-
 
 def normalize_session_data(session, phone_hint=""):
     if not isinstance(session, dict):
@@ -823,11 +746,9 @@ def normalize_session_data(session, phone_hint=""):
         data["device"] = normalized_device
     return data
 
-
 def get_session(account_key):
     data = bucket_get_json(BUCKET_SESSION, account_key, None)
     return normalize_session_data(data) if isinstance(data, dict) else None
-
 
 def find_account_by_phone(phone):
     phone = str(phone or "").strip()
@@ -838,7 +759,6 @@ def find_account_by_phone(phone):
         if account and account_phone(account) == phone:
             return str(key), account
     return "", None
-
 
 def migrate_account_key(old_key, new_key):
     if not old_key or not new_key or str(old_key) == str(new_key):
@@ -854,7 +774,6 @@ def migrate_account_key(old_key, new_key):
             bucket_set(bucket, new_key, raw)
         bucket_del(bucket, old_key)
     bucket_del(BUCKET_ACCOUNT, old_key)
-
 
 def save_account(user_id, session, source="sms"):
     session = normalize_session_data(session)
@@ -893,7 +812,6 @@ def save_account(user_id, session, source="sms"):
     save_user_account_keys(user_id, keys)
     return account
 
-
 def delete_account_local(account_key):
     account = get_account(account_key)
     owner = str((account or {}).get("owner_userid", ""))
@@ -904,7 +822,6 @@ def delete_account_local(account_key):
         bucket_del(bucket, account_key)
     return True
 
-
 def all_accounts():
     items = []
     for key in bucket_keys(BUCKET_ACCOUNT):
@@ -913,11 +830,9 @@ def all_accounts():
             items.append(account)
     return items
 
-
 def get_auth(account_key):
     data = bucket_get_json(BUCKET_AUTH, account_key, None)
     return data if isinstance(data, dict) else None
-
 
 def auth_status(account_key):
     auth = get_auth(account_key)
@@ -937,7 +852,6 @@ def auth_status(account_key):
         bucket_set_json(BUCKET_AUTH, account_key, auth)
         return {"status": "expired", "text": "已过期", "expire_date": expire_date, "days_left": days_left}
     return {"status": "active", "text": "已授权", "expire_date": expire_date, "days_left": days_left}
-
 
 def set_auth(account_key, days, source, granted_by):
     current = auth_status(account_key)
@@ -962,11 +876,9 @@ def set_auth(account_key, days, source, granted_by):
     bucket_set_json(BUCKET_AUTH, account_key, data)
     return data
 
-
 def build_env_value(account, session):
     remark = account_remark(account, session)
     return "%s#%s" % (remark, json_dumps(session))
-
 
 def validate_qinglong_session(session):
     session = normalize_session_data(session)
@@ -974,7 +886,6 @@ def validate_qinglong_session(session):
     if missing:
         raise PluginError("会话字段缺失：%s" % "、".join(missing))
     return session
-
 
 def build_remarks(account, auth, session=None):
     return "%s：%s|用户：%s|到期：%s|得间管理" % (
@@ -984,10 +895,8 @@ def build_remarks(account, auth, session=None):
         auth.get("expire_date", ""),
     )
 
-
 def parse_env_id(env):
     return env.get("id") or env.get("_id")
-
 
 class QingLongAPI:
     def __init__(self, cfg):
@@ -1068,7 +977,6 @@ class QingLongAPI:
     def disable_env(self, env_id):
         return self.request("PUT", "/open/envs/disable", json=[env_id])
 
-
 def env_matches_account(env, account, session, env_value):
     remarks = str(env.get("remarks") or "")
     value = str(env.get("value") or "")
@@ -1082,7 +990,6 @@ def env_matches_account(env, account, session, env_value):
         return True
     return False
 
-
 def find_env_for_account(ql, cfg, account, session, env_value):
     sync = bucket_get_json(BUCKET_SYNC, account["account_key"], {})
     env_id = (sync or {}).get("env_id")
@@ -1095,7 +1002,6 @@ def find_env_for_account(ql, cfg, account, session, env_value):
         if env.get("name") == cfg["env_name"] and env_matches_account(env, account, session, env_value):
             return env
     return None
-
 
 def sync_to_qinglong(account_key, cfg):
     status = auth_status(account_key)
@@ -1133,7 +1039,6 @@ def sync_to_qinglong(account_key, cfg):
     })
     return {"ok": True, "action": action, "env_id": str(env_id or "")}
 
-
 def disable_qinglong_account(account_key, cfg, reason=""):
     account = get_account(account_key)
     session = get_session(account_key)
@@ -1151,7 +1056,6 @@ def disable_qinglong_account(account_key, cfg, reason=""):
     bucket_set_json(BUCKET_SYNC, account_key, sync)
     return {"ok": True, "action": "disabled", "env_id": str(env_id)}
 
-
 def remove_from_qinglong(account_key, cfg):
     account = get_account(account_key)
     session = get_session(account_key)
@@ -1165,7 +1069,6 @@ def remove_from_qinglong(account_key, cfg):
     env_id = parse_env_id(env)
     ql.delete_env(env_id)
     return {"ok": True, "action": "deleted", "env_id": str(env_id)}
-
 
 class DejianClient:
     def __init__(self, session_data, cfg):
@@ -1318,7 +1221,6 @@ class DejianClient:
                     return detail
         return None
 
-
 def parse_selection(text, count):
     text = (text or "").strip().lower()
     if text == "q":
@@ -1349,7 +1251,6 @@ def parse_selection(text, count):
         raise PluginError("没有选中账号")
     return selected
 
-
 def format_account_selector(accounts, title="请选择得间账号", all_text="全部账号"):
     lines = []
     for idx, account in enumerate(accounts, 1):
@@ -1372,7 +1273,6 @@ def format_account_selector(accounts, title="请选择得间账号", all_text="�
     ])
     return format_panel(title, lines)
 
-
 def pick_accounts(sender, accounts, title="请选择得间账号", all_text="全部账号", timeout=180):
     if not accounts:
         sender_reply(sender, "没有可操作的得间账号")
@@ -1392,7 +1292,6 @@ def pick_accounts(sender, accounts, title="请选择得间账号", all_text="全
         sender_reply(sender, "选择失败：%s" % exc)
         return []
 
-
 def user_accounts(user_id):
     accounts = []
     for key in get_user_account_keys(user_id):
@@ -1400,7 +1299,6 @@ def user_accounts(user_id):
         if account:
             accounts.append(account)
     return accounts
-
 
 def show_help(sender, cfg, admin=False):
     if coin_price_int(cfg) == 0:
@@ -1430,7 +1328,6 @@ def show_help(sender, cfg, admin=False):
             "得间统计  全局统计",
         ])
     reply_panel(sender, "📘 得间免费小说", lines)
-
 
 def handle_login(sender, cfg):
     cfg = dict(cfg)
@@ -1494,7 +1391,6 @@ def handle_login(sender, cfg):
     except Exception as exc:
         sender_reply(sender, "登录失败：%s" % short_error(exc))
 
-
 def build_query_card(account, cfg, index=None, total=None):
     status = auth_status(account["account_key"])
     sync = bucket_get_json(BUCKET_SYNC, account["account_key"], {}) or {}
@@ -1525,7 +1421,6 @@ def build_query_card(account, cfg, index=None, total=None):
         "到期：%s%s" % (status.get("expire_date") or "-", "（剩余%s天）" % status["days_left"] if status["status"] == "active" else ""),
     ])
 
-
 def handle_query(sender, cfg):
     accounts = user_accounts(get_user_id(sender))
     if not accounts:
@@ -1540,7 +1435,6 @@ def handle_query(sender, cfg):
         sender_reply(sender, build_query_card(account, cfg, index if total > 1 else None, total if total > 1 else None))
         if total > 1:
             time.sleep(0.3)
-
 
 def handle_delete(sender, cfg, accounts):
     selected = pick_accounts(sender, accounts, "请选择删除账号", "全部账号", cfg["sms_wait_timeout"])
@@ -1567,7 +1461,6 @@ def handle_delete(sender, cfg, accounts):
         lines.append("%s：本地已删，青龙%s" % (account_display(account), ql_text))
     reply_panel(sender, "🗑 删除结果", lines)
 
-
 def handle_sync(sender, cfg, accounts):
     selected = pick_accounts(sender, accounts, "请选择提交青龙账号", "全部已授权账号", cfg["sms_wait_timeout"])
     if not selected:
@@ -1586,21 +1479,17 @@ def handle_sync(sender, cfg, accounts):
             lines.append("%s：失败 %s" % (account_display(account), short_error(exc)))
     reply_panel(sender, "📤 提交青龙结果", lines)
 
-
 def coin_price_int(cfg):
     try:
         return max(int(cfg.get("coin_price", 0)), 0)
     except Exception:
         return 0
 
-
 def get_user_coin(user_id, coin_bucket):
     return parse_int(bucket_get(coin_bucket, str(user_id), "0"), 0)
 
-
 def set_user_coin(user_id, amount, coin_bucket):
     return bucket_set(coin_bucket, str(user_id), str(max(int(amount), 0)))
-
 
 def deduct_user_coin(user_id, amount, coin_bucket):
     if amount <= 0:
@@ -1610,20 +1499,17 @@ def deduct_user_coin(user_id, amount, coin_bucket):
         return False
     return set_user_coin(user_id, current - amount, coin_bucket)
 
-
 def refund_user_coin(user_id, amount, coin_bucket):
     if amount <= 0:
         return True
     current = get_user_coin(user_id, coin_bucket)
     return set_user_coin(user_id, current + amount, coin_bucket)
 
-
 def restore_auth(account_key, previous_auth):
     if previous_auth:
         bucket_set_json(BUCKET_AUTH, account_key, previous_auth)
     else:
         bucket_del(BUCKET_AUTH, account_key)
-
 
 def authorize_accounts(sender, cfg, accounts, days, deduct_coin=False, source="coin"):
     days = parse_int(days, 0, 1, 3650)
@@ -1698,7 +1584,6 @@ def authorize_accounts(sender, cfg, accounts, days, deduct_coin=False, source="c
         lines.append("%s：%s" % (item["remark"], item["reason"]))
     reply_panel(sender, "✅ 得间授权完成", lines)
 
-
 def handle_user_authorize(sender, cfg):
     accounts = user_accounts(get_user_id(sender))
     if not accounts:
@@ -1754,7 +1639,6 @@ def handle_user_authorize(sender, cfg):
     except Exception as exc:
         sender_reply(sender, "授权失败：%s" % short_error(exc))
 
-
 def handle_manage(sender, cfg):
     accounts = user_accounts(get_user_id(sender))
     if not accounts:
@@ -1789,11 +1673,6 @@ def handle_manage(sender, cfg):
     else:
         sender_reply(sender, "已退出")
 
-
-
-
-
-
 def handle_admin_authorize(sender, cfg):
     try:
         sender.reply('该管理项已取消，账号直接运行')
@@ -1814,7 +1693,6 @@ def handle_admin_sync(sender, cfg):
             lines.append("%s：失败 %s" % (account_display(account), short_error(exc)))
     reply_panel(sender, "🔄 得间重同步", lines)
 
-
 def handle_admin_check(sender, cfg):
     lines = []
     for account in all_accounts():
@@ -1831,7 +1709,6 @@ def handle_admin_check(sender, cfg):
     if not lines:
         lines.append("没有得间账号")
     reply_panel(sender, "🧪 得间检测", lines)
-
 
 def handle_admin_cleanup(sender, cfg):
     sender_reply(sender, format_panel("🧹 得间清理", [
@@ -1865,7 +1742,6 @@ def handle_admin_cleanup(sender, cfg):
         lines.append("没有需要清理的账号")
     reply_panel(sender, "🧹 得间清理", lines)
 
-
 def handle_admin_stats(sender):
     accounts = all_accounts()
     users = set(str(a.get("owner_userid")) for a in accounts if a.get("owner_userid"))
@@ -1896,7 +1772,6 @@ def handle_admin_stats(sender):
         "最近同步：%s" % (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last_sync)) if last_sync else "-"),
     ])
 
-
 def handle_cron(sender, cfg):
     if not cfg.get("expire_notify_enabled"):
         return
@@ -1926,7 +1801,6 @@ def handle_cron(sender, cfg):
         sender_reply(sender, "得间巡检：总账号%d，即将到期%d，已过期%d，青龙处理成功%d，失败%d" % (total, expiring, expired, ql_done, ql_fail))
     except Exception:
         pass
-
 
 def route_message(sender, cfg):
     message = ""
@@ -1972,7 +1846,6 @@ def route_message(sender, cfg):
     else:
         show_help(sender, cfg, admin)
 
-
 def main():
     if sg is None:
         return
@@ -1986,7 +1859,6 @@ def main():
     except Exception:
         pass
     route_message(sender, cfg)
-
 
 if __name__ == "__main__":
     main()

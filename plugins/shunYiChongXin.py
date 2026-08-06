@@ -3,65 +3,49 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.1.7]
+# [version: v1.1.8]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|清理|刷新|一键刷新)$]
+# [rule: ^(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|刷新|一键刷新)$]
 # [icon: https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg]
-# [description: 顺易充（新）任务插件，]
+# [description: 顺易充账号登录、积分查询、Token 刷新与任务运行]
 # [depe: ["pycryptodome","requests","urllib3"]]
-
 
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -74,21 +58,19 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-def get_pay_config(): return {}
 
-config = form({
-    'G_SYC_concurrent_count': form.string().title('并发数量').default('3').description('任务执行时的并发线程数量'),
-    'G_SYC_admin_ids': form.string().title('管理员ID').default('').description('多个管理员ID使用英文逗号分隔'),
-    'G_SYC_proxy_api': form.string().title('代理API').default('').description('填写代理接口或固定代理地址，不填则不启用代理'),
+
+config = plugin.Form({
+    'G_SYC_concurrent_count': plugin.Form.string().title('并发数量').default('3').description('任务执行时的并发线程数量'),
+    'G_SYC_proxy_api': plugin.Form.string().title('代理API').default('').description('填写代理接口或固定代理地址，不填则不启用代理'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_SYC', 'concurrent_count'): 'G_SYC_concurrent_count',
-    ('G_SYC', 'admin_ids'): 'G_SYC_admin_ids',
     ('G_SYC', 'proxy_api'): 'G_SYC_proxy_api',
 }
 
@@ -96,11 +78,10 @@ import requests
 import json
 import time
 import hashlib
-import uuid
 import re
 import warnings
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from Crypto.Cipher import DES3
@@ -141,19 +122,8 @@ except Exception:
 BUCKET_CONFIG = "G_SYC"
 BUCKET_USER = "G_SYC_user"
 BUCKET_TOKEN = "G_SYC_token"
-BUCKET_AUTH = "G_SYC_AUT"
 BUCKET_AUTH_STATE = "G_SYC_auth_state"
 BUCKET_TOKEN_STATUS = "G_SYC_token_status"
-BUCKET_RECORDS = "G_SYC_records"
-DEFAULT_PAY_TYPE_NAMES = {
-    "alipay": "支付宝",
-    "wxpay": "微信支付",
-    "qqpay": "QQ支付",
-}
-PAY_POLL_TIMES = 60
-PAY_POLL_INTERVAL_MS = 5000
-
-_points_payment_lock = threading.Lock()
 
 
 def get_bucket_config_value(key: str, default=""):
@@ -163,17 +133,6 @@ def get_bucket_config_value(key: str, default=""):
     except Exception:
         return default
 
-
-def parse_bool(value) -> bool:
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def parse_pay_types(raw_value) -> dict:
-    return {}
 
 
 def get_user_phones(user_id=None) -> list:
@@ -189,25 +148,6 @@ def get_user_phones(user_id=None) -> list:
         return []
 
 
-def get_auth(phone: str) -> str:
-    return '2099-12-31'
-
-
-def build_auth_status(phone: str) -> dict:
-    expire_time = get_auth(phone)
-    if not expire_time:
-        return {"is_authorized": False, "expire_time": ""}
-    try:
-        expire_date = datetime.strptime(expire_time, "%Y-%m-%d").date()
-        if expire_date < datetime.now().date():
-            return {"is_authorized": False, "expire_time": ""}
-        return {"is_authorized": True, "expire_time": expire_time}
-    except Exception:
-        return {"is_authorized": False, "expire_time": ""}
-
-
-def is_authorized(phone: str) -> bool:
-    return True
 
 
 def get_proxy_api() -> str:
@@ -366,17 +306,6 @@ def get_random_user_agent() -> str:
         lambda: f"Mozilla/5.0 (Linux; Android {random.randint(9, 14)}; {random.choice(['OPPO R9s', 'HUAWEI P30', 'Xiaomi MI 10', 'Samsung SM-G973F', 'vivo V2047A'])} Build/QP1A.{random.randint(190000, 210000)}.{random.randint(100, 999)}; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/{random.randint(90, 120)}.0.{random.randint(4000, 5000)}.{random.randint(100, 200)} Mobile Safari/537.36",
     ]
     return random.choice(ua_types)()
-AD_HEADERS = {
-    "Content-Type": "application/json; charset=utf-8",
-    "Accept-Encoding": "gzip",
-    "Token": "245DC3B3-A2D8-0993-9ECD-269B5F19B5BA",
-}
-AD_POSITION_PATTERNS = {
-    "kuaishou_standard": "9253000",
-    "kuaishou_premium": "9253002",
-    "kuaishou_short": "925300",
-}
-VALID_ADV_ID = "b6286f0d6267aa82"
 def get_task_headers():
     return {
         "User-Agent": get_random_user_agent(),
@@ -390,82 +319,10 @@ def get_task_headers():
         "x-client-code": "01",
     }
 def get_config():
-    try:
-        price_str = get_bucket_config_value("price", "0.88")
-        price = float(price_str) if price_str.replace(".", "", 1).isdigit() else 0.88
-        payment_config = get_pay_config() if callable(get_pay_config) else {}
-        if not isinstance(payment_config, dict):
-            payment_config = {}
-        pay_types = payment_config.get("pay_types") or {}
-        if not pay_types:
-            legacy_types = (
-                '2099-12-31'
-                or '2099-12-31'
-                or ""
-            )
-            pay_types = parse_pay_types(legacy_types)
-        zsm = (
-            get_bucket_config_value("zsm", "")
-            or payment_config.get("zsm")
-            or '2099-12-31'
-            or sg.bucketGet("dd_sign_config", "zsm")
-            or ""
-        )
-        points_per_month_str = get_bucket_config_value("points_per_month", "100")
-        points_per_month = (
-            int(points_per_month_str) if points_per_month_str.isdigit() else 100
-        )
-        concurrent_count_str = get_bucket_config_value("concurrent_count", "3")
-        concurrent_count = (
-            int(concurrent_count_str) if concurrent_count_str.isdigit() else 3
-        )
-        concurrent_count = max(1, min(concurrent_count, 10))
-        admin_ids = get_bucket_config_value("admin_ids", "")
-        ma_pay_switch = parse_bool(
-            payment_config.get("ma_pay_switch")
-            or '2099-12-31'
-            or "false"
-        )
-        video_count = 6
-        wait_time = 30
-        watch_time = 25
-        use_enhanced_ads = True
-        return {
-            "price": price,
-            "zsm": zsm,
-            "points_per_month": points_per_month,
-            "video_count": video_count,
-            "wait_time": wait_time,
-            "watch_time": watch_time,
-            "concurrent_count": concurrent_count,
-            "use_enhanced_ads": use_enhanced_ads,
-            "admin_ids": admin_ids,
-            "ma_pay_switch": ma_pay_switch,
-            "pay_types": pay_types,
-        }
-    except Exception as e:
-        sender.reply(f"❌ 配置获取失败: {str(e)}")
-        return {
-            "price": 0.88,
-            "zsm": "",
-            "points_per_month": 100,
-            "video_count": 6,
-            "wait_time": 30,
-            "watch_time": 25,
-            "concurrent_count": 3,
-            "use_enhanced_ads": True,
-            "admin_ids": "",
-            "ma_pay_switch": False,
-            "pay_types": {},
-        }
-def is_syc_admin():
-    if sender.isAdmin():
-        return True
-    admin_ids_str = get_bucket_config_value("admin_ids", "")
-    if not admin_ids_str:
-        return False
-    admin_ids = [aid.strip() for aid in admin_ids_str.split(",") if aid.strip()]
-    return userid in admin_ids
+    try: count=max(1,min(int(get_bucket_config_value('concurrent_count','3')),10))
+    except (TypeError,ValueError): count=3
+    return {'concurrent_count':count}
+
 def md5_encrypt(text: str) -> str:
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 def triple_des_encrypt(data: str, key_base64: str) -> str:
@@ -626,965 +483,95 @@ def login_with_sms_code(mobile: str, code: str) -> dict:
             "refreshToken": "",
             "custInfo": None,
         }
-def get_user_points(user_id=None):
-    return 0
 def query_user_points():
-    user_accounts = get_user_accounts()
-    if not user_accounts:
-        sender.reply("您还没有绑定任何顺易充账号\n请发送「顺易充登录」进行绑定")
-        return
-    results = []
-    success_count = 0
-    fail_count = 0
-    for account_id, account in user_accounts.items():
-        try:
-            phone = account.get("phone")
-            token = account.get("token", "")
-            if not phone:
-                results.append("❌ 账号信息不完整，跳过")
-                fail_count += 1
-                continue
-            if not token:
-                results.append(f"❌ 账号 {phone} 未保存账号，请重新绑定")
-                fail_count += 1
-                continue
-            if not token.lower().startswith("bearer "):
-                token = f"Bearer {token}"
-            headers = get_task_headers()
-            headers["authorization"] = token
-            account_key = f"acc_{phone}"
-            headers["_account_key"] = account_key  # 在headers中传递账号标识
-            try:
-                score_info = get_score_rank_task(headers)
-                if score_info:
-                    masked_phone = (
-                        phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-                    )
-                    is_authorized = account.get("auth_status", {}).get(
-                        "is_authorized", False
-                    )
-                    expire_time = account.get("auth_status", {}).get("expire_time", "")
-                    auth_status = (
-                        f"✅ 已授权 (到期: {expire_time})"
-                        if is_authorized
-                        else "❌ 未授权"
-                    )
-                    current_year = datetime.now().year
-                    year_score = get_year_score_task(headers, current_year)
-                    year_line = f"📝 {current_year}年积分: {year_score}\n" if year_score is not None else ""
-                    results.append(
-                        f"📱 账号: {masked_phone}\n"
-                        f"🏆 总积分: {score_info['积分']}\n"
-                        f"💰 可用积分: {score_info['可用积分']}\n"
-                        f"{year_line}"
-                        f"📝 状态: {auth_status}\n"
-                        f"--------------------"
-                    )
-                    success_count += 1
-                else:
-                    results.append(f"❌ 账号 {phone} 获取积分失败，可能账号已过期")
-                    fail_count += 1
-            except Exception as e:
-                results.append(f"❌ 账号 {phone} 获取积分异常: {str(e)}")
-                fail_count += 1
-        except Exception as e:
-            results.append(f"❌ 账号 {account.get('phone', '未知')} 查询异常: {str(e)}")
-            fail_count += 1
-    summary = "=====顺易充账号积分=====\n"
-    summary += f"📱 查询账号: {len(user_accounts)}个\n"
-    summary += f"✅ 成功: {success_count}个\n"
-    summary += f"❌ 失败: {fail_count}个\n"
-    summary += "====================\n\n"
-    summary += "\n".join(results)
-    sender.reply(summary)
+    accounts=get_user_accounts()
+    if not accounts:return sender.reply('您还没有绑定顺易充账号，请发送【顺易充登录】')
+    rows=[]
+    for account in accounts.values():
+        phone,token=account.get('phone',''),account.get('token','');masked=phone[:3]+'****'+phone[-4:] if len(phone)==11 else phone
+        if not token:rows.append(f'{masked}：缺少 Token');continue
+        headers=get_task_headers();headers['authorization']=token if token.lower().startswith('bearer ') else f'Bearer {token}';headers['_account_key']=f'acc_{phone}'
+        score=get_score_rank_task(headers)
+        if not score:rows.append(f'{masked}：查询失败');continue
+        year=datetime.now().year;yearly=get_year_score_task(headers,year)
+        rows.append(f"{masked}：总积分 {score['积分']}，可用 {score['可用积分']}"+(f'，{year}年 {yearly}' if yearly is not None else ''))
+    sender.reply('顺易充积分：\n'+'\n'.join(rows))
+
 def bind_account():
     bind_account_with_sms()
 def bind_account_with_sms():
-    print("[DEBUG] 进入bind_account_with_sms函数")
-    sender.reply("请输入手机号：")
-    phone = sender.input(60000, 1, False)
-    print(f"[DEBUG] 接收到手机号: {phone}")
-    if not phone:
-        sender.reply("❌ 未收到手机号")
-        return
-    if isinstance(phone, str) and phone.strip().lower() == "q":
-        sender.reply("✅ 已取消")
-        return
-    phone = phone.strip()
-    if not re.match(r"^1[3-9]\d{9}$", phone):
-        sender.reply("❌ 手机号格式不正确，请输入11位手机号")
-        return
-    print(f"[DEBUG] 准备发送短信到: {phone}")
-    sms_result = send_sms_code(phone)
-    print(f"[DEBUG] 短信发送结果: {sms_result}")
-    if not sms_result:
-        sender.reply("❌ 短信发送失败，请稍后重试")
-        return
-    sender.reply("✅ 短信发送成功！\n请输入收到的验证码（有效期3分钟）：")
-    code = sender.input(180000, 1, False)
-    if not code:
-        sender.reply("❌ 验证码输入超时")
-        return
-    if code and str(code).strip().lower() == "q":
-        sender.reply("✅ 已取消")
-        return
-    code = str(code).strip()
-    if not code:
-        sender.reply("❌ 验证码不能为空")
-        return
-    handle_phone_input_sms(phone, code)
+    sender.reply('请输入手机号，回复 q 退出');phone=sender.input(60000,1,False)
+    if not phone or str(phone).lower()=='q':return sender.reply('已取消')
+    phone=str(phone).strip()
+    if not re.fullmatch(r'1[3-9]\d{9}',phone):return sender.reply('手机号格式错误')
+    if not send_sms_code(phone):return sender.reply('短信发送失败，请稍后重试')
+    sender.reply('短信已发送，请输入验证码');code=sender.input(180000,1,False)
+    if not code or str(code).lower()=='q':return sender.reply('已取消')
+    handle_phone_input_sms(phone,str(code).strip())
 
 
-def build_bind_success_message(phone, is_authorized=False):
-    auth_msg = ",账号已授权" if is_authorized else ""
-    masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-    return (
-        f"✅ 账号绑定成功{auth_msg}！\n"
-        f"📱 手机号: {masked_phone}\n"
-        f"注意： 请使用APP进行充电，这样就不会掉线\n"
-        f"注意： 请使用APP进行充电，这样就不会掉线\n"
-        f"您可以发送「顺易充管理」查看账号详情"
-    )
+def build_bind_success_message(phone,*_args):
+    masked=phone[:3]+'****'+phone[-4:] if len(phone)==11 else phone
+    return f'账号 {masked} 绑定成功'
 
 
-def update_single_account_token(account_id, phone, user_accounts):
-    masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-    sender.reply(
-        f"=====更新账号Token=====\n📱 账号: {masked_phone}\n正在发送验证码...\n===================="
-    )
-    sms_result = send_sms_code(phone)
-    if not sms_result:
-        sender.reply("❌ 短信发送失败，请稍后重试")
-        return
-    sender.reply("✅ 短信发送成功！\n请输入收到的验证码（有效期3分钟）：")
-    code = sender.input(180000, 1, False)
-    if not code:
-        sender.reply("❌ 验证码输入超时")
-        return
-    if str(code) and str(code).strip().lower() == "q":
-        sender.reply("✅ 已取消")
-        return
-    code = str(code).strip()
-    if not code:
-        sender.reply("❌ 验证码不能为空")
-        return
-    sender.reply("🔐 正在验证登录...")
-    login_result = login_with_sms_code(phone, code)
-    if login_result.get("success") and login_result.get("token"):
-        token = login_result.get("token", "")
-        refresh_token = login_result.get("refreshToken", "")
-        cust_info = login_result.get("custInfo")
-        if account_id in user_accounts:
-            user_accounts[account_id]["token"] = token
-            user_accounts[account_id]["refresh_token"] = refresh_token
-            user_accounts[account_id]["cust_info"] = cust_info
-            user_accounts[account_id]["updated_at"] = int(time.time())
-            save_user_accounts(user_accounts)
-            cache_data = {
-                "valid": True,
-                "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-            sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data))
-            is_authorized_now = user_accounts[account_id].get("auth_status", {}).get(
-                "is_authorized", False
-            )
-            sender.reply(build_bind_success_message(phone, is_authorized_now))
-        else:
-            sender.reply("❌ 账号不存在")
-    else:
-        sender.reply(
-            f"❌ 账号更新失败，请检查验证码是否正确或已过期\n"
-            f"详情: {login_result.get('message', '未知错误')}"
-        )
-def batch_update_tokens(user_accounts):
-    account_list = []
-    for idx, (account_id, account) in enumerate(user_accounts.items(), 1):
-        phone = account.get("phone", "未知")
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        token = account.get("token", "")
-        cache_json = sg.bucketGet(BUCKET_TOKEN_STATUS, phone) or "{}"
-        try:
-            cache_data = json.loads(cache_json)
-            check_time_str = cache_data.get("check_time", "")
-            if check_time_str:
-                check_time = datetime.strptime(check_time_str, "%Y-%m-%d %H:%M:%S")
-                hours_ago = (datetime.now() - check_time).total_seconds() / 3600
-                if hours_ago < 24:
-                    token_status = (
-                        "正常: ✓" if cache_data.get("valid") else "重新登录: ❌"
-                    )
-                else:
-                    token_status = "未检测: ?" if token else "重新登录: ❌"
-            else:
-                token_status = "未检测: ?" if token else "重新登录: ❌"
-        except:
-            token_status = "未检测: ?" if token else "重新登录: ❌"
-        account_list.append((idx, account_id, phone, masked_phone, token_status))
-    list_msg = "====账号更新====\n"
-    for idx, _, _, masked_phone, token_status in account_list:
-        expire_time = (
-            user_accounts[list(user_accounts.keys())[idx - 1]]
-            .get("auth_status", {})
-            .get("expire_time", "")
-        )
-        expire_info = f"授权到期{expire_time}" if expire_time else "未授权"
-        list_msg += f"[{idx}] 📱 {masked_phone} | {token_status}\n     {expire_info}\n"
-    list_msg += "--------------------\n回复序号选择账号 (q退出)\n================="
-    sender.reply(list_msg)
-    success_count = 0
-    fail_count = 0
-    while True:
-        choice = sender.input(120000, 1, False)
-        if choice is None:
-            sender.reply("⏰ 操作超时，已退出")
-            break
-        if str(choice).lower() == "q":
-            sender.reply(
-                f"✅ 已退出\n✅ 成功: {success_count}个\n❌ 失败: {fail_count}个"
-            )
-            break
-        try:
-            idx = int(choice)
-            if idx < 1 or idx > len(account_list):
-                sender.reply("❌ 序号无效，请重新输入")
-                continue
-            _, account_id, phone, masked_phone, _ = account_list[idx - 1]
-            sender.reply(f"📱 正在更新: {masked_phone}")
-            sms_result = send_sms_code(phone)
-            if not sms_result:
-                sender.reply("❌ 短信发送失败，请重新选择")
-                fail_count += 1
-                continue
-            sender.reply("✅ 短信发送成功！\n请输入验证码（有效期3分钟）：")
-            code = sender.input(180000, 1, False)
-            if not code:
-                sender.reply("❌ 验证码超时，请重新选择")
-                fail_count += 1
-                continue
-            if str(code).lower() == "q":
-                sender.reply(
-                    f"✅ 已退出\n✅ 成功: {success_count}个\n❌ 失败: {fail_count}个"
-                )
-                break
-            code = str(code).strip()
-            if not code:
-                sender.reply("❌ 验证码为空，请重新选择")
-                fail_count += 1
-                continue
-            login_result = login_with_sms_code(phone, code)
-            if login_result.get("success") and login_result.get("token"):
-                token = login_result.get("token", "")
-                refresh_token = login_result.get("refreshToken", "")
-                cust_info = login_result.get("custInfo")
-                user_accounts[account_id]["token"] = token
-                user_accounts[account_id]["refresh_token"] = refresh_token
-                user_accounts[account_id]["cust_info"] = cust_info
-                user_accounts[account_id]["updated_at"] = int(time.time())
-                save_user_accounts(user_accounts)
-                cache_data = {
-                    "valid": True,
-                    "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                }
-                sg.bucketSet(
-                    BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data)
-                )
-                success_count += 1
-                account_list[idx - 1] = (
-                    idx,
-                    account_id,
-                    phone,
-                    masked_phone,
-                    "正常: ✓",
-                )
-                is_authorized_now = user_accounts[account_id].get("auth_status", {}).get(
-                    "is_authorized", False
-                )
-                new_list_msg = (
-                    f"{build_bind_success_message(phone, is_authorized_now)}\n\n"
-                    "====账号更新====\n"
-                )
-                for i, _, _, m_phone, t_status in account_list:
-                    exp_time = (
-                        user_accounts[list(user_accounts.keys())[i - 1]]
-                        .get("auth_status", {})
-                        .get("expire_time", "")
-                    )
-                    exp_info = f"授权到期{exp_time}" if exp_time else "未授权"
-                    new_list_msg += (
-                        f"[{i}] 📱 {m_phone} | {t_status}\n     {exp_info}\n"
-                    )
-                new_list_msg += (
-                    "--------------------\n回复序号选择账号 (q退出)\n================="
-                )
-                sender.reply(new_list_msg)
-            else:
-                sender.reply(
-                    f"❌ {masked_phone} 更新失败：{login_result.get('message', '未知错误')}\n\n继续选择下一个账号或回复q退出"
-                )
-                fail_count += 1
-        except ValueError:
-            sender.reply("❌ 请输入数字")
-def check_auth_validity(auth_status):
-    return True
-def check_token_validity(token, phone):
-    if not token:
-        return False, "未保存账号"
-    try:
-        if not token.lower().startswith("bearer "):
-            token = f"Bearer {token}"
-        headers = get_task_headers()
-        headers["authorization"] = token
-        account_key = f"acc_{phone}"
-        headers["_account_key"] = account_key  # 在headers中传递账号标识
-        print(f"[INFO] 开始验证账号，账号: {phone[:3]}****{phone[-4:]}")
-        print(f"[INFO] 代理状态: {'已启用' if IS_PROXY else '未启用'}")
-        test_url = (
-            "https://app.wodeev.com/bil-front/v2.0/accounts/myScoreRank?scoreType=02"
-        )
-        print(f"[INFO] 验证URL: {test_url}")
-        response = request_with_retry(
-            "GET",
-            test_url,
-            headers=headers,
-            timeout=15,
-            verify=False,
-            account_key=account_key,
-        )
-        print(f"[INFO] 请求响应状态: {response.status_code if response else '无响应'}")
-        if response and response.status_code == 200:
-            try:
-                data = response.json()
-                print(
-                    f"[INFO] 响应数据: ret={data.get('ret')}, msg={data.get('msg', '无消息')[:50]}"
-                )
-                if data.get("ret") == 200:
-                    return True, "账号有效"
-                else:
-                    print("[INFO] 尝试备用验证接口...")
-                    try:
-                        backup_url = "https://app.wodeev.com/bil-front/v2.0/marketing/getScoreRankingShare"
-                        backup_response = request_with_retry(
-                            "GET",
-                            backup_url,
-                            headers=headers,
-                            timeout=15,
-                            verify=False,
-                            account_key=account_key,
-                        )
-                        if backup_response and backup_response.status_code == 200:
-                            backup_data = backup_response.json()
-                            print(f"[INFO] 备用接口响应: ret={backup_data.get('ret')}")
-                            if backup_data.get("ret") == 200:
-                                return True, "账号有效"
-                    except Exception as be:
-                        print(f"[WARNING] 备用接口异常: {str(be)[:50]}")
-                    return False, f"账号已过期 (ret={data.get('ret')})"
-            except Exception as je:
-                print(f"[ERROR] JSON解析失败: {str(je)}")
-                return False, "响应格式错误"
-        else:
-            error_msg = "网络请求失败"
-            if response:
-                error_msg += f" (HTTP {response.status_code})"
-            print(f"[ERROR] {error_msg}")
-            return False, error_msg
-    except Exception as e:
-        print(f"[ERROR] 账号验证异常: {str(e)}")
-        return False, f"验证异常: {str(e)}"
-def handle_phone_input_sms(phone, sms_code):
-    if not re.match(r"^1[3-9]\d{9}$", phone):
-        sender.reply("❌ 手机号格式不正确，请输入11位手机号")
-        return
-    sender.reply("🔐 正在验证登录...")
-    login_result = login_with_sms_code(phone, sms_code)
-    if login_result.get("success") and login_result.get("token"):
-        token = login_result.get("token", "")
-        refresh_token = login_result.get("refreshToken", "")
-        cust_info = login_result.get("custInfo")
-        user_accounts = get_user_accounts()
-        existing_account_id = None
-        existing_auth_status = None
-        for acc_id, acc_info in user_accounts.items():
-            if acc_info.get("phone") == phone:
-                existing_account_id = acc_id
-                existing_auth_status = acc_info.get("auth_status")
-                break
-        if not existing_auth_status or not existing_auth_status.get("is_authorized"):
-            existing_auth_status = build_auth_status(phone)
-            if existing_auth_status.get("is_authorized"):
-                print(
-                    f"[INFO] 从全局授权数据恢复授权状态: {phone}, 到期: {existing_auth_status.get('expire_time', '')}"
-                )
-        if existing_account_id:
-            account_id = existing_account_id
-        else:
-            account_id = f"{phone}_{int(time.time())}"
-        user_accounts[account_id] = {
-            "phone": phone,
-            "token": token,
-            "refresh_token": refresh_token,
-            "cust_info": cust_info,
-            "updated_at": int(time.time()),
-            "login_type": "sms",
-            "auth_status": existing_auth_status
-            or {"is_authorized": False, "expire_time": ""},
-        }
-        save_user_accounts(user_accounts)
-        cache_data = {
-            "valid": True,
-            "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        }
-        sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data))
-        is_authorized_now = user_accounts[account_id]["auth_status"].get(
-            "is_authorized", False
-        )
-        sender.reply(build_bind_success_message(phone, is_authorized_now))
-    else:
-        sender.reply(
-            f"❌ 短信验证码登录失败，请检查验证码是否正确或已过期\n"
-            f"详情: {login_result.get('message', '未知错误')}"
-        )
+def handle_phone_input_sms(phone,sms_code):
+    result=login_with_sms_code(phone,sms_code)
+    if not result.get('success') or not result.get('token'):return sender.reply(f"登录失败：{result.get('message','验证码无效')}")
+    accounts=get_user_accounts();account_id=next((k for k,v in accounts.items() if v.get('phone')==phone),phone)
+    accounts[account_id]={'phone':phone,'token':result['token'],'refresh_token':result.get('refreshToken',''),'cust_info':result.get('custInfo'),'updated_at':int(time.time())}
+    save_user_accounts(accounts);sender.reply(build_bind_success_message(phone))
+
 def get_user_accounts(user_id=None):
-    if not user_id:
-        user_id = userid
-    try:
-        phones = get_user_phones(user_id)
-        if not phones:
-            return {}
-        accounts = {}
-        for phone in phones:
-            token = sg.bucketGet(BUCKET_TOKEN, phone) or ""
-            refresh_token = ""
-            cust_info = None
-            updated_at = 0
-            state_json = '2099-12-31' or "{}"
-            try:
-                state_data = json.loads(state_json)
-                if isinstance(state_data, dict):
-                    token = state_data.get("token") or token
-                    refresh_token = state_data.get("refreshToken") or ""
-                    cust_info = state_data.get("custInfo")
-                    updated_at = state_data.get("updatedAt") or 0
-            except Exception:
-                pass
-            accounts[phone] = {
-                "phone": phone,
-                "token": token,
-                "refresh_token": refresh_token,
-                "cust_info": cust_info,
-                "updated_at": updated_at,
-                "login_type": "sms",
-                "auth_status": build_auth_status(phone),
-            }
-        return accounts
-    except Exception:
-        return {}
-def save_user_accounts(accounts, user_id=None):
-    if not user_id:
-        user_id = userid
-    try:
-        old_phones_json = sg.bucketGet(BUCKET_USER, user_id) or "[]"
-        try:
-            old_phones = set(json.loads(old_phones_json))
-        except:
-            old_phones = set()
+    accounts={}
+    for phone in get_user_phones(user_id or userid):
+        try:state=json.loads(sg.bucketGet(BUCKET_AUTH_STATE,phone) or '{}')
+        except (TypeError,ValueError):state={}
+        accounts[phone]={'phone':phone,'token':state.get('token') or sg.bucketGet(BUCKET_TOKEN,phone) or '','refresh_token':state.get('refreshToken',''),'cust_info':state.get('custInfo'),'updated_at':state.get('updatedAt',0)}
+    return accounts
 
-        phones = []
-        for account_id, account_info in accounts.items():
-            phone = account_info.get("phone")
-            token = account_info.get("token")
-            refresh_token = account_info.get("refresh_token") or ""
-            cust_info = account_info.get("cust_info")
-            updated_at = account_info.get("updated_at") or int(time.time())
-            if phone:
-                phones.append(phone)
-                if token:
-                    sg.bucketSet(BUCKET_TOKEN, phone, token)
-                auth_state = {
-                    "token": token or "",
-                    "refreshToken": refresh_token,
-                    "custInfo": cust_info,
-                    "updatedAt": updated_at,
-                }
-                sg.bucketSet(
-                    BUCKET_AUTH_STATE,
-                    phone,
-                    json.dumps(auth_state, ensure_ascii=False),
-                )
-                auth_status = account_info.get("auth_status", {})
-                if auth_status.get("is_authorized"):
-                    expire_time = auth_status.get("expire_time", "")
-                    if expire_time:
-                        True
+def save_user_accounts(accounts,user_id=None):
+    user_id=user_id or userid;old=set(get_user_phones(user_id));phones=[]
+    for account in accounts.values():
+        phone=str(account.get('phone','')).strip()
+        if not phone:continue
+        phones.append(phone);token=account.get('token','')
+        if token:sg.bucketSet(BUCKET_TOKEN,phone,token)
+        state={'token':token,'refreshToken':account.get('refresh_token',''),'custInfo':account.get('cust_info'),'updatedAt':account.get('updated_at') or int(time.time())}
+        sg.bucketSet(BUCKET_AUTH_STATE,phone,json.dumps(state,ensure_ascii=False))
+    for phone in old-set(phones):sg.bucketDel(BUCKET_TOKEN,phone);sg.bucketDel(BUCKET_AUTH_STATE,phone);sg.bucketDel(BUCKET_TOKEN_STATUS,phone)
+    if phones:sg.bucketSet(BUCKET_USER,user_id,json.dumps(phones,ensure_ascii=False))
+    else:sg.bucketDel(BUCKET_USER,user_id)
 
-        current_phones = set(phones)
-        removed_phones = old_phones - current_phones
-        for phone in removed_phones:
-            try:
-                sg.bucketDel(BUCKET_TOKEN, phone)
-            except:
-                pass
-            try:
-                pass
-            except:
-                pass
-            try:
-                sg.bucketDel(BUCKET_TOKEN_STATUS, phone)
-            except:
-                pass
-
-        if phones:
-            sg.bucketSet(BUCKET_USER, user_id, json.dumps(phones))
-        else:
-            try:
-                sg.bucketDel(BUCKET_USER, user_id)
-            except:
-                pass
-    except Exception as e:
-        print(f"[ERROR] 保存用户账号失败: {str(e)}")
 def manage_accounts():
-    user_accounts = get_user_accounts()
-    if not user_accounts:
-        sender.reply("您还没有绑定任何顺易充账号\n请发送「顺易充登录」进行绑定")
-        return
-    accounts_updated = False
-    expired_phones = []
-    for account_id, account in user_accounts.items():
-        phone = account.get("phone", "")
-        auth_status = build_auth_status(phone)
-        if account.get("auth_status") != auth_status:
-            user_accounts[account_id]["auth_status"] = auth_status
-            accounts_updated = True
-        if not auth_status.get("is_authorized") and get_auth(phone):
-            expired_phones.append(phone)
-    for phone in expired_phones:
-        try:
-            print(f"[INFO] 已清理过期授权记录: {phone}")
-        except Exception as e:
-            print(f"[WARNING] 清理过期授权记录失败 {phone}: {str(e)}")
-    if accounts_updated:
-        save_user_accounts(user_accounts)
-    points = get_user_points()
-    total_points = points["total"]
-    authorized_count = 0
-    unauthorized_count = 0
-    unauthorized_accounts = []
-    for account_id, account in user_accounts.items():
-        auth_status = account.get("auth_status", {})
-        if auth_status.get("is_authorized"):
-            authorized_count += 1
-        else:
-            unauthorized_count += 1
-            unauthorized_accounts.append(account_id)
-    accounts_msg = "=====账号管理=====\n"
-    accounts_msg += f"📱 绑定账号: {len(user_accounts)}个\n"
-    accounts_msg += f" 已授权: {authorized_count}个\n"
-    accounts_msg += f" 未授权: {unauthorized_count}个\n"
-    accounts_msg += f"📊 当前积分: {total_points}\n"
-    accounts_msg += "--------------------\n"
-    accounts_msg += "📱 短信验证码登录\n"
-    accounts_msg += "--------------------\n"
-    for idx, (account_id, account) in enumerate(user_accounts.items(), 1):
-        phone = account.get("phone", "未知")
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        auth_status = account.get("auth_status", {})
-        expire_time = auth_status.get("expire_time", "")
-        expire_info = f"授权到期{expire_time}" if expire_time else "未授权"
-        accounts_msg += f"[{idx}] 📱 {masked_phone}\n     {expire_info}\n"
-    accounts_msg += "[0] 所有账号授权 (支付)\n"
-    accounts_msg += "[9997] 批量更新Token（更新）\n"
-    accounts_msg += "[9998] 删除所有账号（删除）\n"
-    accounts_msg += "[9999]未授权账号 (授权)\n"
-    accounts_msg += "--------------------\n"
-    accounts_msg += "回复序号选择操作 (q退出)\n"
-    accounts_msg += "=================\n"
-    sender.reply(accounts_msg)
-    selection = sender.input(60000, 1, False)
-    handle_account_selection(selection)
+    accounts=get_user_accounts()
+    if not accounts:return sender.reply('您还没有绑定顺易充账号，请发送【顺易充登录】')
+    rows=[f'{i}. {a["phone"][:3]}****{a["phone"][-4:]}' for i,a in enumerate(accounts.values(),1)]
+    sender.reply('顺易充账号：\n'+'\n'.join(rows)+'\n回复序号管理，9998 删除全部，q 退出');handle_account_selection(sender.input(60000,1,False))
+
 def delete_all_accounts():
-    user_accounts = get_user_accounts()
-    if not user_accounts:
-        sender.reply("❌ 您还没有绑定任何顺易充账号")
-        return
-    account_count = len(user_accounts)
-    accounts_list = []
-    for account_id, account in user_accounts.items():
-        phone = account.get("phone", "未知")
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
-        accounts_list.append(f"📱 {masked_phone}")
-    confirmation_msg = f"""
-⚠️ 危险操作确认 ⚠️
-您即将删除名下的全部 {account_count} 个顺易充账号：
-{chr(10).join(accounts_list)}
-❗ 此操作不可撤销！
-❗ 删除后需要重新绑定账号！
-❗ 已授权的账号将失去授权状态！
-确认删除请回复：确认删除全部账号
-取消操作请回复：q
-"""
-    sender.reply(confirmation_msg)
-    confirmation = sender.input(60000, 1, False)
-    if confirmation is None:
-        sender.reply("⏰ 操作超时，已取消删除")
-        return
-    if str(confirmation).lower() == "q":
-        sender.reply("✅ 已取消删除操作")
-        return
-    if confirmation != "确认删除全部账号":
-        sender.reply("❌ 确认信息不正确，已取消删除")
-        return
-    try:
-        phones_to_delete = [
-            acc.get("phone") for acc in user_accounts.values() if acc.get("phone")
-        ]
-        remove_authorized_accounts(phones_to_delete)
-        sg.bucketDel(BUCKET_USER, userid)
-        delete_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        success_msg = f"""
-✅ 删除成功！
-已删除您名下的全部 {account_count} 个顺易充账号
-📝 删除详情：
-- 删除时间：{delete_time}
-- 删除账号数：{account_count} 个
-💡 如需重新使用，请发送「顺易充登录」重新绑定账号
-"""
-        sender.reply(success_msg)
-    except Exception as e:
-        sender.reply(f"❌ 删除操作失败：{str(e)}")
+    accounts=get_user_accounts()
+    if not accounts:return sender.reply('没有可删除的账号')
+    sender.reply(f'确认删除全部 {len(accounts)} 个账号？回复 y 确认')
+    if str(sender.input(60000,1,False)).lower()!='y':return sender.reply('已取消')
+    save_user_accounts({});sender.reply('全部账号已删除')
+
 def handle_account_selection(selection):
-    try:
-        user_accounts = get_user_accounts()
-        if not user_accounts:
-            sender.reply("❌ 未找到您的账号信息")
-            return
-        account_ids = list(user_accounts.keys())
-        unauthorized_ids = []
-        for account_id, account in user_accounts.items():
-            auth_status = account.get("auth_status", {})
-            is_authorized = auth_status.get("is_authorized", False)
-            if not is_authorized or not check_auth_validity(auth_status):
-                unauthorized_ids.append(account_id)
-        if str(selection).lower() == "q":
-            sender.reply("✅ 已退出账号管理")
-            return
-        if selection is None:
-            sender.reply("⏰ 操作超时")
-            return
-        try:
-            selection = int(selection)
-        except (ValueError, TypeError):
-            sender.reply("❌ 输入无效，请输入数字")
-            return
-        if selection == 0:
-            if not account_ids:
-                sender.reply("❌ 没有找到可授权的账号")
-                return
-            sender.reply(f"您选择了授权所有账号，共 {len(account_ids)} 个账号")
-            sender.reply("请输入授权月数（1-24月）：")
-            auth_input = sender.input(60000, 1, False)
-            if auth_input is None or not auth_input.strip():
-                sender.reply("⏰ 输入超时或为空，已取消授权操作")
-                return
-            handle_auth_days(auth_input, account_ids)
-        elif selection == 9997:
-            batch_update_tokens(user_accounts)
-        elif selection == 9998:
-            delete_all_accounts()
-        elif selection == 9999:
-            if not unauthorized_ids:
-                sender.reply("❌ 没有找到未授权的账号")
-                return
-            sender.reply(
-                f"您选择了授权所有未授权账号，共 {len(unauthorized_ids)} 个账号"
-            )
-            sender.reply("请输入授权月数（1-24月）：")
-            auth_input = sender.input(60000, 1, False)
-            if auth_input is None or not auth_input.strip():
-                sender.reply("⏰ 输入超时或为空，已取消授权操作")
-                return
-            handle_auth_days(auth_input, unauthorized_ids)
-        elif 1 <= selection <= len(account_ids):
-            selected_account_id = account_ids[selection - 1]
-            selected_phone = user_accounts[selected_account_id].get("phone", "未知")
-            sender.reply("""
-请选择操作:
-[0] 更新账号
-[1] 授权账号
-[2] 删除账号
-[3] 运行任务
-回复数字选择操作，回复q取消
-""")
-            operation = sender.input(60000, 1, False)
-            if operation is None:
-                sender.reply("⏰ 操作超时，已取消")
-                return
-            if operation == "0":
-                update_single_account_token(
-                    selected_account_id, selected_phone, user_accounts
-                )
-            elif operation == "1":
-                sender.reply("请输入授权月数（1-24月）：")
-                auth_input = sender.input(60000, 1, False)
-                if auth_input is None or not auth_input.strip():
-                    sender.reply("⏰ 输入超时或为空，已取消授权操作")
-                    return
-                handle_auth_days(auth_input, [selected_account_id])
-            elif operation == "2":
-                phone = user_accounts[selected_account_id].get("phone", "未知")
-                sender.reply(
-                    f"⚠️ 确认删除账号 {phone} 吗？此操作不可恢复！\n回复 [Y] 确认删除\n回复 [N] 取消"
-                )
-                confirm = sender.input(60000, 1, False)
-                if confirm is None:
-                    sender.reply("⏰ 操作超时，已取消删除")
-                    return
-                if str(confirm).lower() != "y":
-                    sender.reply("✅ 已取消删除操作")
-                    return
-                if selected_account_id in user_accounts:
-                    phone = user_accounts[selected_account_id].get("phone", "")
-                    del user_accounts[selected_account_id]
-                    save_user_accounts(user_accounts)
-                    if phone:
-                        remove_authorized_accounts([phone])
-                    sender.reply(f"✅ 成功删除账号 {phone}")
-                    if len(user_accounts) > 0:
-                        manage_accounts()
-                    else:
-                        sender.reply("您已删除所有账号，可发送「顺易充登录」绑定新账号")
-                else:
-                    sender.reply("❌ 账号不存在")
-            elif operation == "3":
-                run_single_account_task(selected_account_id, user_accounts)
-            elif str(operation).lower() == "q":
-                sender.reply("✅ 已取消操作")
-            else:
-                sender.reply("❌ 无效的选择")
-        else:
-            sender.reply("❌ 无效的选择，请输入正确的序号")
-    except ValueError:
-        sender.reply("❌ 请输入有效的数字")
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"[ERROR] 账号操作异常: {error_details}")
-        sender.reply(f"❌ 操作失败：{str(e)}\n请查看日志")
-def remove_authorized_accounts(phones):
-    return True
-def handle_auth_days(months_str, account_ids):
-    try:
-        if months_str is None:
-            sender.reply("⏰ 输入超时，已取消授权操作")
-            return
-        actual_input_str = str(months_str).strip()
-        if not actual_input_str:
-            sender.reply("❌ 输入不能为空，请输入1-24之间的月数")
-            return
-        if actual_input_str.startswith("+"):
-            actual_input_str = actual_input_str[1:]
-        if actual_input_str.startswith("-"):
-            sender.reply("❌ 普通用户只能增加授权时间，不支持减少操作")
-            return
-        try:
-            months = int(actual_input_str)
-        except ValueError:
-            sender.reply("❌ 请输入有效的数字（1-24）")
-            return
-        if not (1 <= months <= 24):
-            sender.reply("❌ 授权月数必须在1-24之间（最多2年）")
-            return
-        days = months * 30
-        user_accounts = get_user_accounts()
-        phone = "未知"
-        if account_ids and account_ids[0] in user_accounts:
-            phone = user_accounts[account_ids[0]].get("phone", "未知")
-        points = get_user_points()
-        config = get_config()
-        points_needed = (
-            len(account_ids) * months * int(config["points_per_month"])
-        )  # 按月计算积分
-        total_price = config["price"] * months * len(account_ids)  # 按月计算价格
-        pay_options = []
-        pay_handlers = {}
-        option_index = 1
-        if config.get("zsm"):
-            pay_options.append(f"[{option_index}] 微信收款在线处理")
-            pay_handlers[str(option_index)] = (
-                lambda account_ids=account_ids, days=days, total_price=total_price, config=config, phone=phone: wechat_payment_flow(
-                    account_ids, days, total_price, config, phone
-                )
-            )
-            option_index += 1
-        pay_types = (
-            dict(config.get("pay_types") or {}) if config.get("ma_pay_switch") else {}
-        )
-        for pay_key, raw_pay_name in pay_types.items():
-            pay_name = (
-                str(raw_pay_name or DEFAULT_PAY_TYPE_NAMES.get(pay_key, pay_key)).strip()
-                or DEFAULT_PAY_TYPE_NAMES.get(pay_key, pay_key)
-            )
-            if config.get("zsm") and pay_key == "wxpay":
-                pay_name = "微信在线处理"
-            pay_options.append(f"[{option_index}] {pay_name}")
-            pay_handlers[str(option_index)] = (
-                lambda pay_key=pay_key, pay_name=pay_name, account_ids=account_ids, days=days, total_price=total_price, config=config, phone=phone, months=months: ma_payment_flow(
-                    account_ids,
-                    days,
-                    total_price,
-                    config,
-                    phone,
-                    months,
-                    pay_type_key=pay_key,
-                    pay_type_name=pay_name,
-                )
-            )
-            option_index += 1
-        pay_options.append(f"[{option_index}] 积分支付")
-        pay_handlers[str(option_index)] = (
-            lambda account_ids=account_ids, days=days, points_needed=points_needed, phone=phone: point_payment_flow(
-                account_ids, days, points_needed, phone
-            )
-        )
-        time_unit = f"{int(months)}月"
-        operation_type = "增加"
-        pay_menu = f"""
-=====顺易充授权支付=====
-📱 手机号: {phone}{f" 等{len(account_ids)}个账号" if len(account_ids) > 1 else ""}
-🎯 授权操作: {operation_type}{time_unit}
-💰 金额: ¥{abs(total_price):.2f}
-📊 积分支付: {abs(points_needed)}积分（当前积分: {points["total"]}）
-------------------
-{chr(10).join(pay_options)}
-回复数字选择支付方式，回复q取消
-==================="""
-        sender.reply(pay_menu)
-        pay_choice = sender.input(120000, 1, False)
-        if str(pay_choice).lower() == "q":
-            sender.reply("✅ 已取消授权")
-            return
-        elif pay_choice in pay_handlers:
-            payment_success = pay_handlers[pay_choice]()
-        else:
-            sender.reply("❌ 无效支付方式")
-            return
-        if payment_success:
-            authorized_count = 0
-            current_time = datetime.now()
-            global_authorized_accounts = get_authorized_accounts()
-            authorized_phones = []
-            expire_date = None  # 初始化 expire_date 避免可能未定义
-            for account_id in account_ids:
-                if account_id in user_accounts:
-                    phone = user_accounts[account_id].get("phone", "")
-                    existing_expire_date = None
-                    is_expired = False
-                    if phone in global_authorized_accounts:
-                        try:
-                            global_expire_date_str = global_authorized_accounts[phone][
-                                "expire_date"
-                            ]
-                            global_expire_time = datetime.strptime(
-                                global_expire_date_str, "%Y-%m-%d"
-                            )
-                            existing_expire_date = global_expire_time
-                            is_expired = global_expire_time.date() < current_time.date()
-                        except:
-                            pass
-                    if existing_expire_date is None and user_accounts[account_id].get(
-                        "auth_status", {}
-                    ).get("is_authorized"):
-                        try:
-                            expire_time_str = user_accounts[account_id]["auth_status"][
-                                "expire_time"
-                            ]
-                            expire_time = datetime.strptime(expire_time_str, "%Y-%m-%d")
-                            existing_expire_date = expire_time
-                            is_expired = expire_time.date() < current_time.date()
-                        except:
-                            pass
-                    if existing_expire_date and not is_expired:
-                        new_expire_date = existing_expire_date + timedelta(days=days)
-                    else:
-                        new_expire_date = current_time + timedelta(days=days)
-                    expire_date = new_expire_date.strftime("%Y-%m-%d")
-                    user_accounts[account_id]["auth_status"] = {
-                        "is_authorized": True,
-                        "expire_time": expire_date,
-                        "auth_time": current_time.strftime("%Y-%m-%d %H:%M:%S"),
-                        "days": days,
-                        "is_renewal": existing_expire_date is not None,
-                    }
-                    user_accounts[account_id]["wx_id"] = senderID
-                    if phone:
-                        authorized_phones.append(phone)
-                        True
-                    authorized_count += 1
-            save_user_accounts(user_accounts)
-            is_renewals = {}
-            for account_id in account_ids:
-                if account_id in user_accounts:
-                    phone = user_accounts[account_id].get("phone", "")
-                    if phone:
-                        is_renewals[phone] = user_accounts[account_id][
-                            "auth_status"
-                        ].get("is_renewal", False)
-            save_auth_record(authorized_phones, expire_date, days, is_renewals)
-            sender.reply(
-                f"✅ 授权成功\n"
-                f"授权账号数: {authorized_count}\n"
-                f"授权时长: {months}个月（{days}天）\n"
-                f"到期时间: {expire_date}"
-            )
-    except ValueError:
-        sender.reply("❌ 请输入有效的数字")
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"[ERROR] 授权处理异常: {error_details}")
-        sender.reply(f"❌ 授权处理失败：{str(e)}\n请查看日志")
+    if selection is None or str(selection).lower()=='q':return
+    accounts=get_user_accounts();items=list(accounts.items())
+    try:choice=int(selection)
+    except (TypeError,ValueError):return sender.reply('请输入有效序号')
+    if choice==9998:return delete_all_accounts()
+    try:account_id,_=items[choice-1]
+    except IndexError:return sender.reply('序号无效')
+    sender.reply('1. 运行任务\n2. 删除账号\n回复 q 退出');action=sender.input(60000,1,False)
+    if action=='1':return run_single_account_task(account_id,accounts)
+    if action=='2':
+        sender.reply('回复 y 确认删除')
+        if str(sender.input(60000,1,False)).lower()=='y':accounts.pop(account_id,None);save_user_accounts(accounts);sender.reply('账号已删除')
 
 
 
-
-
-
-def ma_payment_flow(
-    account_ids, days, amount, config, phone, months, pay_type_key=None, pay_type_name=None
-):
-    return True
-
-
-def point_payment_flow(account_ids, days, required_points, phone):
-    return True
-def wechat_payment_flow(account_ids, days, amount, config, phone):
-    return True
-def save_auth_record(phones, expire_date, days, is_renewals=None):
-    try:
-        auth_records_json = '2099-12-31' or "{}"
-        auth_records = json.loads(auth_records_json)
-
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        for phone in phones:
-            if isinstance(expire_date, str) and ":" in expire_date:
-                phone_expire = expire_date
-                for part in expire_date.split("、"):
-                    if phone in part and ":" in part:
-                        phone_expire = part.split(":")[-1].strip()
-                        break
-            else:
-                phone_expire = expire_date
-
-            auth_records[phone] = {
-                "expire_date": phone_expire,
-                "days": days,
-                "auth_time": current_time,
-                "wx_id": senderID,
-                "user_id": userid,
-            }
-
-        print("✅ 已更新授权状态(仅保留最终到期时间)")
-    except Exception as e:
-        print(f"❌ 保存授权记录失败: {str(e)}")
 def refresh_access_token(refresh_token: str, account_key=None) -> dict:
     try:
         if not refresh_token:
@@ -1615,7 +602,6 @@ def refresh_access_token(refresh_token: str, account_key=None) -> dict:
         return {"success": False, "message": f"刷新失败: {res_data.get('msg', '未知错误')}", "token": "", "refreshToken": "", "response": res_data}
     except Exception as e:
         return {"success": False, "message": f"刷新异常: {str(e)}", "token": "", "refreshToken": ""}
-
 
 def user_refresh_tokens():
     user_accounts = get_user_accounts()
@@ -1691,206 +677,21 @@ def user_refresh_tokens():
         except ValueError:
             sender.reply("❌ 请输入数字")
 
-
 def admin_refresh_all_tokens():
-    if not is_syc_admin():
-        sender.reply("❌ 您没有顺易充管理员权限！")
-        return
-    sender.reply("🔍 正在扫描已授权且未过期的账号...")
-    global_authorized_accounts = get_authorized_accounts()
-    if not global_authorized_accounts:
-        sender.reply("❌ 未找到任何授权账号")
-        return
-    current_time = datetime.now()
-    target_accounts = []
-    processed_phones = set()
-    try:
-        users = sg.bucketAllKeys(bucket=BUCKET_USER) or []
-    except Exception:
-        users = []
-    for user_id in users:
-        try:
-            user_phones_json = sg.bucketGet(BUCKET_USER, user_id) or "[]"
-            user_phones = json.loads(user_phones_json)
-            for phone in user_phones:
-                if not phone or phone in processed_phones:
-                    continue
-                if phone not in global_authorized_accounts:
-                    continue
-                expire_date_str = global_authorized_accounts[phone].get("expire_date", "")
-                if not expire_date_str:
-                    continue
-                try:
-                    expire_date = datetime.strptime(expire_date_str, "%Y-%m-%d")
-                    if expire_date < current_time:
-                        continue
-                except Exception:
-                    continue
-                auth_state_json = '2099-12-31' or "{}"
-                token = ""
-                refresh_token = ""
-                cust_info = None
-                try:
-                    auth_state = json.loads(auth_state_json)
-                    token = auth_state.get("token", "")
-                    refresh_token = auth_state.get("refreshToken", "")
-                    cust_info = auth_state.get("custInfo")
-                except Exception:
-                    pass
-                if not token:
-                    token = sg.bucketGet(BUCKET_TOKEN, phone) or ""
-                target_accounts.append({"phone": phone, "token": token, "refresh_token": refresh_token, "cust_info": cust_info, "user_id": user_id})
-                processed_phones.add(phone)
-        except Exception:
-            pass
-    if not target_accounts:
-        sender.reply("❌ 未找到已授权且未过期的账号")
-        return
-    has_refresh_accounts = [acc for acc in target_accounts if acc.get("refresh_token")]
-    no_refresh_accounts = [acc for acc in target_accounts if not acc.get("refresh_token")]
-    if not has_refresh_accounts:
-        sender.reply(f"❌ 找到 {len(target_accounts)} 个已授权且未过期的账号，但都缺少refreshToken，无法刷新")
-        return
-    sender.reply(
-        f"🔄 开始一键刷新全量账号Token\n"
-        f"📱 已授权且未过期: {len(target_accounts)}个\n"
-        f"✅ 有refreshToken: {len(has_refresh_accounts)}个\n"
-        f"❌ 缺少refreshToken: {len(no_refresh_accounts)}个\n"
-        f"正在刷新..."
-    )
-    success_count = 0
-    fail_count = 0
-    details = []
-    failed_accounts_by_user = {}
-    for idx, item in enumerate(has_refresh_accounts, 1):
-        phone = item.get("phone", "")
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        refresh_token = item.get("refresh_token", "")
-        account_key = f"acc_{phone}"
-        sender.reply(f"[{idx}/{len(has_refresh_accounts)}] 正在刷新 {masked_phone}...")
-        refresh_result = refresh_access_token(refresh_token, account_key=account_key)
-        if refresh_result.get("success") and refresh_result.get("token"):
-            new_token = refresh_result.get("token", "")
-            refresh_result.get("refreshToken") or refresh_token
-            sg.bucketSet(BUCKET_TOKEN, phone, new_token)
-            cache_data = {"valid": True, "status": "正常: ✓", "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-            sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data, ensure_ascii=False))
-            sg.bucketSet("G_SYC_fail_count", phone, "0")
-            success_count += 1
-            details.append(f"✅ {masked_phone}：刷新成功")
-        else:
-            fail_count += 1
-            fail_reason = refresh_result.get("message", "未知错误")
-            details.append(f"❌ {masked_phone}：刷新失败（{fail_reason}）")
-            cache_data = {"valid": False, "status": "需刷新: ❌", "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "message": fail_reason}
-            sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data, ensure_ascii=False))
-            fail_count_str = sg.bucketGet("G_SYC_fail_count", phone) or "0"
-            try:
-                current_fail_count = int(fail_count_str)
-            except ValueError:
-                current_fail_count = 0
-            current_fail_count += 1
-            sg.bucketSet("G_SYC_fail_count", phone, str(current_fail_count))
-            if current_fail_count >= 3:
-                notify_user_id = item.get("user_id", "")
-                if notify_user_id:
-                    failed_accounts_by_user.setdefault(notify_user_id, []).append(
-                        f"📱 账号: {masked_phone}\n📢 消息:\n❌ 连续{current_fail_count}次刷新失败，请重新登录\n注意：使用APP软件进行充电，就不会掉线了\n注意：使用APP软件进行充电，就不会掉线了\n----------------------------------"
-                    )
-    for item in no_refresh_accounts:
-        phone = item.get("phone", "")
-        masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        details.append(f"⚠️ {masked_phone}：缺少refreshToken，跳过")
-        cache_data = {"valid": False, "status": "需刷新: ❌", "check_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "message": "缺少refreshToken"}
-        sg.bucketSet(BUCKET_TOKEN_STATUS, phone, json.dumps(cache_data, ensure_ascii=False))
-        fail_count_str = sg.bucketGet("G_SYC_fail_count", phone) or "0"
-        try:
-            current_fail_count = int(fail_count_str)
-        except ValueError:
-            current_fail_count = 0
-        current_fail_count += 1
-        sg.bucketSet("G_SYC_fail_count", phone, str(current_fail_count))
-        if current_fail_count >= 3:
-            notify_user_id = item.get("user_id", "")
-            if notify_user_id:
-                failed_accounts_by_user.setdefault(notify_user_id, []).append(
-                    f"📱 账号: {masked_phone}\n📢 消息:\n连续{current_fail_count}次缺少refreshToken，请在机器人重新登录\n注意：使用APP软件进行充电，就不会掉线了\n注意：使用APP软件进行充电，就不会掉线了\n----------------------------------"
-                )
-    notified_users = 0
-    for notify_user_id, account_messages in failed_accounts_by_user.items():
-        notify_msg = (
-            "=====顺易充刷新失败通知=====\n"
-            + "\n".join(account_messages)
-            + "\n========================"
-        )
-        push_success = False
-        try:
-            sg.push("wx", "", notify_user_id, "顺易充刷新失败通知", notify_msg)
-            print(f"✅ 微信推送成功 {notify_user_id}")
-            push_success = True
-        except Exception as wx_err:
-            print(f"⚠️ 微信推送失败 {notify_user_id}: {str(wx_err)[:50]}")
-        try:
-            sg.push("qq", "", notify_user_id, "顺易充刷新失败通知", notify_msg)
-            print(f"✅ QQ推送成功 {notify_user_id}")
-            push_success = True
-        except Exception as qq_err:
-            print(f"⚠️ QQ推送失败 {notify_user_id}: {str(qq_err)[:50]}")
-        if push_success:
-            notified_users += 1
-    summary = "=====顺易充一键刷新结果=====\n"
-    summary += f"📱 已授权且未过期: {len(target_accounts)}个\n"
-    summary += f"✅ 刷新成功: {success_count}个\n"
-    summary += f"❌ 刷新失败: {fail_count}个\n"
-    summary += f"⚠️ 缺少refreshToken: {len(no_refresh_accounts)}个\n"
-    summary += f"📤 已推送用户: {notified_users}个\n"
-    summary += "========================\n"
-    if details:
-        summary += "\n" + "\n".join(details)
-    sender.reply(summary)
+    if not sender.isAdmin(): return sender.reply('仅管理员可一键刷新')
+    users = {user_id: get_user_accounts(user_id) for user_id in sg.bucketAllKeys(BUCKET_USER)}
+    targets = [(user_id, account) for user_id, accounts in users.items() for account in accounts.values() if account.get('refresh_token')]
+    if not targets: return sender.reply('没有可刷新的账号')
+    success = 0
+    for user_id, account in targets:
+        result = refresh_access_token(account['refresh_token'], account_key=f"acc_{account['phone']}")
+        if result.get('success') and result.get('token'):
+            account['token'] = result['token']; account['refresh_token'] = result.get('refreshToken') or account['refresh_token']; account['updated_at'] = int(time.time()); success += 1
+    for user_id, accounts in users.items(): save_user_accounts(accounts, user_id)
+    sender.reply(f'刷新完成：成功 {success}，失败 {len(targets)-success}')
 
 
-def get_authorized_accounts():
-    return '2099-12-31'
-def clean_expired_accounts():
-    if not is_syc_admin():
-        sender.reply("❌ 您没有顺易充管理员权限！")
-        return
-    sender.reply("🔍 正在检查过期账号...")
-    authorized_accounts = get_authorized_accounts()
-    if not authorized_accounts:
-        sender.reply("❌ 全局授权数据为空")
-        return
-    expired_phones = []
-    valid_count = 0
-    for phone, info in authorized_accounts.items():
-        if info.get("is_authorized"):
-            valid_count += 1
-        else:
-            expired_phones.append(phone)
-    if not expired_phones:
-        sender.reply(f"✅ 检查完成\n当前有效账号: {valid_count}个\n无过期账号需要清理")
-        return
-    sender.reply(
-        f"📊 统计结果:\n"
-        f"有效账号: {valid_count}个\n"
-        f"过期账号: {len(expired_phones)}个\n"
-        f"数据大小: 约{len(str(authorized_accounts)) / 1024:.1f}KB\n"
-        f"-------------------\n"
-        f"🔄 开始自动清理过期账号..."
-    )
-    deleted_count = 0
-    remove_authorized_accounts(expired_phones)
-    deleted_count = len(expired_phones)
-    remaining_count = valid_count
-    sender.reply(
-        f"✅ 清理完成！\n"
-        f"删除过期账号: {deleted_count}/{len(expired_phones)}个\n"
-        f"剩余有效账号: {remaining_count}个\n"
-        f"清理内容: 授权记录、Token、Token状态"
-    )
-def admin_authorize_account():
-    return True
+
 def run_task_for_account(phone, token, account_id=None, user_id=None):
     try:
         if not token:
@@ -1981,258 +782,43 @@ def run_task_for_account(phone, token, account_id=None, user_id=None):
             "account_id": account_id,
             "user_id": user_id,
         }
-def execute_single_account(account_data, user_accounts_dict, lock):
-    account_id, account = account_data
-    result = {"success": False, "error": None, "masked_phone": "未知", "details": []}
-    try:
-        phone = account.get("phone")
-        if not phone:
-            result["error"] = "账号信息不完整，跳过"
-            result["masked_phone"] = "未知"
-            return result
-        result["masked_phone"] = (
-            phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-        )
-        current_user_id = account.get("user_id", userid)
-        token = account.get("token", "")
-        if not token:
-            result["error"] = "未找到保存的token，请重新绑定账号"
-            return result
-        task_result = run_task_for_account(phone, token, account_id, current_user_id)
-        result["success"] = task_result["success"]
-        result["error"] = task_result["error"]
-        result["details"] = task_result["details"]
-        return result
-    except Exception as e:
-        result["error"] = f"执行异常: {str(e)}"
-        return result
 def run_user_tasks():
-    config = get_config()
-    concurrent_count = config.get("concurrent_count", 3)
-    user_accounts = get_user_accounts()
-    if not user_accounts:
-        sender.reply("您还没有绑定任何顺易充账号，请先绑定账号")
-        return
-    valid_accounts = {}
-    expired_token_accounts = []
-    unauthorized_accounts = []
-    for account_id, account in user_accounts.items():
-        is_authorized = account.get("auth_status", {}).get("is_authorized", False)
-        token = account.get("token", "")
-        phone = account.get("phone", "")
-        if not is_authorized or not check_auth_validity(account.get("auth_status", {})):
-            unauthorized_accounts.append(phone)
-            continue
-        if not token:
-            expired_token_accounts.append((phone, "未保存账号"))
-            continue
-        token_valid, token_msg = check_token_validity(token, phone)
-        if token_valid:
-            valid_accounts[account_id] = account
-        else:
-            expired_token_accounts.append((phone, token_msg))
-    if unauthorized_accounts:
-        sender.reply(f"⚠️ 发现 {len(unauthorized_accounts)} 个未授权账号，请先授权")
-    if expired_token_accounts:
-        expired_msg = "⚠️ 以下账号已过期，需要重新绑定：\n"
-        for phone, reason in expired_token_accounts:
-            masked_phone = (
-                phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-            )
-            expired_msg += f"📱 {masked_phone} - {reason}\n"
-        expired_msg += "\n请发送「顺易充登录」重新绑定这些账号"
-        sender.reply(expired_msg)
-    if not valid_accounts:
-        sender.reply("❌ 没有找到可运行的授权账号")
-        return
-    enhanced_status = "启用" if config.get("use_enhanced_ads", True) else "禁用"
-    sender.reply(
-        f"🔍 找到可运行的授权账号：{len(valid_accounts)}个\n⚙️ 并发数量：{concurrent_count}\n🚀 增强广告系统：{enhanced_status}\n\n开始执行任务..."
-    )
-    execute_tasks_for_accounts(valid_accounts, concurrent_count, config)
-def execute_tasks_for_accounts(valid_accounts, concurrent_count, config):
-    success_count = 0
-    fail_count = 0
-    successful_results = []
-    failed_results = []
-    lock = threading.Lock()
-    user_accounts_dict = {}
-    sender.reply(f"🚀 开始执行任务，共{len(valid_accounts)}个账号...")
+    accounts={k:v for k,v in get_user_accounts().items() if v.get('token')}
+    if not accounts:return sender.reply('没有包含 Token 的账号')
+    config=get_config();execute_tasks_for_accounts(accounts,config['concurrent_count'],config)
+
+def execute_single_account(account_data, *_args):
+    account_id, account = account_data
+    phone, token = account.get('phone', ''), account.get('token', '')
+    masked = phone[:3] + '****' + phone[-4:] if len(phone) == 11 else phone or '未知'
+    if not phone or not token:
+        return {'success': False, 'error': '账号信息不完整', 'masked_phone': masked, 'details': []}
+    result = run_task_for_account(phone, token, account_id, account.get('user_id', userid))
+    result['masked_phone'] = masked
+    return result
+
+def execute_tasks_for_accounts(accounts,concurrent_count,_config=None):
+    sender.reply(f'开始执行 {len(accounts)} 个账号，{concurrent_count} 线程')
     with ThreadPoolExecutor(max_workers=concurrent_count) as executor:
-        future_to_account = {
-            executor.submit(
-                execute_single_account, (account_id, account), user_accounts_dict, lock
-            ): (account_id, account)
-            for account_id, account in valid_accounts.items()
-        }
-        completed_count = 0
-        for future in as_completed(future_to_account):
-            account_id, account = future_to_account[future]
-            completed_count += 1
-            try:
-                result = future.result()
-                if result["success"]:
-                    success_count += 1
-                    successful_results.append(
-                        {
-                            "masked_phone": result["masked_phone"],
-                            "details": result["details"],
-                        }
-                    )
-                else:
-                    fail_count += 1
-                    failed_results.append(
-                        {
-                            "masked_phone": result["masked_phone"],
-                            "error": result["error"],
-                            "phone": account.get("phone", "未知"),
-                        }
-                    )
-                if (
-                    completed_count % 10 == 0
-                    or completed_count % max(1, len(valid_accounts) // 4) == 0
-                ):
-                    progress = int((completed_count / len(valid_accounts)) * 100)
-                    sender.reply(
-                        f"⏳ 进度: {completed_count}/{len(valid_accounts)} ({progress}%) | ✅{success_count} ❌{fail_count}"
-                    )
-            except Exception as e:
-                fail_count += 1
-                phone = account.get("phone", "未知")
-                masked_phone = (
-                    phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-                )
-                failed_results.append(
-                    {
-                        "masked_phone": masked_phone,
-                        "error": f"任务执行异常: {str(e)}",
-                        "phone": phone,
-                    }
-                )
-    summary = "=====顺易充任务完成=====\n"
-    summary += f"📱 任务账号: {len(valid_accounts)}个\n"
-    summary += f"⚙️ 并发数量: {concurrent_count}\n"
-    summary += f"🚀 增强广告系统: {'启用' if config.get('use_enhanced_ads', True) else '禁用'}\n"
-    summary += f"✅ 成功: {success_count}个\n"
-    summary += f"❌ 失败: {fail_count}个\n"
-    summary += "====================\n\n"
-    if successful_results:
-        summary += "✅ 成功账号详情:\n"
-        for i, result in enumerate(successful_results, 1):
-            summary += f"[{i}] 📱 {result['masked_phone']}\n"
-            for detail in result["details"]:
-                summary += f"    {detail}\n"
-            summary += "--------------------\n"
-        summary += "\n"
-    if failed_results:
-        summary += "❌ 失败账号详情:\n"
-        for i, result in enumerate(failed_results, 1):
-            summary += f"[{i}] 📱 {result['masked_phone']}\n"
-            summary += f"    ❌ 错误: {result['error']}\n"
-            summary += "--------------------\n"
-        summary += "\n"
-        failed_phones = [
-            result["phone"] for result in failed_results if result["phone"] != "未知"
-        ]
-        if failed_phones:
-            summary += f"📋 失败账号手机号: {', '.join(failed_phones)}\n"
-    sender.reply(summary)
-def run_single_account_task(account_id, user_accounts):
-    if account_id not in user_accounts:
-        sender.reply("❌ 账号不存在")
-        return
-    account = user_accounts[account_id]
-    phone = account.get("phone", "")
-    token = account.get("token", "")
-    if not phone:
-        sender.reply("❌ 账号信息不完整")
-        return
-    is_authorized = account.get("auth_status", {}).get("is_authorized", False)
-    if not is_authorized or not check_auth_validity(account.get("auth_status", {})):
-        sender.reply(f"❌ 账号 {phone} 未授权，请先授权后再运行任务")
-        return
-    if not token:
-        sender.reply(f"❌ 账号 {phone} 未保存账号，请重新绑定账号")
-        return
-    sender.reply("🔍 正在验证账号状态...")
-    token_valid, token_msg = check_token_validity(token, phone)
-    if not token_valid:
-        sender.reply(
-            f"❌ Token验证失败: {token_msg}\n💡 请发送「顺易充登录」重新绑定账号"
-        )
-        return
-    masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
-    sender.reply(f"🚀 开始为账号 {masked_phone} 执行任务...")
-    try:
-        task_result = run_task_for_account(phone, token, account_id, userid)
-        if task_result["success"]:
-            success_msg = f"✅ 账号 {masked_phone} 任务完成！\n"
-            success_msg += "详情:\n"
-            for detail in task_result["details"]:
-                success_msg += f"  {detail}\n"
-            sender.reply(success_msg)
-        else:
-            fail_msg = f"❌ 账号 {masked_phone} 任务失败！\n"
-            fail_msg += f"错误: {task_result['error']}\n"
-            if task_result["details"]:
-                fail_msg += "详情:\n"
-                for detail in task_result["details"]:
-                    fail_msg += f"  {detail}\n"
-            sender.reply(fail_msg)
-    except Exception as e:
-        sender.reply(f"❌ 账号 {masked_phone} 任务执行异常: {str(e)}")
+        results=[future.result() for future in as_completed([executor.submit(execute_single_account,(key,account),{},None) for key,account in accounts.items()])]
+    success=sum(bool(r.get('success')) for r in results);rows=[f"{r['masked_phone']}：{'成功' if r.get('success') else r.get('error','失败')}" for r in results]
+    sender.reply(f'任务完成：成功 {success}，失败 {len(results)-success}\n'+'\n'.join(rows))
+
+def run_single_account_task(account_id,accounts):
+    account=accounts.get(account_id)
+    if not account or not account.get('token'):return sender.reply('账号不存在或缺少 Token')
+    result=run_task_for_account(account['phone'],account['token'],account_id,userid)
+    sender.reply(('任务完成' if result.get('success') else f"任务失败：{result.get('error')}")+'\n'+'\n'.join(result.get('details',[])))
+
 def run_all_tasks():
-    config = get_config()
-    concurrent_count = config.get("concurrent_count", 3)
-    valid_accounts = {}
-    is_admin = sender.isAdmin()
-    if is_admin:
-        try:
-            users = sg.bucketAllKeys(BUCKET_USER) or []
-        except:
-            users = []
-        all_accounts = {}
-        skipped_count = 0
-        for user_id in users:
-            try:
-                phones = get_user_phones(user_id)
-                for phone in phones:
-                    auth_status = build_auth_status(phone)
-                    if not auth_status.get("is_authorized"):
-                        continue
-                    token = sg.bucketGet(BUCKET_TOKEN, phone) or ""
-                    if not token:
-                        print(f"⚠️ 跳过账号 {phone}: Token缺失")
-                        skipped_count += 1
-                        continue
-                    token_valid, token_msg = check_token_validity(token, phone)
-                    if not token_valid:
-                        print(f"⚠️ 跳过账号 {phone}: {token_msg}")
-                        skipped_count += 1
-                        continue
-                    account_id = f"{phone}_{uuid.uuid4().hex[:8]}"
-                    all_accounts[account_id] = {
-                        "phone": phone,
-                        "token": token,
-                        "user_id": user_id,
-                        "auth_status": auth_status,
-                    }
-            except Exception as e:
-                print(f"获取用户 {user_id} 的账号信息失败: {str(e)}")
-        valid_accounts = all_accounts
-        enhanced_status = "启用" if config.get("use_enhanced_ads", True) else "禁用"
-        sender.reply(
-            f"🔍 找到所有用户的授权账号：{len(valid_accounts)}个\n⚠️ 跳过Token失效账号：{skipped_count}个\n⚙️ 并发数量：{concurrent_count}\n🚀 增强广告系统：{enhanced_status}"
-        )
-    else:
-        sender.reply(
-            "❌ 非管理员用户请使用「顺易充运行」指令\n💡 该指令只运行您自己的已授权账号"
-        )
-        return
-    if not valid_accounts:
-        sender.reply("❌ 没有找到授权账号，请先授权账号")
-        return
-    execute_tasks_for_accounts(valid_accounts, concurrent_count, config)
+    if not sender.isAdmin():return sender.reply('仅管理员可一键运行')
+    accounts={}
+    for user_id in sg.bucketAllKeys(BUCKET_USER):
+        for phone,account in get_user_accounts(user_id).items():
+            if account.get('token'):account['user_id']=user_id;accounts[f'{user_id}:{phone}']=account
+    if not accounts:return sender.reply('没有可运行的账号')
+    config=get_config();execute_tasks_for_accounts(accounts,config['concurrent_count'],config)
+
 def perform_daily_sign_in_task(headers):
     try:
         url = "https://app.wodeev.com/bil-front/v2.0/activity/getWelfare"
@@ -2379,42 +965,12 @@ def get_year_score_task(headers, year=None):
         print(f"获取{year}年积分异常: {str(e)}")
         return None
 if __name__ == "__main__":
-    try:
-        command = sender.getMessage()
-    except Exception:
-        command = ""
-    cmd_match = re.match(
-        r"^(顺易充|syc)(登录|登陆|绑定|管理|查询|授权|运行|一键运行|清理|刷新|一键刷新)$",
-        command,
-        re.IGNORECASE,
-    )
-    if cmd_match:
-        action = cmd_match.group(2)
-        if action in ["登录", "登陆", "绑定"]:
-            bind_account()
-        elif action == "管理":
-            manage_accounts()
-        elif action == "查询":
-            query_user_points()
-        elif action == "授权":
-            if is_syc_admin():
-                admin_authorize_account()
-            else:
-                sender.reply(
-                    "❌ 您没有顺易充管理员权限，无法使用授权功能！\n请发送「顺易充管理」或「syc管理」管理您自己的账号"
-                )
-        elif action == "运行":
-            run_user_tasks()
-        elif action == "一键运行":
-            run_all_tasks()
-        elif action == "清理":
-            if is_syc_admin():
-                clean_expired_accounts()
-            else:
-                sender.reply("❌ 您没有顺易充管理员权限！")
-        elif action == "刷新":
-            user_refresh_tokens()
-        elif action == "一键刷新":
-            admin_refresh_all_tokens()
-    else:
-        sender.reply("未知指令，请发送「顺易充管理」或「syc管理」查看账号管理")
+    match=re.fullmatch(r"(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|刷新|一键刷新)",sender.getMessage(),re.I)
+    if not match:sender.setContinue()
+    elif match.group(2) in ('登录','登陆','绑定'):bind_account()
+    elif match.group(2)=='管理':manage_accounts()
+    elif match.group(2)=='查询':query_user_points()
+    elif match.group(2)=='运行':run_user_tasks()
+    elif match.group(2)=='一键运行':run_all_tasks()
+    elif match.group(2)=='刷新':user_refresh_tokens()
+    elif match.group(2)=='一键刷新':admin_refresh_all_tokens()

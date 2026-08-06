@@ -16,8 +16,8 @@
 const {
   sender: s,
   Bucket,
-  form,
-  utils,
+  plugin,
+  utils
 } = require('sillygirl');
 
 const getSillyGirlVersion = utils.version;
@@ -32,9 +32,9 @@ const DEFAULTS = {
 const STATE_BUCKET = "sillyGirl";
 const UPDATE_RESTART_NOTICE_KEY = "official_commands_update_restart_notice";
 
-const pluginConfig = new form({
-  enable: form.boolean().title("是否启用").default(true),
-  update_timeout: form.integer().title("更新超时秒数").min(10).max(600).default(120),
+const pluginConfig = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+  update_timeout: plugin.Form.integer().title("更新超时秒数").min(10).max(600).default(120),
 });
 
 async function main() {

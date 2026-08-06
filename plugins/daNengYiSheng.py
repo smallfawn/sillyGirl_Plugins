@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: sillyGirl]
-# [version: v1.0.1]
+# [version: v1.0.2]
 # [public: true]
 # [admin: false]
 # [rule: raw ^\s*(达能登录|达能登陆|登录达能|登陆达能|达能查询|查询达能|达能管理|管理达能|达能教程|达能一键运行)\s*$]
@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import Any
 
 import requests
-from sillygirl import Bucket, form, sender as s
+from sillygirl import Bucket, plugin, sender as s
 
 try:
     import ast as _sg_ast
@@ -33,7 +33,6 @@ try:
     import decimal as decimal
 except Exception:
     decimal = None
-
 
 BUCKET_USER = "S_DNYS_USER"
 BUCKET_TOKEN = "S_DNYS_TOKEN"
@@ -46,16 +45,15 @@ DEFAULTS = {
     "request_timeout": 10,
 }
 
-plugin_config = form(
+plugin_config = plugin.Form(
     {
-        "enable": form.boolean().title("是否启用").default(True),
-        "cron_run": form.boolean().title("定时自动运行").description("cron 触发时自动运行全部绑定账号").default(True),
-        "verify_on_bind": form.boolean().title("绑定时校验账号").description("关闭后不请求接口校验，直接保存账号").default(True),
-        "force_new_challenge": form.boolean().title("自动开启新挑战").description("运行任务时尝试开启/刷新挑战").default(True),
-        "request_timeout": form.integer().title("请求超时秒数").min(3).max(60).default(10),
+        "enable": plugin.Form.boolean().title("是否启用").default(True),
+        "cron_run": plugin.Form.boolean().title("定时自动运行").description("cron 触发时自动运行全部绑定账号").default(True),
+        "verify_on_bind": plugin.Form.boolean().title("绑定时校验账号").description("关闭后不请求接口校验，直接保存账号").default(True),
+        "force_new_challenge": plugin.Form.boolean().title("自动开启新挑战").description("运行任务时尝试开启/刷新挑战").default(True),
+        "request_timeout": plugin.Form.integer().title("请求超时秒数").min(3).max(60).default(10),
     }
 )
-
 
 def normalize_config(raw: Any) -> dict[str, Any]:
     cfg = dict(DEFAULTS)
@@ -70,7 +68,6 @@ def normalize_config(raw: Any) -> dict[str, Any]:
     except Exception:
         cfg["request_timeout"] = 10
     return cfg
-
 
 class DNYX:
     def __init__(self, remark: str, token: str, open_id: str, union_id: str, cfg: dict[str, Any]):
@@ -316,14 +313,12 @@ class DNYX:
         except Exception:
             return False
 
-
 async def ask(prompt: str, timeout: int = 120000) -> str:
     await s.reply(prompt)
     child = await s.listen({"timeout": timeout})
     if not child:
         return ""
     return (await child.getContent() or "").strip()
-
 
 async def load_accounts(user_id: str) -> list[str]:
     raw = await Bucket(BUCKET_USER).get(user_id, "[]")
@@ -340,10 +335,8 @@ async def load_accounts(user_id: str) -> list[str]:
         except Exception:
             return []
 
-
 async def save_accounts(user_id: str, accounts: list[str]) -> None:
     await Bucket(BUCKET_USER).set(user_id, json.dumps(accounts, ensure_ascii=False))
-
 
 async def load_account_info(account_key: str) -> dict[str, Any] | None:
     raw = await Bucket(BUCKET_TOKEN).get(account_key, "")
@@ -355,18 +348,14 @@ async def load_account_info(account_key: str) -> dict[str, Any] | None:
     except Exception:
         return None
 
-
 async def save_account_info(account_key: str, info: dict[str, Any]) -> None:
     await Bucket(BUCKET_TOKEN).set(account_key, json.dumps(info, ensure_ascii=False))
-
 
 async def delete_account_info(account_key: str) -> None:
     await Bucket(BUCKET_TOKEN).delete(account_key)
 
-
 def account_key_of(open_id: str, union_id: str) -> str:
     return f"{open_id}_{union_id}"
-
 
 def parse_account_lines(text: str) -> list[dict[str, str]]:
     accounts: list[dict[str, str]] = []
@@ -378,7 +367,6 @@ def parse_account_lines(text: str) -> list[dict[str, str]]:
         if len(parts) == 4 and all(parts):
             accounts.append({"remark": parts[0], "token": parts[1], "openId": parts[2], "unionId": parts[3]})
     return accounts
-
 
 async def bind_account(user_id: str, cfg: dict[str, Any]) -> None:
     text = await ask(
@@ -442,7 +430,6 @@ async def bind_account(user_id: str, cfg: dict[str, Any]) -> None:
         + "\n==================\n💡 发送 达能查询 / 达能管理"
     )
 
-
 async def choose_accounts(user_id: str, title: str = "选择账号", allow_all: bool = True) -> list[str]:
     accounts = await load_accounts(user_id)
     if not accounts:
@@ -473,7 +460,6 @@ async def choose_accounts(user_id: str, title: str = "选择账号", allow_all: 
         await s.reply("❌ 未选择有效账号")
     return selected
 
-
 async def query_accounts(user_id: str) -> None:
     selected = await choose_accounts(user_id, "选择查询账号")
     if not selected:
@@ -495,7 +481,6 @@ async def query_accounts(user_id: str) -> None:
             "=================="
         )
     await reply_chunks("\n".join(lines))
-
 
 async def manage_account(user_id: str, cfg: dict[str, Any]) -> None:
     accounts = await load_accounts(user_id)
@@ -528,7 +513,6 @@ async def manage_account(user_id: str, cfg: dict[str, Any]) -> None:
         return
     await s.reply("❌ 无效选择")
 
-
 async def run_selected(account_keys: list[str], cfg: dict[str, Any]) -> tuple[int, int]:
     success = 0
     fail = 0
@@ -551,7 +535,6 @@ async def run_selected(account_keys: list[str], cfg: dict[str, Any]) -> tuple[in
             await asyncio.sleep(1.5)
     return success, fail
 
-
 async def run_all_accounts(current_user_id: str, cfg: dict[str, Any], cron_mode: bool = False) -> None:
     if not cron_mode and not await s.isAdmin():
         await s.reply("=====权限不足=====\n❌ 此功能仅限管理员使用\n==================")
@@ -570,7 +553,6 @@ async def run_all_accounts(current_user_id: str, cfg: dict[str, Any], cron_mode:
     success, fail = await run_selected(account_keys, cfg)
     await s.reply(f"=====一键运行完成=====\n📊 总账号数：{len(account_keys)}个\n🎯 执行成功：{success}个\n❌ 执行失败：{fail}个\n==================")
 
-
 async def parse_accounts_from_raw(raw: Any) -> list[str]:
     if isinstance(raw, list):
         return [str(x) for x in raw]
@@ -584,7 +566,6 @@ async def parse_accounts_from_raw(raw: Any) -> list[str]:
             return [str(x) for x in value] if isinstance(value, list) else []
         except Exception:
             return []
-
 
 async def show_tutorial() -> None:
     await s.reply(
@@ -601,13 +582,11 @@ async def show_tutorial() -> None:
         "说明：账号直接运行，无需额外授权"
     )
 
-
 def mask_text(value: Any, keep: int = 4) -> str:
     text = str(value or "")
     if len(text) <= keep * 2:
         return text[:2] + "***" if text else "-"
     return text[:keep] + "***" + text[-keep:]
-
 
 async def reply_chunks(text: str, size: int = 1800) -> None:
     text = str(text or "")
@@ -617,7 +596,6 @@ async def reply_chunks(text: str, size: int = 1800) -> None:
     for i in range(0, len(text), size):
         await s.reply(text[i : i + size])
         await asyncio.sleep(0.2)
-
 
 async def main() -> None:
     cfg = normalize_config(await plugin_config.get())
@@ -643,6 +621,5 @@ async def main() -> None:
         await run_all_accounts(str(user_id), cfg)
     elif "教程" in message:
         await show_tutorial()
-
 
 asyncio.run(main())

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.5.3]
+# [version: v1.5.4]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,57 +12,41 @@
 # [description: 捷停车小程序自动登录，支持验证码自动识别]
 # [depe: ["requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 import re as _sg_re
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -75,11 +59,12 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
+
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -95,13 +80,13 @@ class QingLongClient:
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
 
-config = form({
-    'G_JTC_ocr_api': form.string().title('ddddocr API地址').default('').description('验证码识别API地址，默认: http://1.94.118.234:8886/ocr'),
-    'G_JTC_ql_config': form.string().title('青龙配置').default('').description('青龙面板配置信息，用|分隔'),
-    'G_JTC_ql_envname': form.string().title('青龙变量名').default('').description('推送到青龙的变量名称'),
-    'G_JTC_daidai_config': form.string().title('呆呆面板配置').default('').description('呆呆面板配置信息，用丨分隔'),
-    'G_JTC_daidai_group': form.string().title('呆呆分组').default('').description('呆呆面板环境变量分组名称'),
-    'G_JTC_use_daidai': form.boolean().title('使用呆呆面板').default(False).description('勾选=上传呆呆面板，不勾选=上传青龙面板(默认)'),
+config = plugin.Form({
+    'G_JTC_ocr_api': plugin.Form.string().title('ddddocr API地址').default('').description('验证码识别API地址，默认: http://1.94.118.234:8886/ocr'),
+    'G_JTC_ql_config': plugin.Form.string().title('青龙配置').default('').description('青龙面板配置信息，用|分隔'),
+    'G_JTC_ql_envname': plugin.Form.string().title('青龙变量名').default('').description('推送到青龙的变量名称'),
+    'G_JTC_daidai_config': plugin.Form.string().title('呆呆面板配置').default('').description('呆呆面板配置信息，用丨分隔'),
+    'G_JTC_daidai_group': plugin.Form.string().title('呆呆分组').default('').description('呆呆面板环境变量分组名称'),
+    'G_JTC_use_daidai': plugin.Form.boolean().title('使用呆呆面板').default(False).description('勾选=上传呆呆面板，不勾选=上传青龙面板(默认)'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_JTC', 'ocr_api'): 'G_JTC_ocr_api',
@@ -137,10 +122,8 @@ senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
 
-
-
 def get_config() -> dict:
-    ma_pay_switch_raw = '2099-12-31' or 'false'
+    ma_pay_switch_raw = '2099-12-31'
     if isinstance(ma_pay_switch_raw, bool): ma_pay_switch = ma_pay_switch_raw
     elif ma_pay_switch_raw is None: ma_pay_switch = False
     else: ma_pay_switch = str(ma_pay_switch_raw).lower() == 'true'
@@ -161,11 +144,11 @@ def get_config() -> dict:
         'daidai_group': sg.bucketGet(BUCKET_CONFIG, 'daidai_group') or PROJECT_NAME,
         'use_daidai': use_daidai,
         'ma_pay_switch': ma_pay_switch,
-        'ma_pay_gateway': '2099-12-31' or '',
-        'ma_pay_pid': '2099-12-31' or '',
-        'ma_pay_key': '2099-12-31' or '',
-        'ma_pay_type': '2099-12-31' or 'alipay,wxpay',
-        'ma_pay_notify_url': '2099-12-31' or ''
+        'ma_pay_gateway': '2099-12-31',
+        'ma_pay_pid': '2099-12-31',
+        'ma_pay_key': '2099-12-31',
+        'ma_pay_type': '2099-12-31',
+        'ma_pay_notify_url': '2099-12-31'
     }
 
 def get_user_accounts(user_id=None) -> dict:
@@ -756,9 +739,6 @@ def batch_manage(config: dict) -> bool:
 def process_batch_payment(account_ids: list, user_accounts: dict, config: dict) -> bool:
     return True
 
-
-
-
 def get_ql_token(host: str, client_id: str, client_secret: str) -> str:
     try:
         url = f'{host}/open/auth/token?client_id={client_id}&client_secret={client_secret}'
@@ -915,8 +895,6 @@ def push_to_qinglong(account_id: str, phone: str, expire_date: str, ql_config: s
         print(f"[ERROR] 异常堆栈: {traceback.format_exc()}")
         return False
 
-
-
 def get_daidai_client(config: dict):
     if DadaiPanelClient is None: return None
     daidai_config = config.get('daidai_config', '')
@@ -976,19 +954,6 @@ def is_panel_configured(config: dict) -> bool:
     if config.get('use_daidai'):
         return bool(config.get('daidai_config'))
     return bool(config.get('ql_config'))
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 def upload_all_to_qinglong() -> bool:
     if not sender.isAdmin():

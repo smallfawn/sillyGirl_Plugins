@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.2.1]
+# [version: v1.2.3]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,56 +13,40 @@
 # [description: APP【壹品仓】插件]
 # [depe: ["pycryptodome","requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -75,14 +59,15 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'G_YPC_proxy_api': form.string().title('代理API').default('').description('获取代理IP的接口地址'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'G_YPC_proxy_api': plugin.Form.string().title('代理API').default('').description('获取代理IP的接口地址'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_YPC', 'proxy_api'): 'G_YPC_proxy_api',
@@ -102,7 +87,6 @@ from typing import Any, Dict, List, Optional
 import requests
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
-
 
 BUCKET_USER = "G_YPC_user"
 BUCKET_TOKEN = "G_YPC_token"
@@ -163,7 +147,6 @@ IS_PROXY = bool(proxy_url)
 proxy_cache = {}
 proxy_lock = threading.Lock()
 
-
 def log(level: str, msg: str, account: Optional[str] = None) -> None:
     timestamp = datetime.now().strftime("%H:%M:%S")
     prefix = f"[{level}] {timestamp}"
@@ -171,12 +154,10 @@ def log(level: str, msg: str, account: Optional[str] = None) -> None:
         prefix += f" [{mask_phone(account)}]"
     print(f"{prefix} {msg}")
 
-
 def mask_phone(phone: str) -> str:
     if not phone or len(phone) < 7:
         return phone or "***"
     return f"{phone[:3]}****{phone[-4:]}"
-
 
 def reply_error(msg: str, detail: Optional[str] = None) -> None:
     response = f"❌ {msg}"
@@ -184,19 +165,14 @@ def reply_error(msg: str, detail: Optional[str] = None) -> None:
         response += f"\n详情: {detail}"
     sender.reply(response)
 
-
-
-
 def render_block(title: str, lines: List[str]) -> str:
     content = [f"====={title}====="]
     content.extend(lines)
     content.append("====================")
     return "\n".join(content)
 
-
 def count_authorized_accounts(phones: List[str]) -> int:
     return 0
-
 
 def get_user_phones(user_id: Optional[str] = None) -> List[str]:
     if not user_id:
@@ -204,19 +180,16 @@ def get_user_phones(user_id: Optional[str] = None) -> List[str]:
     data = sg.bucketGet(BUCKET_USER, user_id) or ""
     return [p.strip() for p in data.split(",") if p.strip()]
 
-
 def save_user_phones(phones: List[str], user_id: Optional[str] = None) -> None:
     if not user_id:
         user_id = userid
     sg.bucketSet(BUCKET_USER, user_id, ",".join(phones))
-
 
 def add_account(phone: str, user_id: Optional[str] = None) -> None:
     phones = get_user_phones(user_id)
     if phone not in phones:
         phones.append(phone)
         save_user_phones(phones, user_id)
-
 
 def get_token(phone: str) -> Dict[str, str]:
     data = sg.bucketGet(BUCKET_TOKEN, phone) or ""
@@ -227,20 +200,14 @@ def get_token(phone: str) -> Dict[str, str]:
         return {"userId": parts[0], "token": parts[1], "refreshToken": parts[2]}
     return {}
 
-
 def save_token(phone: str, userId: str, token: str, refreshToken: str) -> None:
     sg.bucketSet(BUCKET_TOKEN, phone, f"{userId}#{token}#{refreshToken}")
-
 
 def get_auth(phone: str) -> str:
     return '2099-12-31'
 
-
-
-
 def is_authorized(phone: str) -> bool:
     return True
-
 
 def del_account(phone: str, user_id: Optional[str] = None) -> None:
     if not user_id:
@@ -255,10 +222,9 @@ def del_account(phone: str, user_id: Optional[str] = None) -> None:
     sg.bucketDel(BUCKET_TOKEN, phone)
     True
 
-
 def get_config() -> Dict[str, Any]:
     ma_pay_switch_raw = (
-        '2099-12-31' or "false"
+        '2099-12-31'
     )
     if isinstance(ma_pay_switch_raw, bool):
         ma_pay_switch = ma_pay_switch_raw
@@ -269,19 +235,15 @@ def get_config() -> Dict[str, Any]:
     return {
         "price": Decimal(sg.bucketGet(BUCKET_CONFIG, "price") or "0"),
         "coin": sg.bucketGet(BUCKET_CONFIG, "coin") or "",
-        "zsm": '2099-12-31' or "",
+        "zsm": '2099-12-31',
         "proxy_api": sg.bucketGet(BUCKET_CONFIG, "proxy_api") or "",
         "ma_pay_switch": ma_pay_switch,
-        "ma_pay_gateway": '2099-12-31'
-        or "",
-        "ma_pay_pid": '2099-12-31' or "",
-        "ma_pay_key": '2099-12-31' or "",
-        "ma_pay_type": '2099-12-31'
-        or "alipay,wxpay",
-        "ma_pay_notify_url": '2099-12-31'
-        or "",
+        "ma_pay_gateway": '2099-12-31',
+        "ma_pay_pid": '2099-12-31',
+        "ma_pay_key": '2099-12-31',
+        "ma_pay_type": '2099-12-31',
+        "ma_pay_notify_url": '2099-12-31',
     }
-
 
 def get_proxy(
     force_new: bool = False, account_key: Optional[str] = None
@@ -308,7 +270,6 @@ def get_proxy(
         log("ERROR", f"获取代理失败: {exc}")
     return None
 
-
 def safe_request(method: str, url: str, **kwargs) -> Optional[Dict[str, Any]]:
     kwargs.setdefault("timeout", 15)
     kwargs.setdefault("verify", False)
@@ -326,10 +287,8 @@ def safe_request(method: str, url: str, **kwargs) -> Optional[Dict[str, Any]]:
         log("ERROR", "JSON解析失败")
     return None
 
-
 def _load_json_value(value: str) -> object:
     return json.loads(value)
-
 
 def _normalize_json_object(payload: object) -> Dict[str, Any]:
     if isinstance(payload, dict):
@@ -339,14 +298,12 @@ def _normalize_json_object(payload: object) -> Dict[str, Any]:
         return normalized
     return {"raw": str(payload)}
 
-
 def _encrypt_phone(phone: str) -> str:
     public_key_bytes = base64.b64decode(RSA_PUBLIC_KEY_BASE64)
     public_key = RSA.import_key(public_key_bytes)
     cipher = PKCS1_v1_5.new(public_key)
     encrypted = cipher.encrypt(phone.encode("utf-8"))
     return base64.b64encode(encrypted).decode("utf-8")
-
 
 def _build_sign(params: Dict[str, str]) -> str:
     parts = [f"{key}={params[key]}" for key in sorted(params.keys())]
@@ -355,7 +312,6 @@ def _build_sign(params: Dict[str, str]) -> str:
     joined_amp = "&".join(sorted_parts)
     text_with_key = f"{joined_amp}{SIGN_SECRET_KEY}"
     return hashlib.md5(text_with_key.encode("utf-8")).hexdigest()
-
 
 def sign_in_by_token(token: str) -> Dict[str, Any]:
     if not token:
@@ -386,7 +342,6 @@ def sign_in_by_token(token: str) -> Dict[str, Any]:
     if res.get("code") == 200:
         return {"ok": True, "msg": "签到成功"}
     return {"ok": False, "msg": f"签到失败：{res.get('msg', '未知错误')}"}
-
 
 def get_sign_head_data(token: str) -> Dict[str, Any]:
     if not token:
@@ -422,10 +377,8 @@ def get_sign_head_data(token: str) -> Dict[str, Any]:
         return {"ok": True, "data": data}
     return {"ok": False, "msg": str(res.get("msg") or "查询失败")}
 
-
 def _is_signed_status(status: Any) -> bool:
     return str(status) in {"1", "2"}
-
 
 def get_continuous_sign_days(data: Dict[str, Any]) -> int:
     last_month_calendar = data.get("lastMonthCalendar")
@@ -469,13 +422,11 @@ def get_continuous_sign_days(data: Dict[str, Any]) -> int:
         break
     return days
 
-
 def _build_time_sign(touchid: str, timestamp: str) -> str:
     sign_content = (
         f"device=android&key={SIGN_KEY}&timestamp={timestamp}&touchid={touchid}"
     )
     return hashlib.md5(sign_content.encode("utf-8")).hexdigest()
-
 
 def _fetch_server_time(host: str, headers: Dict[str, str]) -> str:
     touchid = headers.get("touchid", DEFAULT_HEADERS.get("touchid", ""))
@@ -493,7 +444,6 @@ def _fetch_server_time(host: str, headers: Dict[str, str]) -> str:
         return server_time
     return local_timestamp
 
-
 def _build_sms_sign(
     encrypted_tel: str, touchid: str, timestamp: str, sms_type: str
 ) -> str:
@@ -507,7 +457,6 @@ def _build_sms_sign(
         f"&type={sms_type}"
     )
     return hashlib.md5(sign_content.encode("utf-8")).hexdigest()
-
 
 def _build_login_sign(
     encrypted_tel: str, code: str, touchid: str, timestamp: str
@@ -523,7 +472,6 @@ def _build_login_sign(
     )
     return hashlib.md5(sign_content.encode("utf-8")).hexdigest()
 
-
 def _build_sms_url_path(
     encrypted_tel: str, headers: Dict[str, str], sms_type: str
 ) -> str:
@@ -531,7 +479,6 @@ def _build_sms_url_path(
     touchid = headers.get("touchid", DEFAULT_HEADERS.get("touchid", ""))
     sign = _build_sms_sign(encrypted_tel, touchid, timestamp, sms_type)
     return f"{DEFAULT_URL_PATH}?sign={sign}&timestamp={timestamp}"
-
 
 def _build_login_url_path(
     encrypted_tel: str, code: str, headers: Dict[str, str]
@@ -541,7 +488,6 @@ def _build_login_url_path(
     sign = _build_login_sign(encrypted_tel, code, touchid, timestamp)
     return f"{LOGIN_URL_PATH}?sign={sign}&timestamp={timestamp}"
 
-
 def send_sms_code(
     url_path: str, host: str, headers: Dict[str, str], body: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -550,7 +496,6 @@ def send_sms_code(
     response.raise_for_status()
     payload = _load_json_value(response.text)
     return _normalize_json_object(payload)
-
 
 def login_by_sms(phone: str, code: str) -> Dict[str, Any]:
     headers = build_device_headers()
@@ -563,7 +508,6 @@ def login_by_sms(phone: str, code: str) -> Dict[str, Any]:
     login_body = {"tel": encrypted_tel, "code": code}
     login_path = _build_login_url_path(encrypted_tel, code, headers)
     return send_sms_code(login_path, DEFAULT_HOST, headers, login_body)
-
 
 def extract_login_token(payload: Dict[str, Any]) -> Dict[str, str]:
     if not isinstance(payload, dict):
@@ -581,7 +525,6 @@ def extract_login_token(payload: Dict[str, Any]) -> Dict[str, str]:
             "refreshToken": str(refresh_token),
         }
     return {}
-
 
 def parse_selection(choice: str, max_index: int) -> Optional[List[int]]:
     if not choice or not choice.strip():
@@ -612,7 +555,6 @@ def parse_selection(choice: str, max_index: int) -> Optional[List[int]]:
     except Exception:
         return None
 
-
 def format_account_list(accounts: List[str]) -> str:
     if not accounts:
         return "暂无绑定账号"
@@ -622,7 +564,6 @@ def format_account_list(accounts: List[str]) -> str:
         auth_msg = get_auth(phone) or "未授权"
         lines.append(f"[{i}] {status} {mask_phone(phone)} | {auth_msg}")
     return "\n".join(lines)
-
 
 def sign_in_accounts(phones: List[str]) -> None:
     if not phones:
@@ -664,7 +605,6 @@ def sign_in_accounts(phones: List[str]) -> None:
         )
     )
 
-
 def get_random_device() -> Dict[str, str]:
     brands = ["Xiaomi", "OPPO", "vivo", "Huawei", "Samsung", "OnePlus", "Realme"]
     models = {
@@ -690,7 +630,6 @@ def get_random_device() -> Dict[str, str]:
         "systemversion": f"{brand}|{model}|{android_ver}",
     }
 
-
 def get_random_ua() -> str:
     uas = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
@@ -698,7 +637,6 @@ def get_random_ua() -> str:
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
     ]
     return random.choice(uas)
-
 
 def build_device_headers() -> Dict[str, str]:
     touchid = "".join(random.choices("0123456789abcdef", k=16))
@@ -713,7 +651,6 @@ def build_device_headers() -> Dict[str, str]:
     headers["user-agent"] = get_random_ua()
     return headers
 
-
 def request_sms_code(phone: str) -> bool:
     headers = build_device_headers()
     body = _normalize_json_object(DEFAULT_BODY)
@@ -723,7 +660,6 @@ def request_sms_code(phone: str) -> bool:
     sms_path = _build_sms_url_path(encrypted_tel, headers, sms_type)
     result = send_sms_code(sms_path, DEFAULT_HOST, headers, body)
     return bool(result)
-
 
 def process_login() -> None:
     sender.reply(
@@ -797,12 +733,8 @@ def process_login() -> None:
         )
     )
 
-
 def authorize_accounts(phones: List[str]) -> bool:
     return True
-
-
-
 
 def process_manage() -> None:
     phones = get_user_phones()
@@ -864,7 +796,6 @@ def process_manage() -> None:
     selected = [phones[i] for i in indices]
     authorize_accounts(selected)
 
-
 def process_query() -> None:
     phones = get_user_phones()
     if not phones:
@@ -902,10 +833,8 @@ def process_query() -> None:
         lines.append(f"    ✅ 今日状态: {today_status}")
     sender.reply(render_block("壹品仓查询", lines))
 
-
 def process_authorize_admin() -> None:
     return True
-
 
 def process_sign_in() -> None:
     phones = get_user_phones()
@@ -913,7 +842,6 @@ def process_sign_in() -> None:
         reply_error("暂无账号")
         return
     sign_in_accounts(phones)
-
 
 def process_clean() -> None:
     if not sender.isAdmin():
@@ -1009,7 +937,6 @@ def process_clean() -> None:
         )
     )
 
-
 def show_tutorial() -> None:
     sender.reply(
         render_block(
@@ -1024,7 +951,6 @@ def show_tutorial() -> None:
             ],
         )
     )
-
 
 def run_tasks() -> None:
     sg.bucketGet("G_YPC", "admin_id") or "1603960061"
@@ -1058,7 +984,6 @@ def run_tasks() -> None:
     )
     sign_in_accounts(all_authorized_phones)
 
-
 def main() -> None:
     try:
         msg = sender.getMessage().strip()
@@ -1080,6 +1005,5 @@ def main() -> None:
         run_tasks()
     else:
         sender.setContinue()
-
 
 main()

@@ -3,7 +3,7 @@
 //[language: javascript]
 //[class: 工具]
 //[author: sillyGirl]
-//[version: v1.1.2]
+//[version: v1.1.3]
 //[public: true]
 //[admin: false]
 //[rule: ^\s*sm(登录|退出)(?:\s+(.+))?\s*$]
@@ -16,8 +16,9 @@ const {
   sender: s,
   console,
   utils,
-  form,
+  plugin,
   container,
+  user
 } = require('sillygirl');
 
 
@@ -32,21 +33,21 @@ const DEFAULTS = {
   default_display_name: "",
 };
 
-const pluginConfig = new form({
-  enable: form.boolean().title("是否启用").default(true),
-  smallcat_id: form.integer().title("smallcat 编号").description("后台 smallcat 页面里的编号，从 1 开始").widget("smallcat-panel").default(1),
-  account_mode: form.string()
+const pluginConfig = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+  smallcat_id: plugin.Form.integer().title("smallcat 编号").description("后台 smallcat 页面里的编号，从 1 开始").widget("smallcat-panel").default(1),
+  account_mode: plugin.Form.string()
     .title("openid 获取模式")
     .description("普通用户授权：只显示已授权本插件的账号；手动填写：按下方 openid 显示，留空显示 SmallCat 全部账号")
     .options(["authorized", "manual"]).default("authorized"),
-  manual_openids: form.string()
+  manual_openids: plugin.Form.string()
     .title("手动 openid")
     .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
     .widget("textarea").default(""),
-  login_type: form.integer().title("登录类型").description("传给 smallcat createQr/addUser 的 type，默认 1").default(1),
-  login_timeout: form.integer().title("扫码超时秒数").min(30).max(600).default(180),
-  poll_interval: form.integer().title("轮询间隔秒数").min(1).max(10).default(3),
-  default_display_name: form.string().title("默认备注").description("sm登录 后面没写备注时使用；仍为空则由 smallcat 决定").default(""),
+  login_type: plugin.Form.integer().title("登录类型").description("传给 smallcat createQr/addUser 的 type，默认 1").default(1),
+  login_timeout: plugin.Form.integer().title("扫码超时秒数").min(30).max(600).default(180),
+  poll_interval: plugin.Form.integer().title("轮询间隔秒数").min(1).max(10).default(3),
+  default_display_name: plugin.Form.string().title("默认备注").description("sm登录 后面没写备注时使用；仍为空则由 smallcat 决定").default(""),
 });
 
 async function main() {
@@ -175,8 +176,8 @@ async function loadSmallcatAccounts(sm, cfg) {
 }
 
 async function authorizedOpenidSet() {
-  if (typeof userList !== "function") throw new Error("当前 SillyGirl 版本缺少 userList");
-  const users = await utils.userList();
+  if (!user || typeof user.getUserList !== "function") throw new Error("当前 SillyGirl 版本缺少 user.getUserList");
+  const users = await user.getUserList();
   const allowed = new Set();
   for (const user of (Array.isArray(users) ? users : [])) {
     if (!user || user.disabled || !user.authorized) continue;

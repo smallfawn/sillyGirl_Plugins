@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: Lxg-021002]
-# [version: v1.2.6]
+# [version: v1.2.8]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,44 +13,31 @@
 # [description: 如果需要账密续期 请在我的市场下载我的续期食用 增加提交 账号密码  (饿了管理>选择账号>提交账密)  也可以在ck中添加loginId=xxx；password=xxx]
 # [depe: ["requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -63,16 +50,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,16 +72,17 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'Yzyxmm_elm_elm_Qinglong': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖(直接复制)，多容器用&分割'),
-    'Yzyxmm_elm_elm_leyuanosname': form.string().title('乐园币变量名').default('').description('青龙容器内乐园币的变量名,默认elmck\n乐园和助力变量名不可一致！！！'),
-    'Yzyxmm_elm_zlosname': form.string().title('助力账号变量名').default('').description('青龙容器内助力的变量名,默认nczlck\n乐园和助力变量名不可一致！！！'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'Yzyxmm_elm_elm_Qinglong': plugin.Form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖(直接复制)，多容器用&分割'),
+    'Yzyxmm_elm_elm_leyuanosname': plugin.Form.string().title('乐园币变量名').default('').description('青龙容器内乐园币的变量名,默认elmck\n乐园和助力变量名不可一致！！！'),
+    'Yzyxmm_elm_zlosname': plugin.Form.string().title('助力账号变量名').default('').description('青龙容器内助力的变量名,默认nczlck\n乐园和助力变量名不可一致！！！'),
 })
 _CONFIG_FIELD_MAP = {
     ('Yzyxmm_elm', 'elm_Qinglong'): 'Yzyxmm_elm_elm_Qinglong',
@@ -112,10 +100,8 @@ import requests
 import time
 from urllib.parse import urlencode
 
-
 global QLurl
 global qltoken
-
 
 def getusercontent():
     elm_leyuanmoney = sg.bucketGet(bucket='Yzyxmm_elm', key='elm_leyuanmoney')
@@ -152,7 +138,6 @@ def getusercontent():
     randomquerycommand = '吃饱了'
     return zsm, wx_zsm, elm_leyuanmoney, elm_leyuanosname, moneycoin, randommanagecommand, randomquerycommand, elm_container_max, elm_zlmoney, elm_zlosname, zlmoneycoin, elm_zlcontainer_max
 
-
 def seekql():
     try:
         qljson = {}
@@ -182,7 +167,6 @@ def seekql():
         sender.reply("获取青龙token失败")
         exit(0)
 
-
 def delenvs(qlid, QLurl, qltoken):
     if qlid is None:
         return
@@ -198,11 +182,9 @@ def delenvs(qlid, QLurl, qltoken):
     if code == 200:
         print('删除成功')
 
-
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
-
 
 def req(cookie, api, data_str, v="1.0"):
     def hbh5tk(tk_cookie, enc_cookie, cookie_str):
@@ -294,7 +276,6 @@ def req(cookie, api, data_str, v="1.0"):
     except Exception:
         return None
 
-
 def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
     try:
         url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
@@ -311,7 +292,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
     except Exception:
         sender.reply("链接青龙失败,请检查青龙配参！")
         exit(0)
-
 
 def QLupdate(QLurl, qltoken, osname, value, account, qlid):
     qlurl = f"{QLurl}/open/envs"
@@ -339,7 +319,6 @@ def QLupdate(QLurl, qltoken, osname, value, account, qlid):
         qlurl2 = f"{QLurl}/open/envs/enable"
         return qlid
 
-
 def QLzt(QLurl, qltoken, osname, value, account):  # 添加青龙变量
     try:
         qlurl = f"{QLurl}/open/envs"
@@ -363,7 +342,6 @@ def QLzt(QLurl, qltoken, osname, value, account):  # 添加青龙变量
     except Exception:
         sender.reply("添加青龙变量错误,请稍后重试")
         exit(0)
-
 
 def Addenvs(osname, value, account, OrderPoints=0):
     qlid = None
@@ -455,7 +433,6 @@ def Addenvs(osname, value, account, OrderPoints=0):
     else:
         QLupdate(QLurl, qltoken, osname, value, account, qlid)
 
-
 def allenvs(osname, token, account):
     qlid = None
     QLurl = None
@@ -485,7 +462,6 @@ def allenvs(osname, token, account):
             exit(0)
     return qlid, QLurl, qltoken
 
-
 def userdata(cookie):
     try:
         r = req(cookie, 'mtop.alsc.user.detail.query', json.dumps({}), v="1.0")
@@ -498,7 +474,6 @@ def userdata(cookie):
         return str(localId), encryptMobile, userName
     except Exception:
         return '查询失败', '查询失败', '查询失败'
-
 
 def tq2(txt):
     try:
@@ -522,9 +497,7 @@ def tq2(txt):
         print(f'Cookie解析错误: {e}')
         return {}
 
-
 def sign(cookie):
-
 
     def accvip(Newaddition):
         if len(zlaccountVip) != 0 and zlaccountVip >= str(now_time):
@@ -546,7 +519,6 @@ def sign(cookie):
                 sender.reply(f'🤪{bind}更新成功！\n————————————————\n» 授权过期‘饿了管理’进行续期！')
 
         sg.bucketSet(bucket='Yzyxmm_elm_bind', key=userid, value=f'{accounts}')
-
 
     account, bind, username = userdata(cookie)
     if account == '查询失败':
@@ -586,7 +558,6 @@ def sign(cookie):
     '''else:
         exit(0)'''
 
-
 def getaccountmes(account):
     cookie = sg.bucketGet(bucket='Yzyxmm_elm_account', key=f'{account}')
     accsvip = sg.bucketGet(bucket='Yzyxmm_elm_svip', key=f'{account}')
@@ -604,7 +575,6 @@ def getaccountmes(account):
 
     return cookie, bind, accsvip, zlaccsvip
 
-
 def empower2(empowertime, me_as_int):
     day = me_as_int * 30
     if empowertime == '未授权' or empowertime == '授权过期' or empowertime <= str(today_time):
@@ -617,7 +587,6 @@ def empower2(empowertime, me_as_int):
         sender.reply('出错！')
         exit(0)
     return str(delayed_date)
-
 
 def inputm(mes, long=99999999999, count=99999999999):
     sender.reply(mes)
@@ -644,10 +613,8 @@ def inputm(mes, long=99999999999, count=99999999999):
         pass
     return mes
 
-
 def Pointpayment2(OrderPoints):
     return True
-
 
 def zf2(project, me_as_int, money):
     zfzt = False
@@ -682,7 +649,6 @@ def zf2(project, me_as_int, money):
     else:
         sender.reply('当前有人正在支付,请稍后再试！')
         exit(0)
-
 
 def manage():
     accounts = sg.bucketGet(bucket='Yzyxmm_elm_bind', key=userid)
@@ -800,7 +766,6 @@ def manage():
                             f'———《订单完成》———\n🎈名称:批量助力\n🎉数量:{len(accounts) * int(mation_int)}月\n💰支付金额:{order}积分')
             else:
                 sender.reply('输入错误！')
-
 
         else:
             try:
@@ -939,12 +904,8 @@ def manage():
     else:
         sender.reply('暂未绑定饿了么账号，请获取Cookie后直接发给我！')
 
-
 def Pointpayment(mation_int, accsvip, cookie, account, bind, coin, osname, OrderPoints, batch=False):
     return True
-
-
-
 
 def zf(money, osname, mation_int):  # 等待支付并且发送ck到青龙、
     zfzt = False
@@ -982,14 +943,12 @@ def zf(money, osname, mation_int):  # 等待支付并且发送ck到青龙、
         sender.reply('当前有人正在支付,请稍后再试！')
         exit(0)
 
-
 def signs(mh5tk, ts, data):
     data_str = json.dumps(data, separators=(',', ':'))
 
     e = mh5tk + "&" + ts + "&" + '12574478' + "&" + data_str
     sign = hashlib.md5(e.encode()).hexdigest()
     return sign
-
 
 def res(header, cookie):
     str_header = str(header)
@@ -1002,7 +961,6 @@ def res(header, cookie):
     cookie = re.sub(r'_m_h5_tk_enc=[^;]+;?', '', cookie)
     cookie = str1 + str2 + cookie
     return cookie, mh5tk
-
 
 def eatapi(cookie):
     try:
@@ -1043,7 +1001,6 @@ def eatapi(cookie):
         print(e)
         return '查询错误', '查询错误'
 
-
 def bbf(cookie):
     try:
         url = 'https://wallet.ele.me/api/storedcard/queryBalanceBycardType?cardType=platform'
@@ -1059,7 +1016,6 @@ def bbf(cookie):
         return money
     except Exception:
         return '查询错误'
-
 
 def leyuanB(cookie):
     try:
@@ -1098,7 +1054,6 @@ def leyuanB(cookie):
     except Exception:
         return '查询错误'
 
-
 def Orchard_inquiry(cookie):
     try:
         r = req(cookie, 'mtop.alsc.playgame.orchard.index.batch.query', json.dumps({
@@ -1116,7 +1071,6 @@ def Orchard_inquiry(cookie):
         return "\n🍒果树进度:- -"
     except Exception:
         return "\n🍒果树进度:- -"
-
 
 def WinningTheTreasureHunt(cookie):
     try:
@@ -1157,7 +1111,6 @@ def WinningTheTreasureHunt(cookie):
         sender.reply(f'{e}')
         return '\n🍡夺宝中奖:- -'
 
-
 def OrchardExchangeVoucher(cookie):
     try:
         respnse = req(cookie, 'mtop.koubei.interaction.center.common.queryintegralproperty.v2',
@@ -1167,7 +1120,6 @@ def OrchardExchangeVoucher(cookie):
 
     except Exception:
         return "\n🌸果园兑换卡:- -"
-
 
 def todayreques(cookie):
     try:
@@ -1244,16 +1196,12 @@ def todayreques(cookie):
         print(e)
         return '查询错误', '查询错误'
 
-
-
-
 def cx(cookie):
     money = bbf(cookie)
     eatcount, todayeat = eatapi(cookie)
     count = leyuanB(cookie)
     todayleyuanB, Bdetailed = todayreques(cookie)
     return count, money, eatcount, todayeat, todayleyuanB
-
 
 def push(user, mobile, message):
     sg.push('wb', '', user, '',
@@ -1266,7 +1214,6 @@ def push(user, mobile, message):
                     f'🤪用户‘{mobile}’,{message}')
     sg.push('wx', '', user, '',
                     f'🤪用户‘{mobile}’,{message}')
-
 
 def cxs():
     accounts = sg.bucketGet(bucket='Yzyxmm_elm_bind', key=userid)
@@ -1448,10 +1395,8 @@ def cxs():
             except ValueError:
                 sender.reply('输入错误！')
 
-
     else:
         sender.reply('未绑定饿了么账号，请获取Cookie后直接发给我！')
-
 
 def AlluserTreasureHunt():
     sender.reply('正在检索所有用户的中奖信息，该过程时间较长 请耐心等待...')
@@ -1481,7 +1426,6 @@ def AlluserTreasureHunt():
         exit(0)
     sender.reply(f'{message}')
 
-
 today_date = datetime.now().date()
 today_time = str(today_date)
 now_time = datetime.now().date()
@@ -1502,7 +1446,6 @@ elif '夺宝' in usermessage:
         AlluserTreasureHunt()
     else:
         sender.reply('无权使用！')
-
 
 elif imtype == 'fake':
     bindlist = sg.bucketAllKeys(bucket='Yzyxmm_elm_bind')

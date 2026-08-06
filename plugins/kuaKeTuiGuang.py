@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: rujingxianghai]
-# [version: v1.0.0]
+# [version: v1.0.1]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -16,50 +16,35 @@ import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -72,18 +57,18 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'quark_search_cookies': form.string().title('夸克网盘Cookie').default('').description('夸克网盘的Cookie字符串'),
-    'quark_search_save_folder': form.string().title('保存文件夹名称').default('').description('转存时的保存文件夹名称，留空则随机生成'),
-    'quark_search_share_option': form.string().title('分享选项').default('').description('1=公开永久 2=公开1天 3=公开7天 4=公开30天 5=加密永久 6=加密1天 7=加密7天 8=加密30天'),
-    'quark_search_search_api': form.string().title('搜索API地址').default('').description('搜索API，自建项目：https://github.com/fish2018/pansou'),
-    'quark_search_clean_folder_id': form.string().title('清理文件夹ID').default('').description('需要清理的文件夹ID，留空则不启用清理功能'),
+config = plugin.Form({
+    'quark_search_cookies': plugin.Form.string().title('夸克网盘Cookie').default('').description('夸克网盘的Cookie字符串'),
+    'quark_search_save_folder': plugin.Form.string().title('保存文件夹名称').default('').description('转存时的保存文件夹名称，留空则随机生成'),
+    'quark_search_share_option': plugin.Form.string().title('分享选项').default('').description('1=公开永久 2=公开1天 3=公开7天 4=公开30天 5=加密永久 6=加密1天 7=加密7天 8=加密30天'),
+    'quark_search_search_api': plugin.Form.string().title('搜索API地址').default('').description('搜索API，自建项目：https://github.com/fish2018/pansou'),
+    'quark_search_clean_folder_id': plugin.Form.string().title('清理文件夹ID').default('').description('需要清理的文件夹ID，留空则不启用清理功能'),
 })
 _CONFIG_FIELD_MAP = {
     ('quark_search', 'cookies'): 'quark_search_cookies',
@@ -114,10 +99,8 @@ def get_timestamp(length: int = 13) -> str:
     timestamp = int(time.time() * 1000)  # 毫秒时间戳
     return str(timestamp)[:length]
 
-
 def generate_random_code(length: int = 4) -> str:
     return ''.join([str(random.randint(0, 9)) for _ in range(length)])
-
 
 def generate_qrcode(url):
     try:
@@ -127,7 +110,6 @@ def generate_qrcode(url):
     except Exception:
         return None
 
-
 def parse_datetime(dt_str: str) -> str:
     try:
         if dt_str == "0001-01-01T00:00:00Z":
@@ -136,7 +118,6 @@ def parse_datetime(dt_str: str) -> str:
         return dt.strftime("%Y-%m-%d")
     except:
         return "未知"
-
 
 class QuarkAutoSaveAndShare:
 
@@ -660,7 +641,6 @@ class QuarkAutoSaveAndShare:
         except Exception as e:
             return '', f'分享失败：{str(e)}'
 
-
 def search_resources(keyword: str, api_base_url: str) -> List[Dict]:
     try:
         url = f"{api_base_url.rstrip('/')}/api/search"
@@ -678,7 +658,6 @@ def search_resources(keyword: str, api_base_url: str) -> List[Dict]:
     except Exception as e:
         print(f"搜索失败: {str(e)}")
         return []
-
 
 def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share_option: str, keyword: str = ''):
     page = 1
@@ -722,7 +701,6 @@ def retry_selection(resources: List[Dict], cookies: str, save_folder: str, share
         except ValueError:
             sender.reply('请输入有效的数字')
 
-
 def format_resource_list(resources: List[Dict], page: int = 1, per_page: int = 10) -> str:
     if not resources:
         return "未找到相关资源"
@@ -749,7 +727,6 @@ def format_resource_list(resources: List[Dict], page: int = 1, per_page: int = 1
         result += f"\n【0】下一页(当前第{page}/{total_pages}页)"
 
     return result
-
 
 def handle_search(keyword: str):
     cookies = sg.bucketGet('quark_search', 'cookies') or ''
@@ -823,7 +800,6 @@ def handle_search(keyword: str):
         except ValueError:
             sender.reply('请输入有效的数字')
 
-
 def handle_resource(resource: Dict, cookies: str, save_folder: str, share_option: str, keyword: str = '', resources: List[Dict] = None):
     share_url = resource.get('url', '')
     password = resource.get('password', '')
@@ -886,7 +862,6 @@ def handle_resource(resource: Dict, cookies: str, save_folder: str, share_option
             sender.reply('请重新选择其他资源：')
             retry_selection(resources, cookies, save_folder, share_option, keyword)
 
-
 def handle_clean():
     cookies = sg.bucketGet('quark_search', 'cookies') or ''
     clean_folder_id = sg.bucketGet('quark_search', 'clean_folder_id') or ''
@@ -925,13 +900,11 @@ def handle_clean():
     except Exception as e:
         sender.reply(f'清理失败：{str(e)}')
 
-
 def cookiejar_to_string(cookiejar):
     cookie_string = ""
     for cookie in cookiejar:
         cookie_string += cookie.name + "=" + cookie.value + "; "
     return cookie_string.strip('; ')
-
 
 def poll_qrcode_status(token: str, max_wait_seconds: int = 120) -> Union[str, None]:
     start_time = time.time()
@@ -978,7 +951,6 @@ def poll_qrcode_status(token: str, max_wait_seconds: int = 120) -> Union[str, No
 
     return None
 
-
 def handle_login():
     try:
         request_id = str(uuid.uuid4())
@@ -1016,7 +988,6 @@ def handle_login():
 
     except Exception as e:
         sender.reply(f'登录失败：{str(e)}')
-
 
 message = sender.getMessage()
 

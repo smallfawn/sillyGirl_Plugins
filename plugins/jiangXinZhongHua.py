@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.3.7]
+# [version: v1.3.8]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,56 +12,40 @@
 # [description: 介绍：匠心插件，支持扫码登录、CK批量登录、查询、兑换、批量兑换、物流、地址管理与管理；更新日志：1.3.7 新增「匠心CK」指令，支持批量CK登录，格式：备注#ck]
 # [depe: ["requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -74,17 +58,17 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'G_JXZH_panel_type': form.string().title('面板类型').default('').description('对接面板：qinglong=青龙，daidai=呆呆（DaiDaiPanel），不填默认为青龙'),
-    'G_JXZH_panel_config': form.string().title('设置对接容器').default('').description('青龙用 | 分割3项；呆呆为 Open API 的 host、app_key、app_secret（也支持中文丨分隔）'),
-    'G_JXZH_ql_envname': form.string().title('变量名').default('').description('面板内匠心账号使用的变量名（青龙/呆呆通用），默认 G_JXZH_TOKEN'),
-    'G_JXZH_panel_group': form.string().title('对接面板分组').default('').description('可选。仅呆呆面板生效，新增/更新变量时写入 group；留空不处理'),
+config = plugin.Form({
+    'G_JXZH_panel_type': plugin.Form.string().title('面板类型').default('').description('对接面板：qinglong=青龙，daidai=呆呆（DaiDaiPanel），不填默认为青龙'),
+    'G_JXZH_panel_config': plugin.Form.string().title('设置对接容器').default('').description('青龙用 | 分割3项；呆呆为 Open API 的 host、app_key、app_secret（也支持中文丨分隔）'),
+    'G_JXZH_ql_envname': plugin.Form.string().title('变量名').default('').description('面板内匠心账号使用的变量名（青龙/呆呆通用），默认 G_JXZH_TOKEN'),
+    'G_JXZH_panel_group': plugin.Form.string().title('对接面板分组').default('').description('可选。仅呆呆面板生效，新增/更新变量时写入 group；留空不处理'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_JXZH', 'panel_type'): 'G_JXZH_panel_type',
@@ -100,7 +84,7 @@ import uuid
 import hashlib
 import requests
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 
 senderID = sg.getSenderID()
@@ -141,7 +125,6 @@ APP_HEADERS = {
     'Accept-Language': 'zh-Hans-CN;q=1, zh-Hant-CN;q=0.9, en-CN;q=0.8',
 }
 
-
 def parse_bool(value, default: bool = False) -> bool:
     if isinstance(value, bool):
         return value
@@ -149,13 +132,11 @@ def parse_bool(value, default: bool = False) -> bool:
         return default
     return str(value).strip().lower() == 'true'
 
-
 def parse_decimal(value, default: str = '0') -> Decimal:
     try:
         return Decimal(str(value).strip() or default)
     except Exception:
         return Decimal(default)
-
 
 def parse_int(value, default: int) -> int:
     try:
@@ -163,22 +144,18 @@ def parse_int(value, default: int) -> int:
     except Exception:
         return default
 
-
 def normalize_text(value):
     if value is None:
         return ''
     return str(value)
 
-
 def dedupe_phones(phones: list) -> list:
     return list(dict.fromkeys([str(phone).strip() for phone in phones if str(phone).strip()]))
-
 
 def get_user_phones(user_id=None) -> list:
     user_id = user_id or userid
     data = sg.bucketGet(BUCKET_USER, user_id) or ''
     return dedupe_phones(data.split(','))
-
 
 def save_user_phones(phones: list, user_id=None):
     user_id = user_id or userid
@@ -188,13 +165,11 @@ def save_user_phones(phones: list, user_id=None):
         return
     sg.bucketDel(BUCKET_USER, user_id)
 
-
 def add_account(phone: str, user_id=None):
     phones = get_user_phones(user_id)
     if phone not in phones:
         phones.append(phone)
         save_user_phones(phones, user_id)
-
 
 def parse_token_parts(data: str) -> dict:
     if not data:
@@ -208,27 +183,12 @@ def parse_token_parts(data: str) -> dict:
         'refreshToken': parts[2] if len(parts) > 2 else '',
     }
 
-
 def save_token(phone: str, userId: str, token: str, refreshToken: str = ''):
     sg.bucketSet(BUCKET_TOKEN, phone, f'{userId}#{token}#{refreshToken}')
-
 
 def get_token(phone: str) -> dict:
     data = sg.bucketGet(BUCKET_TOKEN, phone) or ''
     return parse_token_parts(data)
-
-
-def get_auth(phone: str) -> str:
-    return '2099-12-31'
-
-
-def save_auth(phone: str, expire_date: str):
-    return True
-
-
-def is_authorized(phone: str) -> bool:
-    return True
-
 
 def del_account(phone: str, user_id=None, panel_config: str = '', panel_envname: str = ''):
     user_id = user_id or userid
@@ -242,9 +202,8 @@ def del_account(phone: str, user_id=None, panel_config: str = '', panel_envname:
     sg.bucketDel(BUCKET_TOKEN, phone)
     True
 
-
 def get_config() -> dict:
-    auth_days = parse_int('2099-12-31' or '30', 30)
+    auth_days = parse_int('2099-12-31', 30)
     points_limit = parse_int(sg.bucketGet(BUCKET_CONFIG, 'points_limit') or '10', 10)
     return {
         'panel_type': (sg.bucketGet(BUCKET_CONFIG, 'panel_type') or 'qinglong').strip(),
@@ -255,21 +214,19 @@ def get_config() -> dict:
         'auth_days': auth_days if auth_days > 0 else 30,
         'coin': parse_int(sg.bucketGet(BUCKET_CONFIG, 'coin') or '0', 0),
         'points_limit': points_limit if points_limit > 0 else 10,
-        'use_ma_pay': parse_bool('2099-12-31' or 'false', False),
+        'use_ma_pay': parse_bool('2099-12-31', False),
         'zsm': (sg.bucketGet('dd_sign_config', 'zsm') or '').strip(),
-        'ma_pay_switch': parse_bool('2099-12-31' or 'false', False),
-        'ma_pay_gateway': ('2099-12-31' or '').strip(),
-        'ma_pay_pid': ('2099-12-31' or '').strip(),
-        'ma_pay_key': ('2099-12-31' or '').strip(),
-        'ma_pay_type': ('2099-12-31' or 'alipay,wxpay').strip(),
-        'ma_pay_notify_url': ('2099-12-31' or '').strip(),
-        'ma_pay_return_url': ('2099-12-31' or '').strip(),
+        'ma_pay_switch': parse_bool('2099-12-31', False),
+        'ma_pay_gateway': ('2099-12-31').strip(),
+        'ma_pay_pid': ('2099-12-31').strip(),
+        'ma_pay_key': ('2099-12-31').strip(),
+        'ma_pay_type': ('2099-12-31').strip(),
+        'ma_pay_notify_url': ('2099-12-31').strip(),
+        'ma_pay_return_url': ('2099-12-31').strip(),
     }
-
 
 CONFIG = get_config()
 uservalue = ','.join(get_user_phones(userid))
-
 
 def build_signed_payload(extra=None, use_app_style: bool = False, sign_mode: str = 'encoded'):
     if use_app_style:
@@ -309,7 +266,6 @@ def build_signed_payload(extra=None, use_app_style: bool = False, sign_mode: str
     payload['key'] = hashlib.sha1(sign_source.encode('utf-8')).hexdigest()
     return payload
 
-
 def get_base_headers():
     return {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf2541411) XWEB/16965',
@@ -324,10 +280,8 @@ def get_base_headers():
         'Accept-Language': 'zh-CN,zh;q=0.9',
     }
 
-
 def get_app_base_headers():
     return APP_HEADERS.copy()
-
 
 def is_signature_error_result(result) -> bool:
     if not isinstance(result, dict):
@@ -349,7 +303,6 @@ def is_signature_error_result(result) -> bool:
     )
     return any(keyword in message for keyword in keywords)
 
-
 def signed_post_with_fallback(url, headers, extra=None, use_app_style: bool = False, timeout=10):
     payload = build_signed_payload(extra, use_app_style=use_app_style, sign_mode='encoded')
     response = requests.post(url, headers=headers, data=payload, timeout=timeout)
@@ -364,7 +317,6 @@ def signed_post_with_fallback(url, headers, extra=None, use_app_style: bool = Fa
         print(f"签名兼容重试成功: {url}")
         return fallback_result
     return fallback_result if fallback_result else result
-
 
 def load_json_response(response):
     raw = getattr(response, 'content', b'') or b''
@@ -398,7 +350,6 @@ def load_json_response(response):
     except Exception:
         return {}
 
-
 def get_user_info(token):
     try:
         result = signed_post_with_fallback(
@@ -424,7 +375,6 @@ def get_user_info(token):
         print(f"获取用户信息失败: {e}")
         return None
 
-
 def get_task_list(token):
     try:
         result = signed_post_with_fallback(
@@ -441,7 +391,6 @@ def get_task_list(token):
         print(f"获取任务列表失败: {e}")
         return None
 
-
 def get_task_userinfo(token):
     task_data = get_task_list(token)
     if not task_data:
@@ -455,7 +404,6 @@ def get_task_userinfo(token):
         'points': userinfo.get('points', '0'),
         'task_rice': userinfo.get('task_rice', '0'),
     }
-
 
 def get_points_list(token, page=1):
     try:
@@ -481,7 +429,6 @@ def get_points_list(token, page=1):
     except Exception as e:
         print(f"获取积分明细失败: {e}")
         return None
-
 
 def get_order_list(token, status='3', page=1, keywords=''):
     try:
@@ -523,11 +470,6 @@ def get_order_list(token, status='3', page=1, keywords=''):
             'data': [],
         }
 
-
-
-
-
-
 def exchange_token(wx_code):
     if not wx_code:
         print("exchange_token: wx_code 为空")
@@ -567,7 +509,6 @@ def exchange_token(wx_code):
         sender.reply(f'❌ 换取Token异常: {e}')
         return None
 
-
 def get_qr_code():
     url = 'https://open.weixin.qq.com/connect/app/qrconnect'
     params = {
@@ -590,7 +531,6 @@ def get_qr_code():
     except Exception as e:
         print(f"获取二维码失败: {e}")
         return None
-
 
 def check_qr_status(qr_uuid, qr_created_at=None):
     if qr_created_at and time.time() - qr_created_at >= QR_EXPIRE_SECONDS:
@@ -629,19 +569,14 @@ def check_qr_status(qr_uuid, qr_created_at=None):
         print(f"检查扫码状态异常: {e}")
         return None
 
-
 def format_message(title, content, status='info'):
     status_icons = {'info': 'ℹ️', 'success': '✅', 'warning': '⚠️', 'error': '❌', 'loading': '⏳'}
     return f"{status_icons.get(status, 'ℹ️')} {title}\n{content}"
-
 
 def mask_phone(phone):
     if len(phone) >= 11:
         return phone[:3] + '*' * 4 + phone[7:]
     return phone
-
-
-
 
 def parse_selection(choice, max_index: int) -> list:
     choice = str(choice or '').strip()
@@ -689,11 +624,6 @@ def parse_selection(choice, max_index: int) -> list:
     if not values:
         raise ValueError('请输入有效序号')
     return values
-
-
-def get_auth_status(account_vip, today_time):
-    return '2099-12-31'
-
 
 def decode_wechat_nickname(raw):
     if raw is None:
@@ -747,7 +677,6 @@ def decode_wechat_nickname(raw):
     )
     return best
 
-
 def is_usable_display_name(name):
     name = str(name or '').strip()
     if not name:
@@ -769,7 +698,6 @@ def is_usable_display_name(name):
         return True
     return mojibake_count == 0
 
-
 def get_account_display_name(account, userinfo=None):
     username = ''
     if isinstance(userinfo, dict):
@@ -777,7 +705,6 @@ def get_account_display_name(account, userinfo=None):
     if is_usable_display_name(username):
         return username
     return mask_phone(account) if len(account) >= 11 else account
-
 
 def get_user_choice(prompt, timeout=120000, allow_quit=True):
     if prompt:
@@ -792,10 +719,8 @@ def get_user_choice(prompt, timeout=120000, allow_quit=True):
         return ''
     return choice
 
-
 def get_content_config():
     return CONFIG['ql_envname'], '匠心管理', '匠心查询', '匠心登录'
-
 
 jxzh_osname, jxzh_managecommand, jxzh_querycommand, jxzh_signcommand = get_content_config()
 panel_type_value = CONFIG['panel_type']
@@ -808,14 +733,12 @@ jxzhcoin = CONFIG['coin']
 jxzh_points_limit = CONFIG['points_limit']
 jxzh_use_ma_pay = CONFIG['use_ma_pay']
 
-
 def split_panel_config(raw):
     raw = (raw or '').strip()
     if not raw:
         return []
     parts = re.split(r'\s*[|｜丨]\s*', raw)
     return [p.strip() for p in parts if p and p.strip()]
-
 
 def normalize_panel_type(panel_type_value):
     value = str(panel_type_value or '').strip().lower()
@@ -825,10 +748,8 @@ def normalize_panel_type(panel_type_value):
         return 'qinglong'
     return 'qinglong'
 
-
 panel_type = normalize_panel_type(panel_type_value)
 use_daidai = panel_type == 'daidai'
-
 
 def get_ql_config():
     if not panel_config_value:
@@ -840,7 +761,6 @@ def get_ql_config():
         return '', '', ''
     return parts[0], parts[1], parts[2]
 
-
 def get_dd_config():
     if not panel_config_value:
         sender.reply(format_message('配置错误', '未配置对接容器（呆呆需要 host、app_key、app_secret）', 'error'))
@@ -850,7 +770,6 @@ def get_dd_config():
         sender.reply(format_message('格式错误', '呆呆对接容器需用 | 或 丨 分割为 3 段', 'error'))
         return '', '', ''
     return parts[0], parts[1], parts[2]
-
 
 panel_token_cache = None
 
@@ -866,7 +785,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):
         print(f"获取青龙Token失败: {e}")
         return None
 
-
 def DDtoken(DDurl, AppKey, AppSecret):
     url = f'{DDurl.rstrip("/")}/api/open-api/token'
     data = {"app_key": AppKey, "app_secret": AppSecret}
@@ -877,7 +795,6 @@ def DDtoken(DDurl, AppKey, AppSecret):
     except Exception as e:
         print(f"获取呆呆Token失败: {e}")
         return None
-
 
 def get_panel_token():
     global panel_token_cache
@@ -892,7 +809,6 @@ def get_panel_token():
         panel_token_cache = QLtoken(QLurl, ClientID, ClientSecret)
     return panel_token_cache
 
-
 def get_panel_headers(content_type="application/json"):
     token = get_panel_token()
     return {
@@ -901,7 +817,6 @@ def get_panel_headers(content_type="application/json"):
         "Content-Type": content_type
     }
 
-
 def get_panel_base_url():
     if use_daidai:
         DDurl, _, _ = get_dd_config()
@@ -909,7 +824,6 @@ def get_panel_base_url():
     else:
         QLurl, _, _ = get_ql_config()
         return QLurl
-
 
 def allenvs(osname, account):
     if use_daidai:
@@ -933,7 +847,6 @@ def allenvs(osname, account):
         pass
     return None
 
-
 def dd_allenvs(osname, account):
     url = f"{get_panel_base_url()}/api/envs"
     headers = get_panel_headers()
@@ -952,7 +865,6 @@ def dd_allenvs(osname, account):
         pass
     return None
 
-
 def delenvs(id):
     if id is None:
         return
@@ -965,7 +877,6 @@ def delenvs(id):
         headers = get_panel_headers()
         data = [id]
         requests.delete(url, headers=headers, json=data)
-
 
 def Addenvs(osname, value, account, phone, target_userid=None, expire_time=None):
     phone = mask_phone(phone)
@@ -985,7 +896,6 @@ def Addenvs(osname, value, account, phone, target_userid=None, expire_time=None)
         else:
             QLupdate(osname, value, account, qlid, phone, actual_userid, expire_info)
 
-
 def QLupdate(osname, value, account, qlid, phone, target_userid, expire_info):
     url = f"{get_panel_base_url()}/open/envs"
     data = {
@@ -997,7 +907,6 @@ def QLupdate(osname, value, account, qlid, phone, target_userid, expire_info):
     headers = get_panel_headers()
     requests.put(url, headers=headers, data=json.dumps(data))
 
-
 def QLzt(osname, value, account, phone, target_userid, expire_info):
     url = f"{get_panel_base_url()}/open/envs"
     data = [{
@@ -1007,7 +916,6 @@ def QLzt(osname, value, account, phone, target_userid, expire_info):
     }]
     headers = get_panel_headers()
     requests.post(url, headers=headers, json=data)
-
 
 def DDcreate(osname, value, account, phone, target_userid, expire_info):
     url = f"{get_panel_base_url()}/api/envs"
@@ -1021,7 +929,6 @@ def DDcreate(osname, value, account, phone, target_userid, expire_info):
     headers = get_panel_headers()
     requests.post(url, headers=headers, json=data)
 
-
 def DDupdate(osname, value, account, env_id, phone, target_userid, expire_info):
     url = f"{get_panel_base_url()}/api/envs/{env_id}"
     data = {
@@ -1034,264 +941,9 @@ def DDupdate(osname, value, account, env_id, phone, target_userid, expire_info):
     headers = get_panel_headers()
     requests.put(url, headers=headers, json=data)
 
-
-def generate_qrcode(url):
-    try:
-        encoded_url = urllib.parse.quote(url, safe='')
-        return f"https://api.qrtool.cn/?text={encoded_url}"
-    except Exception as e:
-        print(f"生成二维码失败: {str(e)}")
-        return None
-
-
-def send_qrcode_image(sender, qrcode_url, pay_type):
-    pay_type_names = {'alipay': '支付宝', 'wxpay': '微信', 'qqpay': 'QQ钱包'}
-    pay_type_name = pay_type_names.get(pay_type, pay_type)
-    try:
-        sender.replyImage(qrcode_url)
-        if pay_type == 'qqpay':
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\nQQ支付打开图片若是黑屏，长按屏幕进行\"识别二维码\"即可！\n支付过程中输入'q'可取消支付")
-        else:
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\n支付过程中输入'q'可取消支付")
-    except Exception:
-        if pay_type == 'qqpay':
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\nQQ支付打开图片若是黑屏，长按屏幕进行"识别二维码"即可！\n[CQ:image,file={qrcode_url}]'
-        else:
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\n[CQ:image,file={qrcode_url}]'
-        sender.reply(pay_msg)
-
-
-def yesornos():
-    choice = get_user_choice("", 120000, True)
-    if choice in ['Y', 'y', '是']:
-        return True
-    if choice in ['n', 'N', '否', '']:
-        return False
-    sender.reply(format_message("输入错误", "请输入正确的选项", "error"))
-    return False
-
-
-def jxzh_get_payment_config():
-    return {}
-
-
-def jxzh_parse_payment_result(ddzf):
-    return True
-
-
-def jxzh_empower(empowertime, months_int):
-    today_time = datetime.now().strftime("%Y-%m-%d")
-    today_date = datetime.now().date()
-    day = int(months_int) * jxzh_auth_days
-    if not empowertime or empowertime <= today_time:
-        delayed_date = today_date + timedelta(days=day)
-    elif empowertime > today_time:
-        empower_date = datetime.strptime(empowertime, "%Y-%m-%d")
-        delayed_date = empower_date + timedelta(days=day)
-        delayed_date = delayed_date.date()
-    else:
-        sender.reply('出错！')
-        return ''
-    return str(delayed_date)
-
-
 def jxzh_token_value_for_account(account):
     token_data = get_token(account)
     return token_data.get('token', '')
-
-
-def jxzh_zf(project, months_int, accountVip, token, phone, account):
-    try:
-        money = Decimal(months_int) * jxzhVipmoney
-        if money == 0:
-            new_vip = jxzh_empower(accountVip or '', months_int)
-            if not new_vip:
-                return False
-            save_auth(account, new_vip)
-            Addenvs(osname=jxzh_osname, value=token, account=account, phone=phone, expire_time=new_vip)
-            sender.reply(format_message("免费授权成功",
-                f"商品: {project}\n金额: 免费\n授权时长: {months_int}月（每{jxzh_auth_days}天为1月）", "success"))
-            return True
-
-        zsm, use_ma_pay, ma_pay_config = jxzh_get_payment_config()
-        usercoin = sg.bucketGet('dd_sign_points', userid) or '0'
-        zfcoin = int(jxzhcoin) * int(months_int) if jxzhcoin else 0
-        opt_points = bool(jxzhcoin and int(jxzhcoin) > 0)
-        opt_ma = bool(use_ma_pay and ma_pay_config)
-        opt_zsm = bool(zsm and str(zsm).strip())
-
-        if not opt_points and not opt_ma and not opt_zsm:
-            sender.reply(format_message("配置错误",
-                "付费授权需至少配置一种支付方式：\n• 填写「积分支付」\n或开启有效「使用在线处理」并完成卡密系统在线处理配置\n或填写「赞赏码链接」", "error"))
-            return False
-
-        pay_menu = "=====请选择支付方式====="
-        option_num = 1
-        options_map = {}
-
-        if opt_points:
-            pay_menu += f"\n[{option_num}] 积分支付\n   🎯 需 {zfcoin} 积分（{months_int}月）\n   💫 当前积分: {usercoin}"
-            options_map[str(option_num)] = 'points'
-            option_num += 1
-        if opt_ma:
-            pay_menu += f"\n[{option_num}] 在线处理\n   💰 {money}元 / {months_int}月"
-            options_map[str(option_num)] = 'ma'
-            option_num += 1
-        if opt_zsm:
-            pay_menu += f"\n[{option_num}] 赞赏在线处理\n   💰 {money}元 / {months_int}月（微信扫码赞赏或收款）"
-            options_map[str(option_num)] = 'wechat'
-            option_num += 1
-
-        pay_menu += "\n------------------\n回复对应数字\n回复'q'退出\n=================="
-        sender.reply(pay_menu)
-        choice = get_user_choice("", 60000, True)
-        if not choice:
-            return False
-
-        selected_pay = options_map.get(choice)
-        if selected_pay == 'wechat' and opt_zsm:
-            if False:
-                sender.reply(format_message("支付繁忙", "当前有人正在支付,请稍后再试！", "warning"))
-                return False
-            pay_msg = f"""=====微信扫在线处理====
-🎫 商品: {project}
-📅 时长: {months_int}月
-💰 金额: {money}元
-------------------
-请使用微信扫在线处理
-回复"q"取消支付
-=================="""
-            sender.reply(pay_msg)
-            sender.replyImage(zsm)
-            ddzf = False
-            if str(ddzf) == 'q':
-                sender.reply(format_message("已取消", "已取消支付", "info"))
-                return False
-            payment_result = jxzh_parse_payment_result(ddzf)
-            if not payment_result:
-                return False
-            Money, Time, From = payment_result
-            if float(Money) >= float(money):
-                new_vip = jxzh_empower(accountVip or '', months_int)
-                if not new_vip:
-                    return False
-                save_auth(account, new_vip)
-                Addenvs(osname=jxzh_osname, value=token, account=account, phone=phone, expire_time=new_vip)
-                sender.reply(f"""=====支付成功=====
-🎫 商品: {project}
-💰 金额: {Money}元
-⏰ 时间: {Time}
-{f'👤 付款人: {From}' if From else ''}
-==================""")
-                return True
-            sender.reply(format_message("支付金额错误",
-                f"应付: {money}元\n实付: {Money}元\n{f'付款人: {From}' if From else ''}\n\n❗ 请稍后核对支付记录！", "error"))
-            return False
-
-        if selected_pay == 'ma' and opt_ma and ma_pay_config:
-            out_trade_no = f"JX{int(time.time())}{userid}"
-            params = {
-                'pid': ma_pay_config['pid'],
-                'type': ma_pay_config['type'].split(',')[0],
-                'out_trade_no': out_trade_no,
-                'name': f"{senderID}-匠心授权-{str(money)}",
-                'money': str(money),
-                'notify_url': ma_pay_config['notify_url'],
-                'return_url': ma_pay_config['return_url'],
-                'param': userid
-            }
-            params = {k: v for k, v in params.items() if v}
-            sorted_params = dict(sorted(params.items(), key=lambda x: x[0]))
-            sign_str = "&".join([f"{k}={v}" for k, v in sorted_params.items()])
-            sign = hashlib.md5((sign_str + ma_pay_config['key']).encode('utf-8')).hexdigest().lower()
-            params['sign'] = sign
-            params['sign_type'] = 'MD5'
-            gateway = ma_pay_config['gateway']
-            if gateway.endswith('/'):
-                gateway = gateway[:-1]
-            mapi_url = f"{gateway}/mapi.php"
-            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-            response = requests.post(mapi_url, data=params, headers=headers, timeout=10)
-            if response.status_code != 200:
-                sender.reply(format_message("支付失败", f"创建支付订单失败，HTTP状态码: {response.status_code}", "error"))
-                return False
-            try:
-                result = response.json()
-            except Exception:
-                sender.reply(format_message("支付失败", "创建支付订单失败，返回数据格式错误", "error"))
-                return False
-            if result.get('code', 0) != 1:
-                msg = result.get('msg', '未知状态')
-                sender.reply(format_message("支付失败", f"创建订单失败: {msg}", "error"))
-                return False
-            payurl = result.get('payurl', '')
-            if not payurl:
-                sender.reply(format_message("支付失败", "未获取到支付链接", "error"))
-                return False
-            qrcode_url = generate_qrcode(payurl)
-            pay_type = ma_pay_config['type'].split(',')[0] if ma_pay_config.get('type') else 'alipay'
-            if qrcode_url:
-                send_qrcode_image(sender, qrcode_url, pay_type)
-            else:
-                sender.reply(f"请点击链接完成支付:\n{payurl}")
-            for _ in range(60):
-                check_url = gateway
-                if '/xpay/epay/api.php' not in check_url:
-                    check_url = f"{check_url.rstrip('/')}/xpay/epay/api.php"
-                check_params = {
-                    'act': 'order',
-                    'pid': ma_pay_config['pid'],
-                    'key': ma_pay_config['key'],
-                    'out_trade_no': out_trade_no
-                }
-                try:
-                    check_resp = requests.get(check_url, params=check_params, timeout=10)
-                    check_result = check_resp.json()
-                    if check_result.get('code') == 1 and check_result.get('status') == 1:
-                        new_vip = jxzh_empower(accountVip or '', months_int)
-                        if not new_vip:
-                            return False
-                        save_auth(account, new_vip)
-                        Addenvs(osname=jxzh_osname, value=token, account=account, phone=phone, expire_time=new_vip)
-                        sender.reply(f"""=====支付成功=====
-🎫 商品: {project}
-💰 金额: {money}元
-⏰ 授权时长: {months_int}月
-==================""")
-                        return True
-                except Exception as e:
-                    print(f"查询订单状态出错: {str(e)}")
-                result = sender.listen(5000)
-                if result == 'q' or result == 'Q':
-                    sender.reply("✅ 已取消支付")
-                    return False
-            sender.reply("❌ 支付超时,请重新发起支付!")
-            return False
-
-        if selected_pay == 'points' and jxzhcoin and int(jxzhcoin) > 0:
-            if int(usercoin) < zfcoin:
-                sender.reply(format_message("积分不足", f"当前积分: {usercoin}\n需要积分: {zfcoin}", "error"))
-                return False
-            sender.reply(f"💫 积分支付确认\n💰 消耗积分: {zfcoin}\n⏰ 授权时长: {months_int}月\n------------------\n确认请回复【y】\n取消请回复【n】")
-            if yesornos():
-                new_balance = int(usercoin) - zfcoin
-                sg.bucketSet('dd_sign_points', userid, str(new_balance))
-                new_vip = jxzh_empower(accountVip or '', months_int)
-                if not new_vip:
-                    return False
-                save_auth(account, new_vip)
-                Addenvs(osname=jxzh_osname, value=token, account=account, phone=phone, expire_time=new_vip)
-                sender.reply(f"✅ 支付成功\n💫 扣除积分: {zfcoin}\n💰 剩余积分: {new_balance}\n⏰ 授权时长: {months_int}月")
-                return True
-            sender.reply(format_message("已取消支付", "操作已取消", "info"))
-            return False
-
-        sender.reply(format_message("输入无效", "请输入正确的选项", "error"))
-        return False
-    except Exception as e:
-        sender.reply(format_message("系统错误", f"支付处理异常\n错误信息: {str(e)}", "error"))
-        return False
-
 
 def jxzh_login():
     try:
@@ -1339,29 +991,15 @@ def jxzh_login():
                 save_token(account, str(user_id or ''), str(token or ''), '')
                 display_mobile = mask_phone(account) if len(account) >= 11 else account
                 display_name = username if is_usable_display_name(username) else display_mobile
-                authorized = is_authorized(account)
-                auth_status = '✅ 已授权' if authorized else '⚠️ 未授权'
-                upload_status = ''
-                if authorized:
-                    expire_date = get_auth(account)
-                    try:
-                        Addenvs(
-                            osname=jxzh_osname,
-                            value=token,
-                            account=account,
-                            phone=account,
-                            expire_time=expire_date,
-                        )
-                        upload_status = '\n📤 匠心上传：✅ 已同步到面板'
-                    except Exception as e:
-                        upload_status = f'\n📤 匠心上传：❌ 同步失败({e})'
-                sender.reply(
-                    f"✅ 扫码成功! 昵称: {display_name}\n"
-                    f"📱 账号: {display_mobile}\n"
-                    f"🔐 授权状态: {auth_status}"
-                    f"{upload_status}\n"
-                    f"💡 发送 {jxzh_managecommand} 可管理账号"
-                )
+                try:
+                    Addenvs(jxzh_osname, token, account, account, "")
+                    upload_status = "✅ 已同步到面板"
+                except Exception as exc:
+                    upload_status = f"❌ 同步失败({exc})"
+                sender.reply(f"""✅ 扫码成功! 昵称: {display_name}
+📱 账号: {display_mobile}
+📤 {upload_status}
+💡 发送 {jxzh_managecommand} 可管理账号""")
                 return
             if code == 1:
                 if retry % 10 == 0:
@@ -1376,60 +1014,23 @@ def jxzh_login():
     except Exception as e:
         sender.reply(f'❌ 登录失败: {str(e)}')
 
-
-def jxzh_query_detail_lines(account, today_time):
-    accountVip = get_auth(account)
-    auth_status, auth_time = get_auth_status(accountVip, today_time)
-    login_mobile = mask_phone(account) if len(account) >= 11 else account
-
+def jxzh_query_detail_lines(account, today_time=""):
     token = jxzh_token_value_for_account(account)
-
-    lines = [f"📱 账号：{login_mobile}"]
-
-    username = ''
-    total_points = '0'
-    today_points = '0'
-
-    if token:
-        userinfo = get_task_userinfo(token)
-        if userinfo:
-            total_points = userinfo.get('points', '0')
-            today_points = userinfo.get('task_rice', '0')
-            username = decode_wechat_nickname(userinfo.get('username', ''))
-
+    lines = [f"📱 账号：{mask_phone(account) if len(account) >= 11 else account}"]
+    if not token:
+        return lines + ["❌ 本地无 Token，请重新登录"]
+    userinfo = get_task_userinfo(token) or {}
+    username = decode_wechat_nickname(userinfo.get("username", ""))
     if is_usable_display_name(username):
         lines.append(f"👤 昵称：{username}")
-
-    if not token:
-        lines.append("❌ 本地无 Token，请发送「匠心登录」重新绑定")
-        return lines
-
-    lines.append(f"⭐ 今日积分：{today_points}")
-    lines.append(f"⭐ 总积分：{total_points}")
-    if auth_time and auth_time != '无':
-        lines.append(f"📅 到期：{auth_time}")
-
-    points_data = get_points_list(token)
-    all_records = []
-    if points_data:
-        rows = points_data.get('dataRows', [])
-        if rows:
-            records = rows[0].get('list', [])
-            all_records = records[:jxzh_points_limit]
-
-    if all_records:
-        lines.append("🧾 积分明细：")
-        for record in all_records:
-            addtime = record.get('addtime', '')
-            actlog = record.get('actlog', '未知')
-            points = record.get('points', '0')
-            date_part = addtime.split(' ')[0].replace('-', '.')
-            lines.append(f"{date_part} {actlog} {points}")
-    else:
-        lines.append("🧾 积分明细：暂无记录")
-
+    lines.extend((f"⭐ 今日积分：{userinfo.get('task_rice', '0')}", f"⭐ 总积分：{userinfo.get('points', '0')}"))
+    data = get_points_list(token) or {}
+    records = ((data.get("dataRows") or [{}])[0].get("list") or [])[:jxzh_points_limit]
+    if not records:
+        return lines + ["🧾 积分明细：暂无记录"]
+    lines.append("🧾 积分明细：")
+    lines.extend(f"{str(item.get('addtime', '')).split(' ')[0].replace('-', '.')} {item.get('actlog', '未知')} {item.get('points', '0')}" for item in records)
     return lines
-
 
 def format_order_product_titles(order_items) -> str:
     titles = []
@@ -1442,7 +1043,6 @@ def format_order_product_titles(order_items) -> str:
     if len(titles) == 1:
         return titles[0]
     return f"{titles[0]} 等{len(titles)}件商品"
-
 
 def jxzh_logistics_detail_lines(account):
     token = jxzh_token_value_for_account(account)
@@ -1499,7 +1099,6 @@ def jxzh_logistics_detail_lines(account):
         lines.append(f"ℹ️ 仅展示前 {LOGISTICS_ORDER_LIMIT} 条待收货订单")
     return lines
 
-
 def jxzh_query():
     accounts = get_user_phones(userid)
     if not accounts:
@@ -1516,13 +1115,11 @@ def jxzh_query():
     except Exception as e:
         sender.reply(format_message("查询错误", f"查询失败: {str(e)}", "error"))
 
-
 def _format_points(value) -> str:
     try:
         return str(int(float(str(value or '0').strip() or '0')))
     except Exception:
         return str(value or '0')
-
 
 def _mask_mobile(text: str) -> str:
     text = str(text or '').strip()
@@ -1530,7 +1127,6 @@ def _mask_mobile(text: str) -> str:
     if len(digits) >= 11:
         return f"{digits[:3]}****{digits[-4:]}"
     return text
-
 
 def _mask_address(text: str) -> str:
     text = str(text or '').strip()
@@ -1542,7 +1138,6 @@ def _mask_address(text: str) -> str:
     if len(text) > 18:
         text = text[:18] + '...'
     return text or '详细地址已隐藏'
-
 
 def get_product_list(token, page=1):
     try:
@@ -1569,7 +1164,6 @@ def get_product_list(token, page=1):
         print(f"获取商品列表失败: {e}")
         return []
 
-
 def get_all_products(token, max_pages=10):
     all_products = []
     for page in range(1, max_pages + 1):
@@ -1580,7 +1174,6 @@ def get_all_products(token, max_pages=10):
         if len(page_data) < 10:
             break
     return all_products
-
 
 def get_product_detail(token, product_num):
     try:
@@ -1603,7 +1196,6 @@ def get_product_detail(token, product_num):
         print(f"获取商品详情失败: {e}")
         return {}
 
-
 def get_address_list(token):
     try:
         result = signed_post_with_fallback(
@@ -1621,7 +1213,6 @@ def get_address_list(token):
         print(f"获取地址列表失败: {e}")
         return []
 
-
 def delete_address(token, address_id):
     try:
         result = signed_post_with_fallback(
@@ -1635,7 +1226,6 @@ def delete_address(token, address_id):
     except Exception as e:
         print(f"删除地址失败: {e}")
         return {}
-
 
 def create_address(token, name, mobile, address, province_id, city_id, area_id, region_id, province_str, city_str, area_str, region_str, house_number='', is_default='1'):
     try:
@@ -1666,11 +1256,6 @@ def create_address(token, name, mobile, address, province_id, city_id, area_id, 
         print(f"创建地址失败: {e}")
         return {}
 
-
-
-
-
-
 def get_area_list(token, area_type, pid='0'):
     for attempt in range(3):
         try:
@@ -1695,7 +1280,6 @@ def get_area_list(token, area_type, pid='0'):
             time.sleep(1)
     return []
 
-
 def flatten_area_list(area_data: list) -> list:
     items = []
     for group in area_data:
@@ -1704,7 +1288,6 @@ def flatten_area_list(area_data: list) -> list:
                 if isinstance(item, dict) and item.get('id') and item.get('name'):
                     items.append({'id': str(item['id']), 'name': str(item['name'])})
     return items
-
 
 def create_order(token, address_id, product_id, product_sku, num=1):
     try:
@@ -1737,7 +1320,6 @@ def create_order(token, address_id, product_id, product_sku, num=1):
         print(f"创建订单失败: {e}")
         return {}
 
-
 def _is_create_order_sku(candidate, product_num=None):
     val = str(candidate or '').strip()
     if not val:
@@ -1748,7 +1330,6 @@ def _is_create_order_sku(candidate, product_num=None):
     if pn and val.isdigit() and len(val) >= 10 and len(pn) >= 10:
         return False
     return True
-
 
 def _sku_from_sku_list(node, product_num=None):
     if not isinstance(node, dict):
@@ -1766,7 +1347,6 @@ def _sku_from_sku_list(node, product_num=None):
                     return str(value).strip()
     return ''
 
-
 def _sku_from_product_item(product):
     if not isinstance(product, dict):
         return ''
@@ -1779,7 +1359,6 @@ def _sku_from_product_item(product):
         if _is_create_order_sku(value, product_num):
             return str(value).strip()
     return ''
-
 
 def _sku_from_product_detail(detail):
     if not isinstance(detail, dict):
@@ -1804,7 +1383,6 @@ def _sku_from_product_detail(detail):
             return str(value).strip()
     return ''
 
-
 def resolve_exchange_product_sku(token, selected):
     product_num = (
         selected.get('product_num')
@@ -1821,9 +1399,7 @@ def resolve_exchange_product_sku(token, selected):
         sku = _sku_from_product_item(selected)
     return sku or '', detail
 
-
 PAGE_SIZE = 10
-
 
 def _render_product_page(display_list: list, page_idx: int, total: int, title_prefix: str):
     start = page_idx * PAGE_SIZE
@@ -1857,7 +1433,6 @@ def _render_product_page(display_list: list, page_idx: int, total: int, title_pr
     lines.append("回复商品序号选择，回复 q 退出")
     sender.reply("\n".join(lines))
     return page_items
-
 
 def _search_and_select_product(token):
     sender.reply("🔍 请输入商品关键词搜索\n回复 0 查看全部商品列表\n回复 q 退出")
@@ -1916,7 +1491,6 @@ def _search_and_select_product(token):
             continue
         return display_list[choice_idx]
 
-
 def jxzh_exchange():
     accounts = get_user_phones(userid)
     if not accounts:
@@ -1924,16 +1498,13 @@ def jxzh_exchange():
         return
 
     try:
-        today_time = datetime.now().strftime("%Y-%m-%d")
         if len(accounts) > 1:
             lines = ["=====选择兑换账号=====", "0. 取消返回"]
             for i, account in enumerate(accounts, 1):
-                account_vip = get_auth(account)
-                auth_status, _ = get_auth_status(account_vip, today_time)
                 token = jxzh_token_value_for_account(account)
                 userinfo = get_task_userinfo(token) if token else None
                 login_name = get_account_display_name(account, userinfo)
-                lines.append(f"{i}. {login_name}（{auth_status}）")
+                lines.append(f"{i}. {login_name}")
             lines.append("回复账号序号选择，回复 q 退出")
             sender.reply("\n".join(lines))
             account_choice = get_user_choice("", 120000, True)
@@ -1953,12 +1524,6 @@ def jxzh_exchange():
             account = accounts[account_idx - 1]
         else:
             account = accounts[0]
-
-        account_vip = get_auth(account)
-        auth_status, _ = get_auth_status(account_vip, today_time)
-        if "未授权" in auth_status or "已过期" in auth_status:
-            sender.reply(format_message("未授权", "该账号未授权或已过期，请先授权后再兑换", "error"))
-            return
 
         token = jxzh_token_value_for_account(account)
         if not token:
@@ -2107,7 +1672,6 @@ def jxzh_exchange():
     except Exception as e:
         sender.reply(format_message("兑换错误", f"积分兑换失败: {str(e)}", "error"))
 
-
 def jxzh_batch_exchange():
     accounts = get_user_phones(userid)
     if not accounts:
@@ -2133,16 +1697,10 @@ def jxzh_batch_exchange():
             sender.reply(format_message("无可选账号", "没有匹配的账号", "error"))
             return
 
-        today_time = datetime.now().strftime("%Y-%m-%d")
         valid_accounts = []
         skip_reasons = []
         for acc in selected_accounts:
             display = get_account_display_name(acc)
-            account_vip = get_auth(acc)
-            auth_status, _ = get_auth_status(account_vip, today_time)
-            if "未授权" in auth_status or "已过期" in auth_status:
-                skip_reasons.append(f"⚠️ {display}：未授权/已过期，跳过")
-                continue
             token = jxzh_token_value_for_account(acc)
             if not token:
                 skip_reasons.append(f"⚠️ {display}：无Token，跳过")
@@ -2233,7 +1791,6 @@ def jxzh_batch_exchange():
     except Exception as e:
         sender.reply(format_message("批量兑换错误", f"操作失败: {str(e)}", "error"))
 
-
 def jxzh_logistics():
     accounts = get_user_phones(userid)
     if not accounts:
@@ -2285,296 +1842,18 @@ def jxzh_logistics():
     except Exception as e:
         sender.reply(format_message("物流查询错误", f"查询失败: {str(e)}", "error"))
 
-
-def build_manage_account_cards(accounts: list, today_time: str) -> str:
+def build_manage_account_cards(accounts: list, today_time: str = "") -> str:
     lines = ["=====匠心管理====="]
     for index, account in enumerate(accounts, 1):
-        account_vip = get_auth(account)
-        auth_status, auth_time = get_auth_status(account_vip, today_time)
         token = jxzh_token_value_for_account(account)
         userinfo = get_task_userinfo(token) if token else None
-        login_mobile = get_account_display_name(account, userinfo)
-        lines.append(f"[{index}] ")
-        lines.append(f"  账号：{login_mobile}")
-        lines.append(f"  状态：{auth_status}")
-        if auth_time and auth_time != '无':
-            lines.append(f"  到期：{auth_time}")
-        lines.append("-------------------")
-    lines.append("[0] 所有账号")
-    lines.append("[9999] 未授权账号")
-    lines.append("支持: 1,3,5 或 1-5")
-    lines.append("回复序号选择操作（q退出）")
-    lines.append("===================")
+        lines.append(f"[{index}] {get_account_display_name(account, userinfo)}")
+    lines.extend(("-------------------", "[0] 所有账号", "支持 1,3,5 或 1-5", "回复序号选择操作（q退出）", "=================="))
     return "\n".join(lines)
-
 
 def resolve_selected_accounts(choice, accounts: list) -> list:
     selections = parse_selection(choice, len(accounts))
-    if selections == ['0']:
-        return accounts[:]
-    if selections == ['9999']:
-        return [account for account in accounts if not is_authorized(account)]
-    return [accounts[index - 1] for index in selections]
-
-
-def format_batch_target_label(accounts: list) -> str:
-    accounts = dedupe_phones(accounts)
-    if not accounts:
-        return '账号'
-    first_account = accounts[0]
-    token = jxzh_token_value_for_account(first_account)
-    userinfo = get_task_userinfo(token) if token else None
-    first_label = get_account_display_name(first_account, userinfo)
-    if len(accounts) == 1:
-        return first_label
-    return f"{first_label} 等{len(accounts)}个账号"
-
-
-def batch_authorize_accounts(accounts: list, months: int, today_time: str):
-    return True
-
-
-def build_batch_authorize_result(project: str, target_label: str, account_count: int, months: int, success_count: int, fail_count: int, extra_lines=None) -> str:
-    return True
-
-
-def jxzh_batch_zf(project: str, months_int: int, accounts: list, today_time: str):
-    accounts = dedupe_phones(accounts)
-    if not accounts:
-        sender.reply(format_message("未绑定账号", "没有可授权的账号", "error"))
-        return False
-
-    account_count = len(accounts)
-    target_label = format_batch_target_label(accounts)
-    money = Decimal(months_int) * jxzhVipmoney * account_count
-
-    if money == 0:
-        success_count, fail_count = batch_authorize_accounts(accounts, months_int, today_time)
-        sender.reply(
-            build_batch_authorize_result(
-                project,
-                target_label,
-                account_count,
-                months_int,
-                success_count,
-                fail_count,
-                ["💰 金额：免费"],
-            )
-        )
-        return fail_count == 0 and success_count > 0
-
-    zsm, use_ma_pay, ma_pay_config = jxzh_get_payment_config()
-    usercoin = sg.bucketGet('dd_sign_points', userid) or '0'
-    zfcoin = int(jxzhcoin) * int(months_int) * account_count if jxzhcoin else 0
-    opt_points = bool(jxzhcoin and int(jxzhcoin) > 0)
-    opt_ma = bool(use_ma_pay and ma_pay_config)
-    opt_zsm = bool(zsm and str(zsm).strip())
-
-    if not opt_points and not opt_ma and not opt_zsm:
-        sender.reply(format_message(
-            "配置错误",
-            "付费授权需至少配置一种支付方式：\n• 填写「积分支付」\n或开启有效「使用在线处理」并完成卡密系统在线处理配置\n或填写「赞赏码链接」",
-            "error"
-        ))
-        return False
-
-    pay_menu = (
-        "=====批量授权支付=====\n"
-        f"🎫 商品: {project}\n"
-        f"👤 目标: {target_label}\n"
-        f"📦 账号数: {account_count}个\n"
-        f"⏰ 授权时长: {months_int}月\n"
-        f"💰 总金额: {money}元"
-    )
-    option_num = 1
-    options_map = {}
-
-    if opt_points:
-        pay_menu += f"\n[{option_num}] 积分支付\n   🎯 需 {zfcoin} 积分（{months_int}月 × {account_count}个）\n   💫 当前积分: {usercoin}"
-        options_map[str(option_num)] = 'points'
-        option_num += 1
-    if opt_ma:
-        pay_menu += f"\n[{option_num}] 在线处理\n   💰 {money}元 / {account_count}个账号"
-        options_map[str(option_num)] = 'ma'
-        option_num += 1
-    if opt_zsm:
-        pay_menu += f"\n[{option_num}] 赞赏在线处理\n   💰 {money}元 / {account_count}个账号（微信扫码赞赏或收款）"
-        options_map[str(option_num)] = 'wechat'
-        option_num += 1
-
-    pay_menu += "\n------------------\n回复对应数字\n回复'q'退出\n=================="
-    sender.reply(pay_menu)
-    choice = get_user_choice("", 60000, True)
-    if not choice:
-        return False
-
-    selected_pay = options_map.get(choice)
-    if selected_pay == 'wechat' and opt_zsm:
-        if False:
-            sender.reply(format_message("支付繁忙", "当前有人正在支付,请稍后再试！", "warning"))
-            return False
-        pay_msg = f"""=====微信扫在线处理====
-🎫 商品: {project}
-👤 目标: {target_label}
-📦 账号数: {account_count}个
-📅 时长: {months_int}月
-💰 金额: {money}元
-------------------
-请使用微信扫在线处理
-回复"q"取消支付
-=================="""
-        sender.reply(pay_msg)
-        sender.replyImage(zsm)
-        ddzf = False
-        if str(ddzf) == 'q':
-            sender.reply(format_message("已取消", "已取消支付", "info"))
-            return False
-        payment_result = jxzh_parse_payment_result(ddzf)
-        if not payment_result:
-            return False
-        Money, Time, From = payment_result
-        if float(Money) < float(money):
-            sender.reply(format_message(
-                "支付金额错误",
-                f"应付: {money}元\n实付: {Money}元\n{f'付款人: {From}' if From else ''}\n\n❗ 请稍后核对支付记录！",
-                "error"
-            ))
-            return False
-        success_count, fail_count = batch_authorize_accounts(accounts, months_int, today_time)
-        sender.reply(
-            build_batch_authorize_result(
-                project,
-                target_label,
-                account_count,
-                months_int,
-                success_count,
-                fail_count,
-                [
-                    f"💰 实付：{Money}元",
-                    f"⏰ 时间：{Time}",
-                    f"👤 付款人：{From}" if From else "",
-                ],
-            )
-        )
-        return fail_count == 0 and success_count > 0
-
-    if selected_pay == 'ma' and opt_ma and ma_pay_config:
-        out_trade_no = f"JX{int(time.time())}{userid}"
-        params = {
-            'pid': ma_pay_config['pid'],
-            'type': ma_pay_config['type'].split(',')[0],
-            'out_trade_no': out_trade_no,
-            'name': f"{senderID}-匠心批量授权-{str(money)}",
-            'money': str(money),
-            'notify_url': ma_pay_config['notify_url'],
-            'return_url': ma_pay_config['return_url'],
-            'param': userid
-        }
-        params = {k: v for k, v in params.items() if v}
-        sorted_params = dict(sorted(params.items(), key=lambda x: x[0]))
-        sign_str = "&".join([f"{k}={v}" for k, v in sorted_params.items()])
-        sign = hashlib.md5((sign_str + ma_pay_config['key']).encode('utf-8')).hexdigest().lower()
-        params['sign'] = sign
-        params['sign_type'] = 'MD5'
-        gateway = ma_pay_config['gateway']
-        if gateway.endswith('/'):
-            gateway = gateway[:-1]
-        mapi_url = f"{gateway}/mapi.php"
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        response = requests.post(mapi_url, data=params, headers=headers, timeout=10)
-        if response.status_code != 200:
-            sender.reply(format_message("支付失败", f"创建支付订单失败，HTTP状态码: {response.status_code}", "error"))
-            return False
-        try:
-            result = response.json()
-        except Exception:
-            sender.reply(format_message("支付失败", "创建支付订单失败，返回数据格式错误", "error"))
-            return False
-        if result.get('code', 0) != 1:
-            msg = result.get('msg', '未知状态')
-            sender.reply(format_message("支付失败", f"创建订单失败: {msg}", "error"))
-            return False
-        payurl = result.get('payurl', '')
-        if not payurl:
-            sender.reply(format_message("支付失败", "未获取到支付链接", "error"))
-            return False
-        qrcode_url = generate_qrcode(payurl)
-        pay_type = ma_pay_config['type'].split(',')[0] if ma_pay_config.get('type') else 'alipay'
-        if qrcode_url:
-            send_qrcode_image(sender, qrcode_url, pay_type)
-        else:
-            sender.reply(f"请点击链接完成支付:\n{payurl}")
-        for _ in range(60):
-            check_url = gateway
-            if '/xpay/epay/api.php' not in check_url:
-                check_url = f"{check_url.rstrip('/')}/xpay/epay/api.php"
-            check_params = {
-                'act': 'order',
-                'pid': ma_pay_config['pid'],
-                'key': ma_pay_config['key'],
-                'out_trade_no': out_trade_no
-            }
-            try:
-                check_resp = requests.get(check_url, params=check_params, timeout=10)
-                check_result = check_resp.json()
-                if check_result.get('code') == 1 and check_result.get('status') == 1:
-                    success_count, fail_count = batch_authorize_accounts(accounts, months_int, today_time)
-                    sender.reply(
-                        build_batch_authorize_result(
-                            project,
-                            target_label,
-                            account_count,
-                            months_int,
-                            success_count,
-                            fail_count,
-                            [
-                                f"💰 金额：{money}元",
-                                "💳 支付方式：在线处理",
-                            ],
-                        )
-                    )
-                    return fail_count == 0 and success_count > 0
-            except Exception as e:
-                print(f"查询订单状态出错: {str(e)}")
-            result = sender.listen(5000)
-            if result == 'q' or result == 'Q':
-                sender.reply("✅ 已取消支付")
-                return False
-        sender.reply("❌ 支付超时,请重新发起支付!")
-        return False
-
-    if selected_pay == 'points' and jxzhcoin and int(jxzhcoin) > 0:
-        if int(usercoin) < zfcoin:
-            sender.reply(format_message("积分不足", f"当前积分: {usercoin}\n需要积分: {zfcoin}", "error"))
-            return False
-        sender.reply(
-            f"💫 批量积分支付确认\n👤 目标: {target_label}\n📦 账号数: {account_count}个\n💰 消耗积分: {zfcoin}\n⏰ 授权时长: {months_int}月\n------------------\n确认请回复【y】\n取消请回复【n】"
-        )
-        if not yesornos():
-            sender.reply(format_message("已取消支付", "操作已取消", "info"))
-            return False
-        new_balance = int(usercoin) - zfcoin
-        sg.bucketSet('dd_sign_points', userid, str(new_balance))
-        success_count, fail_count = batch_authorize_accounts(accounts, months_int, today_time)
-        sender.reply(
-            build_batch_authorize_result(
-                project,
-                target_label,
-                account_count,
-                months_int,
-                success_count,
-                fail_count,
-                [
-                    f"💫 扣除积分：{zfcoin}",
-                    f"💰 剩余积分：{new_balance}",
-                ],
-            )
-        )
-        return fail_count == 0 and success_count > 0
-
-    sender.reply(format_message("输入无效", "请输入正确的选项", "error"))
-    return False
-
+    return accounts[:] if selections == ["0"] else [accounts[index - 1] for index in selections]
 
 def batch_delete_accounts(accounts: list):
     success_count = 0
@@ -2590,168 +1869,29 @@ def batch_delete_accounts(accounts: list):
 
     return success_count, fail_count
 
-
-def prompt_months_input(title: str):
-    sender.reply(
-        f"""====={title}=====
-请输入授权月数（例：1）
-每 1 月 = 插件配置的「授权天数」
--------------------
-回复序号选择操作（q退出）
-==================="""
-    )
-    value = get_user_choice("", 120000, True)
-    if not value:
-        return None
-    try:
-        months = int(value)
-    except ValueError:
-        sender.reply("❌ 月数必须是数字!")
-        return None
-    if months <= 0:
-        sender.reply("❌ 月数必须大于0!")
-        return None
-    return months
-
-
-def prompt_batch_manage_action(selected_accounts: list) -> str:
-    sender.reply(
-        f"""=====批量账号操作=====
-已选账号：{len(selected_accounts)} 个
-[1] 批量授权
-[2] 批量删除
-[3] 取消返回
--------------------
-回复序号选择操作（q退出）
-==================="""
-    )
-    return get_user_choice("", 120000, True)
-
-
 def jxzh_manage():
     accounts = get_user_phones(userid)
     if not accounts:
-        sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
+        sender.reply(format_message("未绑定账号", f"请先发送 {jxzh_signcommand}", "error"))
         return
-
+    sender.reply(build_manage_account_cards(accounts))
+    choice = get_user_choice("", 120000, True)
+    if not choice:
+        return
     try:
-        save_user_phones(accounts, userid)
-        today_time = datetime.now().strftime("%Y-%m-%d")
-        sender.reply(build_manage_account_cards(accounts, today_time))
-
-        inputmessage = get_user_choice("", 120000, True)
-        if not inputmessage:
-            return
-
-        try:
-            selected_accounts = resolve_selected_accounts(inputmessage, accounts)
-        except ValueError as e:
-            sender.reply(format_message("输入错误", str(e), "error"))
-            return
-
-        if not selected_accounts:
-            sender.reply("=====暂无可选账号=====\n当前没有匹配的账号\n===================")
-            return
-
-        if len(selected_accounts) == 1:
-            account = selected_accounts[0]
-            accountVip = get_auth(account)
-            token = jxzh_token_value_for_account(account)
-            userinfo = get_task_userinfo(token) if token else None
-            login_mobile = get_account_display_name(account, userinfo)
-            auth_status, auth_time = get_auth_status(accountVip, today_time)
-            account_info = f"""=====当前账号=====
-📱 {login_mobile}
-🔐 {auth_status}
-{f'📅 {auth_time}' if auth_time and auth_time != '无' else ''}
--------------------
-[1] 授权续期
-[2] 删除账号
--------------------
-回复序号选择操作（q退出）
-==================="""
-            sender.reply(account_info)
-
-            single_choice = get_user_choice("", 120000, True)
-            if not single_choice:
-                return
-
-            if single_choice == '2':
-                confirm_msg = """=====删除账号=====
-确定删除？不可恢复。
-[1] 确认删除
-[2] 取消返回
--------------------
-回复序号选择操作（q退出）
-==================="""
-                sender.reply(confirm_msg)
-                choice = get_user_choice("", 120000, True)
-                if not choice:
-                    return
-                if choice == '1':
-                    del_account(account, userid, panel_config_value, jxzh_osname)
-                    sender.reply("=====删除成功=====\n账号删除成功!\n===================")
-                    return
-                sender.reply("=====已取消=====\n已取消删除\n===================")
-                return
-
-            if single_choice == '1':
-                months = prompt_months_input('授权续期')
-                if months is None:
-                    return
-                token = jxzh_token_value_for_account(account)
-                jxzh_zf('匠心授权', months, accountVip, token, account, account)
-                return
-
-            sender.reply("=====输入错误=====\n请输入正确的选项\n===================")
-            return
-
-        batch_choice = prompt_batch_manage_action(selected_accounts)
-        if not batch_choice or batch_choice == '3':
-            sender.reply("=====已取消=====\n已取消批量操作\n===================")
-            return
-
-        if batch_choice == '1':
-            months = prompt_months_input('批量授权')
-            if months is None:
-                return
-            jxzh_batch_zf('匠心批量授权', months, selected_accounts, today_time)
-            return
-
-        if batch_choice == '2':
-            sender.reply(
-                f"""=====批量删除=====
-即将删除 {len(selected_accounts)} 个账号
-[1] 确认删除
-[2] 取消返回
--------------------
-回复序号选择操作（q退出）
-==================="""
-            )
-            confirm_choice = get_user_choice("", 120000, True)
-            if not confirm_choice:
-                return
-            if confirm_choice != '1':
-                sender.reply("=====已取消=====\n已取消批量删除\n===================")
-                return
-            success_count, fail_count = batch_delete_accounts(selected_accounts)
-            sender.reply(
-                f"""=====批量删除完成=====
-✅ 成功：{success_count} 个
-❌ 失败：{fail_count} 个
-==================="""
-            )
-            return
-
-        sender.reply("=====输入错误=====\n请输入正确的选项\n===================")
-
-    except Exception as e:
-        sender.reply(f"=====账号处理错误=====\n账号列表处理失败\n错误: {str(e)}\n===================")
-
-
-def jxzh_admin_auth():
-    return True
-
+        selected = resolve_selected_accounts(choice, accounts)
+    except ValueError as exc:
+        sender.reply(format_message("输入错误", str(exc), "error"))
+        return
+    if not selected:
+        sender.reply("❌ 未选择账号")
+        return
+    sender.reply(f"确认删除选中的 {len(selected)} 个账号请回复 y")
+    if get_user_choice("", 120000, True).lower() != "y":
+        sender.reply("✅ 已取消")
+        return
+    success, failed = batch_delete_accounts(selected)
+    sender.reply(f"=====删除完成=====\n✅ 成功：{success}\n❌ 失败：{failed}\n==================")
 
 def jxzh_logoff():
     accounts = get_user_phones(userid)
@@ -2759,14 +1899,10 @@ def jxzh_logoff():
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
         return
 
-    today_time = datetime.now().strftime("%Y-%m-%d")
     menu_lines = ["=====匠心账号注销=====", "------------------"]
     for idx, account in enumerate(accounts, 1):
         display = mask_phone(account) if len(account) >= 11 else account
-        accountVip = get_auth(account)
-        auth_status, auth_time = get_auth_status(accountVip, today_time)
-        expire_info = f'  📅{auth_time}' if auth_time and auth_time != '无' else ''
-        menu_lines.append(f"[{idx}] {display}  {auth_status}{expire_info}")
+        menu_lines.append(f"[{idx}] {display}")
     menu_lines.append("------------------")
     menu_lines.append("[0] 全部注销")
     menu_lines.append("⚠️ 注销后平台数据不可恢复")
@@ -2848,182 +1984,56 @@ def jxzh_logoff():
     result_lines.append("==================")
     sender.reply('\n'.join(result_lines))
 
-
-def jxzh_clear():
-    accounts = get_user_phones(userid)
-    if not accounts:
-        sender.reply(format_message("未绑定账号", "未找到任何账号信息", "error"))
-        return
-
-    try:
-        today_time = datetime.now().strftime("%Y-%m-%d")
-        expired_accounts = [account for account in accounts if (get_auth(account) and get_auth(account) <= today_time)]
-
-        if not expired_accounts:
-            sender.reply("✅ 您没有过期的账号需要清理")
-            return
-
-        confirm_msg = f"""=====清理过期账号=====
-📊 过期账号数量: {len(expired_accounts)} 个
-------------------
-确定要清理这些过期账号吗？
-[y] 确认清理
-[n] 取消操作
-=================="""
-        sender.reply(confirm_msg)
-
-        choice = get_user_choice("", 120000, True)
-        if not choice:
-            return
-        if choice in ['Y', 'y', '是']:
-            for account in expired_accounts:
-                try:
-                    del_account(account, userid, panel_config_value, jxzh_osname)
-                except Exception:
-                    continue
-            sender.reply(format_message("清理成功", f"已清理 {len(expired_accounts)} 个过期账号", "success"))
-            return
-
-        sender.reply(format_message("已取消", "已取消清理", "info"))
-
-    except Exception as e:
-        sender.reply(format_message("清理错误", f"清理失败: {str(e)}", "error"))
-
-
 def jxzh_ck_login():
-    sender.reply(
-        "=====匠心CK登录=====\n"
-        "📋 请发送CK信息，格式：\n"
-        "备注#token\n"
-        "------------------\n"
-        "💡 支持多行批量提交，每行一个\n"
-        "💡 备注可为手机号或自定义名称\n"
-        "💡 token 从匠心平台获取\n"
-        "💡 输入 q 取消\n"
-        "=================="
-    )
-    raw_input = get_user_choice("", 120000, True)
-    if not raw_input:
+    sender.reply("=====匠心CK登录=====\n请发送 备注#token，支持多行；输入 q 取消\n==================")
+    raw = get_user_choice("", 120000, True)
+    if not raw:
         return
-
-    lines = [line.strip() for line in raw_input.replace('\r\n', '\n').split('\n') if line.strip()]
-    if not lines:
-        sender.reply(format_message("输入为空", "未检测到有效的CK信息", "error"))
-        return
-
-    ck_list = []
-    for i, line in enumerate(lines, 1):
-        if '#' not in line:
-            sender.reply(format_message("格式错误", f"第{i}行格式不正确: {line}\n正确格式: 备注#token", "error"))
-            return
-        parts = line.split('#', 1)
-        remark = parts[0].strip()
-        token = parts[1].strip()
-        if not remark or not token:
-            sender.reply(format_message("格式错误", f"第{i}行备注或token为空\n正确格式: 备注#token", "error"))
-            return
-        ck_list.append({'remark': remark, 'token': token})
-
-    sender.reply(f"⏳ 正在验证 {len(ck_list)} 个账号...")
-
-    success_count = 0
-    fail_count = 0
-    result_lines = ["=====CK登录结果====="]
-
-    for item in ck_list:
-        remark = item['remark']
-        token = item['token']
-        user_info = get_user_info(token)
-        if not user_info:
-            result_lines.append(f"❌ {remark}：Token无效或已过期")
-            fail_count += 1
+    rows = [row.strip() for row in raw.replace("\r\n", "\n").split("\n") if row.strip()]
+    result = ["=====CK登录结果====="]
+    success = 0
+    for row in rows:
+        if "#" not in row:
+            result.append(f"❌ {row}：格式错误")
             continue
-
-        user_id = str(user_info.get('id') or '')
-        mobile = str(user_info.get('mobile') or '').strip()
-        username = decode_wechat_nickname(user_info.get('username') or '')
-        account = mobile or user_id or remark
-
+        remark, token = (part.strip() for part in row.split("#", 1))
+        info = get_user_info(token) if token else None
+        if not info:
+            result.append(f"❌ {remark}：Token 无效")
+            continue
+        account = str(info.get("mobile") or info.get("id") or remark)
         add_account(account, userid)
-        save_token(account, user_id, token, '')
-
-        display_name = username if is_usable_display_name(username) else remark
-        display_mobile = mask_phone(account) if len(account) >= 11 else account
-        authorized = is_authorized(account)
-        auth_label = '已授权' if authorized else '未授权'
-
-        upload_status = ''
-        if authorized:
-            expire_date = get_auth(account)
-            try:
-                Addenvs(
-                    osname=jxzh_osname,
-                    value=token,
-                    account=account,
-                    phone=account,
-                    expire_time=expire_date,
-                )
-                upload_status = ' | 已同步面板'
-            except Exception:
-                upload_status = ' | 同步失败'
-
-        result_lines.append(f"✅ {display_name}({display_mobile}) [{auth_label}]{upload_status}")
-        success_count += 1
-
-    result_lines.append("-------------------")
-    result_lines.append(f"✅ 成功：{success_count} 个")
-    if fail_count:
-        result_lines.append(f"❌ 失败：{fail_count} 个")
-    result_lines.append("====================")
-    sender.reply("\n".join(result_lines))
-
+        save_token(account, str(info.get("id") or ""), token, "")
+        try:
+            Addenvs(jxzh_osname, token, account, account, "")
+            sync = "已同步"
+        except Exception:
+            sync = "同步失败"
+        result.append(f"✅ {remark}({account})：{sync}")
+        success += 1
+    result.extend(("-------------------", f"✅ 成功：{success} 个", f"❌ 失败：{len(rows)-success} 个", "=================="))
+    sender.reply("\n".join(result))
 
 def jxzh_upload():
     accounts = get_user_phones(userid)
     if not accounts:
-        sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {jxzh_signcommand} 绑定", "error"))
+        sender.reply(format_message("未绑定账号", f"请先发送 {jxzh_signcommand}", "error"))
         return
-
-    authorized_accounts = [acc for acc in accounts if is_authorized(acc)]
-    if not authorized_accounts:
-        sender.reply(format_message("无可上传账号", "当前没有已授权且未过期的账号", "warning"))
-        return
-
-    success_count = 0
-    fail_count = 0
-    result_lines = ["=====匠心上传====="]
-
-    for account in authorized_accounts:
+    result = ["=====匠心上传====="]
+    success = 0
+    for account in accounts:
         token = jxzh_token_value_for_account(account)
         if not token:
-            display = mask_phone(account) if len(account) >= 11 else account
-            result_lines.append(f"❌ {display}：无Token，请重新登录")
-            fail_count += 1
+            result.append(f"❌ {account}：无 Token")
             continue
-        expire_date = get_auth(account)
         try:
-            Addenvs(
-                osname=jxzh_osname,
-                value=token,
-                account=account,
-                phone=account,
-                expire_time=expire_date,
-            )
-            display = mask_phone(account) if len(account) >= 11 else account
-            result_lines.append(f"✅ {display}：已同步（到期 {expire_date}）")
-            success_count += 1
-        except Exception as e:
-            display = mask_phone(account) if len(account) >= 11 else account
-            result_lines.append(f"❌ {display}：同步失败（{e}）")
-            fail_count += 1
-
-    result_lines.append("-------------------")
-    result_lines.append(f"✅ 成功：{success_count} 个")
-    if fail_count:
-        result_lines.append(f"❌ 失败：{fail_count} 个")
-    result_lines.append("===================")
-    sender.reply("\n".join(result_lines))
-
+            Addenvs(jxzh_osname, token, account, account, "")
+            result.append(f"✅ {account}：已同步")
+            success += 1
+        except Exception as exc:
+            result.append(f"❌ {account}：{exc}")
+    result.extend(("-------------------", f"✅ 成功：{success} 个", f"❌ 失败：{len(accounts)-success} 个", "=================="))
+    sender.reply("\n".join(result))
 
 def _format_address_card(addr, index=None) -> str:
     prefix = f"[{index}] " if index is not None else ""
@@ -3043,7 +2053,6 @@ def _format_address_card(addr, index=None) -> str:
     if house:
         detail = f"{address} {house}"
     return f"{prefix}{name} {mobile} {is_default}\n    {full_region} {detail}"
-
 
 def _select_account_for_address(accounts: list, today_time: str):
     if len(accounts) == 1:
@@ -3072,7 +2081,6 @@ def _select_account_for_address(accounts: list, today_time: str):
         return None
     return accounts[idx - 1]
 
-
 def _match_area_items(items: list, keyword: str) -> list:
     keyword = keyword.strip()
     if not keyword:
@@ -3081,7 +2089,6 @@ def _match_area_items(items: list, keyword: str) -> list:
     if exact:
         return exact
     return [it for it in items if keyword in it['name'] or it['name'].replace('省', '').replace('市', '').replace('区', '').replace('县', '').replace('街道', '').replace('镇', '') == keyword.replace('省', '').replace('市', '').replace('区', '').replace('县', '').replace('街道', '').replace('镇', '')]
-
 
 def _select_area_step(token, area_type, pid, label, show_all_threshold=20):
     sender.reply(f"⏳ 正在加载{label}列表...")
@@ -3144,7 +2151,6 @@ def _select_area_step(token, area_type, pid, label, show_all_threshold=20):
     sender.reply(format_message("未匹配", f"未找到匹配的{label}「{choice}」，请重试", "error"))
     return None
 
-
 def _address_add_flow(token):
     addr_info = _collect_address_info(token)
     if not addr_info:
@@ -3184,7 +2190,6 @@ def _address_add_flow(token):
     else:
         err_msg = result.get('message', '未知错误') if isinstance(result, dict) else '网络错误'
         sender.reply(format_message("保存失败", f"新增地址失败: {err_msg}", "error"))
-
 
 def _collect_address_info(token):
     sender.reply("=====填写收货地址=====\n请输入收货人姓名（回复 q 取消）")
@@ -3242,17 +2247,13 @@ def _collect_address_info(token):
         'address': address_detail, 'house_number': house_number,
     }
 
-
 def _show_accounts_selection(accounts: list, title: str) -> str:
     lines = [f"====={title}====="]
-    today_time = datetime.now().strftime("%Y-%m-%d")
     for i, account in enumerate(accounts, 1):
         token = jxzh_token_value_for_account(account)
         userinfo = get_task_userinfo(token) if token else None
         login_name = get_account_display_name(account, userinfo)
-        account_vip = get_auth(account)
-        auth_status, _ = get_auth_status(account_vip, today_time)
-        lines.append(f"[{i}] {login_name}（{auth_status}）")
+        lines.append(f"[{i}] {login_name}")
     lines.append("-------------------")
     lines.append("💡 操作说明:")
     lines.append("• 支持单选: 1")
@@ -3263,7 +2264,6 @@ def _show_accounts_selection(accounts: list, title: str) -> str:
     lines.append("回复 q 退出")
     sender.reply("\n".join(lines))
     return get_user_choice("", 120000, True)
-
 
 def _address_batch_flow(accounts: list):
     choice = _show_accounts_selection(accounts, "批量设置地址")
@@ -3346,7 +2346,6 @@ def _address_batch_flow(accounts: list):
     result_lines.append("===================")
     sender.reply("\n".join(result_lines))
 
-
 def _address_delete_flow(token, address_list):
     if not address_list:
         sender.reply(format_message("无地址", "当前没有收货地址可删除", "warning"))
@@ -3385,7 +2384,6 @@ def _address_delete_flow(token, address_list):
     else:
         err_msg = result.get('message', '未知错误') if isinstance(result, dict) else '网络错误'
         sender.reply(format_message("删除失败", f"删除地址失败: {err_msg}", "error"))
-
 
 def jxzh_address():
     accounts = get_user_phones(userid)
@@ -3459,7 +2457,6 @@ def jxzh_address():
     except Exception as e:
         sender.reply(format_message("地址管理错误", f"操作失败: {str(e)}", "error"))
 
-
 def jxzh_batch_address():
     accounts = get_user_phones(userid)
     if not accounts:
@@ -3470,54 +2467,18 @@ def jxzh_batch_address():
         return
     _address_batch_flow(accounts)
 
-
 def jxzh_tutorial():
-    tutorial_msg = """=====匠心使用教程=====
-------------------
-📱 登录指令: 匠心登录
-   用于扫码绑定账号
-
-🔑 CK登录: 匠心CK
-   批量CK登录，格式：备注#token
-   支持多行批量提交
-
-📊 查询指令: 匠心查询
-   用于查看账号状态
-
-🎁 兑换指令: 匠心兑换
-   用于积分兑换商品（单账号）
-
-🎁 批量兑换: 匠心批量兑换
-   多账号一键兑换同一商品
-
-📦 物流指令: 匠心物流
-   用于查看待收货订单物流
-
-⚙️ 管理指令: 匠心管理
-   用于账号授权和删除
-
-🔑 授权指令: 匠心授权
-   管理员专用，用于批量授权
-
-🚫 注销指令: 匠心注销
-   注销平台账号（不可恢复）
-
-🗑️ 清理指令: 匠心清理
-   用于清理过期账号
-
-📤 上传指令: 匠心上传
-   上传已授权且未过期的账号到面板
-
-📍 地址指令: 匠心地址
-   管理收货地址（新增/删除）
-
-📍 批量地址: 匠心批量地址
-   多账号批量设置同一收货地址
-------------------
-💡 提示: 首次使用请先登录绑定账号
-=================="""
-    sender.reply(tutorial_msg)
-
+    sender.reply("""=====匠心使用教程=====
+匠心登录：扫码绑定账号
+匠心CK：批量导入 备注#token
+匠心查询：查看积分与明细
+匠心兑换 / 匠心批量兑换：兑换商品
+匠心物流：查看订单物流
+匠心管理：删除账号
+匠心上传：同步全部账号到面板
+匠心地址 / 匠心批量地址：管理收货地址
+匠心注销：注销平台账号
+==================""")
 
 command = (sender.getMessage() or "").strip()
 
@@ -3537,10 +2498,6 @@ elif command in ['匠心批量兑换']:
     jxzh_batch_exchange()
 elif command in ['匠心管理', '管理匠心']:
     jxzh_manage()
-elif command in ['匠心授权']:
-    jxzh_admin_auth()
-elif command in ['匠心清理']:
-    jxzh_clear()
 elif command in ['匠心上传']:
     jxzh_upload()
 elif command in ['匠心地址']:

@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: Lxg-021002]
-# [version: v1.0.4]
+# [version: v1.0.6]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,44 +13,31 @@
 # [description: 顺丰账号登录、查询和任务管理。]
 # [depe: ["requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -63,16 +50,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,15 +72,16 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'Yzyxmm_sf_Yzyxmm_sf_Qinglong': form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖(直接复制)'),
-    'Yzyxmm_sf_Yzyxmm_sf_osname': form.string().title('提交到青龙的变量名').default('').description('青龙容器内顺丰的变量名'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'Yzyxmm_sf_Yzyxmm_sf_Qinglong': plugin.Form.string().title('设置对接容器').default('').description('你的变量需要添加到的容器？参数用丨分割，这个符号是中文的竖(直接复制)'),
+    'Yzyxmm_sf_Yzyxmm_sf_osname': plugin.Form.string().title('提交到青龙的变量名').default('').description('青龙容器内顺丰的变量名'),
 })
 _CONFIG_FIELD_MAP = {
     ('Yzyxmm_sf', 'Yzyxmm_sf_Qinglong'): 'Yzyxmm_sf_Yzyxmm_sf_Qinglong',
@@ -114,7 +102,6 @@ senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
 uservalue = sg.bucketGet(bucket='Yzyxmm_sf_bind', key=userid)
-
 
 def getusercontent():
     Yzyxmm_sf_osname = sg.bucketGet(bucket='Yzyxmm_sf', key='Yzyxmm_sf_osname')  # 变量
@@ -157,7 +144,6 @@ def getusercontent():
     randomsigncommand = '顺丰登录'
     return Yzyxmm_sf_osname, Yzyxmm_sf_qlname, Yzyxmm__managecommand, Yzyxmm_querycommand, Yzyxmm_signcommand, randommanagecommand, randomquerycommand, randomsigncommand, sfVipmoney, sfcoin
 
-
 def seekql():
     try:
         if len(Yzyxmm_sf_qlname) == 0:
@@ -174,7 +160,6 @@ def seekql():
         sender.reply("获取青龙token失败")
         exit(0)
 
-
 def delenvs(id):
     if id is None:
         return
@@ -186,7 +171,6 @@ def delenvs(id):
     }
     data = [id]
     requests.delete(url, headers=headers, json=data).json()
-
 
 def allenvs(osname, account):
     url = f"{QLurl}/open/envs"
@@ -238,7 +222,6 @@ def QLupdate(osname, value, account, qlid, phone):
         sender.reply('更新变量失败,请稍后重试')
         exit(0)
 
-
 def Addenvs(osname, value, account, phone):
     phone = phone[:3] + '*' * 4 + phone[7:]
     url = f"{QLurl}/open/envs"
@@ -268,7 +251,6 @@ def Addenvs(osname, value, account, phone):
     else:
         QLupdate(osname, value, account, qlid, phone)
 
-
 def QLzt(osname, value, account, phone):  # 添加青龙变量
     try:
         qlurl = f"{QLurl}/open/envs"
@@ -293,7 +275,6 @@ def QLzt(osname, value, account, phone):  # 添加青龙变量
         sender.reply("添加青龙变量错误,请稍后重试")
         exit(0)
 
-
 def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
     try:
         url = f'{QLurl}/open/auth/token?client_id={ClientID}&client_secret={ClientSecret}'
@@ -311,7 +292,6 @@ def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
         sender.reply("链接青龙失败,请检查青龙配参！")
         exit(0)
 
-
 def session_ids(url):
     response = requests.get(url, allow_redirects=False)
     session_id_pattern = r'sessionId=([^;]+);'
@@ -323,7 +303,6 @@ def session_ids(url):
     else:
         sender.reply('用户信息无效，请检查')
         exit(0)
-
 
 def Honey(session_id):
     url = "https://mcs-mimp-web.sf-express.com/mcs-mimp/commonPost/~memberNonactivity~receiveExchangeIndexService~indexData"
@@ -341,7 +320,6 @@ def Honey(session_id):
         capacity = '校验未通过'
         usableHoney = '0'
     return capacity, usableHoney
-
 
 def todaycoin(session_id):
     pageNo = 1
@@ -387,7 +365,6 @@ def todaycoin(session_id):
             else:
                 break
     return coin, allcoin
-
 
 def todayhoney(session_id):
     pageNo = 1
@@ -435,7 +412,6 @@ def todayhoney(session_id):
                 break
     return honey, allhoney
 
-
 def ValueErrors(value, count):
     try:
         value = int(value)
@@ -447,7 +423,6 @@ def ValueErrors(value, count):
         sender.reply('输入错误！')
         exit(0)
 
-
 def sytTokens(payload, deviceId):
     t = int(time.time() * 1000)
     datamd5 = generate_md5(payload + '&080R3MAC57J2{A19!$3:WO{I<1N$31BI')
@@ -457,14 +432,12 @@ def sytTokens(payload, deviceId):
     sytToken = generate_md5(deviceidmd5 + '&0HQ%H91K&AA{DH$*XV>XR)VKL:QFE{&%')
     return sytToken, t
 
-
 def generate_md5(input_string):
     md5_hash = hashlib.md5()
     md5_hash.update(input_string.encode('utf-8'))
     md5_digest = md5_hash.hexdigest()
 
     return md5_digest
-
 
 def ScanCodeLogin():
     try:
@@ -544,7 +517,6 @@ def ScanCodeLogin():
         sender.reply('登录出错！')
         exit(0)
 
-
 def bindaccount():
     def accvip(Newaddition):
         if len(accountVip) != 0 and accountVip >= today_time:
@@ -589,7 +561,6 @@ def empower(empowertime, me_as_int):
         sender.reply('出错！')
         exit(0)
     return str(delayed_date)
-
 
 def meituanmanage():
     if len(uservalue) != 0:
@@ -670,7 +641,6 @@ def meituanmanage():
     else:
         sender.reply('未绑定顺丰账号，请先发送顺丰登录.')
 
-
 def yesornos():
     yesorno = sender.input(120000, 1, False)
     if yesorno == 'Y' or yesorno == 'y' or yesorno == '是':
@@ -686,7 +656,6 @@ def yesornos():
     else:
         sender.reply('输入错误！')
         exit(0)
-
 
 def zf(project, me_as_int, accountVip, token, phone, account):  # 等待支付并且发送ck到青龙
     def Pointpayment(mation_int, accountVip, token, phone, account):
@@ -738,7 +707,6 @@ def zf(project, me_as_int, accountVip, token, phone, account):  # 等待支付�
         sender.reply('当前有人正在支付,请稍后再试！')
         exit(0)
 
-
 def cx(url):
     session_id, login_mobile = session_ids(url)
     coin, allcoin = todaycoin(session_id)
@@ -747,7 +715,6 @@ def cx(url):
     if capacity == '查询失败':
         exit(0)
     return coin, allcoin, honey, allhoney, capacity, usableHoney
-
 
 def cxs():
     sender.reply('获取数据...')
@@ -769,7 +736,6 @@ def cxs():
             else:
                 sender.reply(f'【{login_mobile}】顺丰云授权过期')
 
-
 def push(user, account, c):
     login_mobile = account[:3] + "****" + account[7:]
     sg.push('wb', '', user, '',
@@ -782,7 +748,6 @@ def push(user, account, c):
                     f'🤪用户‘{login_mobile}’，{c}')
     sg.push('wx', '', user, '',
                     f'🤪用户‘{login_mobile}’，{c}')
-
 
 Yzyxmm_sf_osname, Yzyxmm_sf_qlname, Yzyxmm__managecommand, Yzyxmm_querycommand, Yzyxmm_signcommand, randommanagecommand, randomquerycommand, randomsigncommand, sfVipmoney, sfcoin = getusercontent()
 QLurl, qltoken = seekql()

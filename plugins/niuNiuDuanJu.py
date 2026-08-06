@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.1.0]
+# [version: v1.1.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -13,57 +13,41 @@
 # [description: 指令：；牛牛登录：绑定或更新 token（支持多号换行，格式：备注#token）；牛牛教程：查看 token 提交说明；牛牛上传青龙：强制上传到青龙；牛牛上传呆呆：强制上传到呆呆面板；牛牛清理：清理失效或过期账号；更新：1.1 查询结果新增余额显示；脚本地址]
 # [depe: ["requests"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 import re as _sg_re
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -76,11 +60,12 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
+
 def get_pay_config(): return {}
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
@@ -97,12 +82,13 @@ class QingLongClient:
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
 
-config = form({
-    'G_NNDJ_ql_config': form.string().title('青龙配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
-    'G_NNDJ_ql_envname': form.string().title('环境变量名').default('G_NNDJ_TOKEN').description('推送到青龙或呆呆的环境变量名'),
-    'G_NNDJ_use_daidai': form.boolean().title('使用呆呆面板').default(False).description('勾选后默认上传呆呆，不勾选默认上传青龙'),
-    'G_NNDJ_daidai_config': form.string().title('呆呆配置').default('').description('呆呆面板配置，格式：地址丨app_key丨app_secret'),
-    'G_NNDJ_daidai_group': form.string().title('呆呆分组').default('牛牛短剧').description('呆呆分组名称，不填默认项目名'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'G_NNDJ_ql_config': plugin.Form.string().title('青龙配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
+    'G_NNDJ_ql_envname': plugin.Form.string().title('环境变量名').default('G_NNDJ_TOKEN').description('推送到青龙或呆呆的环境变量名'),
+    'G_NNDJ_use_daidai': plugin.Form.boolean().title('使用呆呆面板').default(False).description('勾选后默认上传呆呆，不勾选默认上传青龙'),
+    'G_NNDJ_daidai_config': plugin.Form.string().title('呆呆配置').default('').description('呆呆面板配置，格式：地址丨app_key丨app_secret'),
+    'G_NNDJ_daidai_group': plugin.Form.string().title('呆呆分组').default('牛牛短剧').description('呆呆分组名称，不填默认项目名'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_NNDJ', 'ql_config'): 'G_NNDJ_ql_config',
@@ -121,8 +107,6 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-
-
 
 PROJECT_NAME = "牛牛短剧"
 PROJECT_ALIAS = "nndj"
@@ -145,10 +129,8 @@ senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = str(sender.getUserID() or "").strip()
 
-
 class BindError(RuntimeError):
     pass
-
 
 def parse_bool(value: Any, default: bool = False) -> bool:
     if isinstance(value, bool):
@@ -157,20 +139,17 @@ def parse_bool(value: Any, default: bool = False) -> bool:
         return default
     return str(value).strip().lower() in {"true", "1", "yes", "y", "on", "是"}
 
-
 def safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(str(value).strip())
     except Exception:
         return default
 
-
 def safe_decimal(value: Any, default: str = "0") -> Decimal:
     try:
         return Decimal(str(value).strip() or default)
     except (InvalidOperation, TypeError, ValueError):
         return Decimal(default)
-
 
 def unique_keep_order(items: List[str]) -> List[str]:
     result = []
@@ -182,7 +161,6 @@ def unique_keep_order(items: List[str]) -> List[str]:
         seen.add(text)
         result.append(text)
     return result
-
 
 def parse_selection(choice: str, max_idx: int) -> Optional[List[int]]:
     if not choice or not choice.strip():
@@ -209,7 +187,6 @@ def parse_selection(choice: str, max_idx: int) -> Optional[List[int]]:
     except Exception:
         return None
 
-
 def parse_date(date_text: str):
     if not date_text:
         return None
@@ -217,7 +194,6 @@ def parse_date(date_text: str):
         return datetime.strptime(str(date_text).strip(), "%Y-%m-%d").date()
     except Exception:
         return None
-
 
 def decode_jwt_payload(token: str) -> Dict[str, Any]:
     parts = str(token or "").split(".")
@@ -232,10 +208,8 @@ def decode_jwt_payload(token: str) -> Dict[str, Any]:
     except Exception:
         return {}
 
-
 def encode_note(note: str) -> str:
     return base64.urlsafe_b64encode(str(note or "").encode("utf-8")).decode("ascii")
-
 
 def decode_note(text: str) -> str:
     value = str(text or "").strip()
@@ -247,14 +221,12 @@ def decode_note(text: str) -> str:
     except Exception:
         return value
 
-
 def get_all_user_ids() -> List[str]:
     raw = sg.bucketGet(BUCKET_CONFIG, "all_user_ids") or ""
     values = [item.strip() for item in str(raw).split(",") if item and str(item).strip()]
     if userid and userid not in values:
         values.append(userid)
     return unique_keep_order(values)
-
 
 def register_user_id(uid: Optional[str] = None):
     current_uid = str(uid or userid or "").strip()
@@ -265,12 +237,10 @@ def register_user_id(uid: Optional[str] = None):
         values.append(current_uid)
     sg.bucketSet(BUCKET_CONFIG, "all_user_ids", ",".join(unique_keep_order(values)))
 
-
 def get_user_accounts(uid: Optional[str] = None) -> List[str]:
     current_uid = str(uid or userid or "").strip()
     raw = sg.bucketGet(BUCKET_USER, current_uid) or ""
     return unique_keep_order(str(raw).split(","))
-
 
 def save_user_accounts(accounts: List[str], uid: Optional[str] = None):
     current_uid = str(uid or userid or "").strip()
@@ -283,7 +253,6 @@ def save_user_accounts(accounts: List[str], uid: Optional[str] = None):
         except Exception:
             sg.bucketSet(BUCKET_USER, current_uid, "")
 
-
 def add_user_account(account_key: str, uid: Optional[str] = None):
     current_uid = str(uid or userid or "").strip()
     register_user_id(current_uid)
@@ -291,7 +260,6 @@ def add_user_account(account_key: str, uid: Optional[str] = None):
     if account_key not in accounts:
         accounts.append(account_key)
         save_user_accounts(accounts, current_uid)
-
 
 def remove_user_account(account_key: str, uid: Optional[str] = None):
     current_uid = str(uid or userid or "").strip()
@@ -301,7 +269,6 @@ def remove_user_account(account_key: str, uid: Optional[str] = None):
     accounts.remove(account_key)
     save_user_accounts(accounts, current_uid)
     return True
-
 
 def get_token_info(account_key: str) -> Dict[str, str]:
     raw = sg.bucketGet(BUCKET_TOKEN, account_key) or ""
@@ -314,25 +281,18 @@ def get_token_info(account_key: str) -> Dict[str, str]:
         "saved_at": parts[2].strip() if len(parts) >= 3 else "",
     }
 
-
 def save_token_info(account_key: str, note: str, token: str):
     value = "#".join([encode_note(note), str(token or "").strip(), time.strftime("%Y-%m-%d %H:%M:%S")])
     sg.bucketSet(BUCKET_TOKEN, account_key, value)
 
-
 def get_auth(account_key: str) -> str:
     return '2099-12-31'
-
-
-
 
 def is_authorized(account_key: str) -> bool:
     return True
 
-
 def get_auth_status(account_key: str) -> str:
     return '2099-12-31'
-
 
 def find_account_owners(account_key: str, exclude_uid: Optional[str] = None) -> List[str]:
     result = []
@@ -353,18 +313,14 @@ def http_get(path: str, token: Optional[str] = None, params: Optional[Dict[str, 
     data = response.json()
     return data if isinstance(data, dict) else {}
 
-
 def fetch_profile(token: str) -> Dict[str, Any]:
     return http_get("/app/user/selectUserById", token=token)
-
 
 def fetch_balance(token: str) -> Dict[str, Any]:
     return http_get("/app/integral/selectByUserId", token=token)
 
-
 def fetch_money_balance(token: str) -> Dict[str, Any]:
     return http_get("/app/invite/selectInviteMoney", token=token)
-
 
 def extract_user_id(token: str, data: Optional[Dict[str, Any]] = None) -> str:
     payload = decode_jwt_payload(token)
@@ -378,7 +334,6 @@ def extract_user_id(token: str, data: Optional[Dict[str, Any]] = None) -> str:
             return value
     return ""
 
-
 def extract_name(data: Optional[Dict[str, Any]] = None) -> str:
     info = data or {}
     for key in ["nickName", "nickname", "name", "userName", "username", "mobile"]:
@@ -387,14 +342,11 @@ def extract_name(data: Optional[Dict[str, Any]] = None) -> str:
             return value
     return ""
 
-
 def parse_pay_types(raw_value: Any) -> Dict[str, str]:
     return {}
 
-
 def format_money(amount: Decimal) -> str:
     return str(amount.quantize(Decimal("0.00")))
-
 
 def get_config() -> Dict[str, Any]:
     payment_config = get_pay_config() if callable(get_pay_config) else {}
@@ -402,14 +354,9 @@ def get_config() -> Dict[str, Any]:
     if not pay_types:
         pay_types = parse_pay_types(
             '2099-12-31'
-            or '2099-12-31'
-            or ""
         )
     zsm = (
         '2099-12-31'
-        or payment_config.get("zsm")
-        or sg.bucketGet("dd_sign_config", "zsm")
-        or ""
     )
     return {
         "price": safe_decimal(sg.bucketGet(BUCKET_CONFIG, "price") or "0.88", "0.88"),
@@ -428,7 +375,6 @@ def get_config() -> Dict[str, Any]:
         "daidai_group": str(sg.bucketGet(BUCKET_CONFIG, "daidai_group") or PROJECT_NAME).strip() or PROJECT_NAME,
     }
 
-
 def get_ql_client():
     config = get_config()
     if QingLongClient is None or not config.get("ql_config"):
@@ -441,7 +387,6 @@ def get_ql_client():
         env_name_key="ql_envname",
     )
     return client if client.is_configured() else None
-
 
 def get_daidai_client():
     config = get_config()
@@ -458,7 +403,6 @@ def get_daidai_client():
     )
     return client if client.is_configured() else None
 
-
 def get_target(force_target: Optional[str] = None) -> str:
     text = str(force_target or "").strip().lower()
     if text in ["qinglong", "ql", "青龙"]:
@@ -470,7 +414,6 @@ def get_target(force_target: Optional[str] = None) -> str:
     config = get_config()
     return "daidai" if config.get("use_daidai") else "qinglong"
 
-
 def get_target_name(force_target: Optional[str] = None) -> str:
     target = get_target(force_target)
     if target == "qinglong":
@@ -478,7 +421,6 @@ def get_target_name(force_target: Optional[str] = None) -> str:
     if target == "daidai":
         return "呆呆面板"
     return "青龙+呆呆"
-
 
 def build_panel_status_lines() -> List[str]:
     config = get_config()
@@ -492,7 +434,6 @@ def build_panel_status_lines() -> List[str]:
         f"🔄 青龙配置: {ql_status}",
         f"🔄 呆呆配置: {daidai_status}",
     ]
-
 
 def choose_upload_target(include_both: bool = True) -> Optional[str]:
     default_target_name = get_target_name()
@@ -529,9 +470,6 @@ def choose_upload_target(include_both: bool = True) -> Optional[str]:
     sender.reply("❌ 无效选择")
     return None
 
-
-
-
 def upload_authorized_accounts(
     accounts: List[str],
     owner_map: Optional[Dict[str, str]] = None,
@@ -539,7 +477,6 @@ def upload_authorized_accounts(
     manual_select: bool = False,
 ):
     return True
-
 
 def sync_account(account_key: str, owner_id: Optional[str] = None, force_target: Optional[str] = None) -> bool:
     token_info = get_token_info(account_key)
@@ -564,7 +501,6 @@ def sync_account(account_key: str, owner_id: Optional[str] = None, force_target:
     client = get_ql_client()
     return bool(client and client.update_env(username=account_key, env_value=token, remark=remark))
 
-
 def delete_panel_env(account_key: str):
     ql_client = get_ql_client()
     if ql_client:
@@ -578,7 +514,6 @@ def delete_panel_env(account_key: str):
             daidai_client.delete_env(account_key)
         except Exception:
             pass
-
 
 def parse_submit_text(raw_text: str) -> List[Dict[str, str]]:
     lines = str(raw_text or "").replace("\r\n", "\n").replace("\r", "\n").split("\n")
@@ -599,7 +534,6 @@ def parse_submit_text(raw_text: str) -> List[Dict[str, str]]:
         raise BindError("提交内容为空")
     return result
 
-
 def validate_token(token: str) -> Dict[str, Any]:
     result = fetch_profile(token)
     if result.get("code") != 0:
@@ -611,7 +545,6 @@ def validate_token(token: str) -> Dict[str, Any]:
     if not user_id:
         raise BindError("无法提取 userId")
     return {"user_id": user_id, "name": extract_name(data)}
-
 
 def bind_accounts():
     sender.reply("=====牛牛登录=====\n请输入：备注#token\n支持换行批量\n回复 q 退出")
@@ -648,7 +581,6 @@ def bind_accounts():
         lines.extend(fail[:10])
     sender.reply("\n".join(lines))
 
-
 def build_rows(accounts: List[str]) -> List[Dict[str, str]]:
     rows = []
     for account_key in accounts:
@@ -660,7 +592,6 @@ def build_rows(accounts: List[str]) -> List[Dict[str, str]]:
         })
     return rows
 
-
 def format_status_for_menu(status: str) -> str:
     text = str(status or "").strip()
     if text.startswith("已授权:"):
@@ -668,7 +599,6 @@ def format_status_for_menu(status: str) -> str:
     if text.startswith("已过期:"):
         return f"已过期｜到期: {text.split(':', 1)[1].strip()}"
     return text
-
 
 def format_status_for_query(status: str) -> str:
     text = str(status or "").strip()
@@ -678,7 +608,6 @@ def format_status_for_query(status: str) -> str:
         return f"已过期｜{text.split(':', 1)[1].strip()}"
     return text
 
-
 def format_balance_money(value: Any) -> str:
     if value in (None, ""):
         return "未知"
@@ -687,7 +616,6 @@ def format_balance_money(value: Any) -> str:
     except Exception:
         text = str(value).strip()
         return text or "未知"
-
 
 def extract_balance_money(money_result: Optional[Dict[str, Any]]) -> str:
     data = money_result.get("data") if isinstance(money_result, dict) else {}
@@ -702,7 +630,6 @@ def extract_balance_money(money_result: Optional[Dict[str, Any]]) -> str:
         if data.get(key) not in (None, ""):
             return format_balance_money(data.get(key))
     return "未知"
-
 
 def build_query_result_message(
     account_key: str,
@@ -735,7 +662,6 @@ def build_query_result_message(
         "====================",
     ])
     return "\n".join(lines)
-
 
 def select_accounts_for_action(accounts: List[str], title: str) -> List[str]:
     rows = build_rows(accounts)
@@ -771,7 +697,6 @@ def select_accounts_for_action(accounts: List[str], title: str) -> List[str]:
         return []
     return [accounts[index] for index in indices]
 
-
 def query_accounts():
     accounts = get_user_accounts()
     if not accounts:
@@ -794,28 +719,12 @@ def query_accounts():
         except Exception as exc:
             sender.reply(build_query_result_message(account_key, info, error=str(exc), index=idx, total=total))
 
-
 def get_manage_points(uid: Optional[str] = None) -> int:
     current_uid = str(uid or userid or "").strip()
     return safe_int(sg.bucketGet("dd_sign_points", current_uid) or "0", 0)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def handle_authorize_accounts(accounts: List[str], owner_map: Optional[Dict[str, str]] = None, force_payment: bool = False):
     return True
-
 
 def build_manage_accounts_message() -> str:
     accounts = get_user_accounts()
@@ -844,7 +753,6 @@ def build_manage_accounts_message() -> str:
         "====================",
     ])
     return "\n".join(lines)
-
 
 def delete_accounts(accounts: List[str], owner_map: Optional[Dict[str, str]] = None):
     accounts = unique_keep_order(accounts)
@@ -875,7 +783,6 @@ def delete_accounts(accounts: List[str], owner_map: Optional[Dict[str, str]] = N
                 pass
     sender.reply(f"删除完成\n数量: {len(accounts)}")
 
-
 def push_notice(uid: str, title: str, content: str) -> bool:
     pushed = False
     for platform in ("wx", "qq"):
@@ -885,7 +792,6 @@ def push_notice(uid: str, title: str, content: str) -> bool:
         except Exception:
             pass
     return pushed
-
 
 def push_auth_status_notifications():
     pushed_users = 0
@@ -910,7 +816,6 @@ def push_auth_status_notifications():
             pushed_users += 1
     return pushed_users
 
-
 def collect_all_accounts() -> Tuple[List[str], Dict[str, str]]:
     accounts: List[str] = []
     owner_map: Dict[str, str] = {}
@@ -921,10 +826,8 @@ def collect_all_accounts() -> Tuple[List[str], Dict[str, str]]:
             accounts.append(account_key)
     return unique_keep_order(accounts), owner_map
 
-
 def authorize_user_accounts():
     return True
-
 
 def manage_accounts():
     accounts = get_user_accounts()
@@ -1012,7 +915,6 @@ def manage_accounts():
         return
     sender.reply("❌ 无效选择")
 
-
 def upload_accounts(force_target: Optional[str] = None):
     target = get_target(force_target) if force_target else choose_upload_target(include_both=True)
     if not target:
@@ -1048,7 +950,6 @@ def upload_accounts(force_target: Optional[str] = None):
         sender.reply("❌ 当前未绑定账号")
         return
     upload_authorized_accounts(accounts, owner_map={account: userid for account in accounts}, force_target=target)
-
 
 def clean_accounts():
     user_ids = get_all_user_ids() if sender.isAdmin() else [userid]
@@ -1116,7 +1017,6 @@ def clean_accounts():
         "===================="
     )
 
-
 def show_tutorial():
     sender.reply(
         "=====牛牛教程=====\n"
@@ -1133,7 +1033,6 @@ def show_tutorial():
         "牛牛清理 - 清理过期或无效账号\n"
         "牛牛教程 - 查看本帮助"
     )
-
 
 def main():
     message = str(sender.getMessage() or "").strip()
@@ -1160,6 +1059,5 @@ def main():
         push_auth_status_notifications()
     else:
         sender.setContinue()
-
 
 main()

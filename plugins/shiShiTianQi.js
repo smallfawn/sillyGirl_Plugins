@@ -1,6 +1,6 @@
 //[title: 实时天气]
 //[name: shiShiTianQi]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: XiaoBo_]
 //[version: v1.1.0]
@@ -12,10 +12,10 @@
 //[description: 查询实时天气、温度、湿度、风力和日出日落；支持“天气”及“北京天气”]
 // [depe: []]
 
-const { sender: s, form } = require("sillygirl");
+const { sender: s, plugin } = require("sillygirl");
 
-const config = new form({
-  city: form.string().title("默认城市").default("北京"),
+const config = new plugin.Form({
+  city: plugin.Form.string().title("默认城市").default("北京"),
 });
 
 async function main() {

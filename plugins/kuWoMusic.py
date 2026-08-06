@@ -3,16 +3,14 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v1.3.9]
+# [version: v1.4.0]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(酷我登录|酷我登陆|登陆酷我|登录酷我|酷我查询|查询酷我|酷我管理|管理酷我|酷我酷我教程|酷我说明|总结今日酷我|酷我清理)$]
-# [cron: 1 8,15 * * *]
+# [rule: ^(酷我登录|酷我登陆|登陆酷我|登录酷我|酷我查询|查询酷我|酷我管理|管理酷我|酷我教程|酷我说明)$]
 # [icon: https://api.iconify.design/lucide:apple.svg]
-# [description: 。]
+# [description: 酷我账号登录、金币查询、面板同步与管理]
 # [depe: ["requests"]]
-
 
 import asyncio as _sg_asyncio
 import os as _sg_os
@@ -20,37 +18,25 @@ import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -63,16 +49,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,36 +71,32 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'dd_Kuwo_PluginsData_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
-    'dd_Kuwo_PluginsData_panel_config': form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
-    'dd_Kuwo_PluginsData_panel_group': form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
-    'dd_Kuwo_PluginsData_osname': form.string().title('面板变量名').default('').description('提交到面板中的酷我音乐变量名'),
-    'dd_Kuwo_PluginsData_days_per_month': form.string().title('每月天数').default('').description('设置每月按多少天计算'),
+config = plugin.Form({
+    'dd_Kuwo_PluginsData_panel_type': plugin.Form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
+    'dd_Kuwo_PluginsData_panel_config': plugin.Form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
+    'dd_Kuwo_PluginsData_panel_group': plugin.Form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
+    'dd_Kuwo_PluginsData_osname': plugin.Form.string().title('面板变量名').default('').description('提交到面板中的酷我音乐变量名'),
 })
 _CONFIG_FIELD_MAP = {
     ('dd_Kuwo_PluginsData', 'panel_type'): 'dd_Kuwo_PluginsData_panel_type',
     ('dd_Kuwo_PluginsData', 'panel_config'): 'dd_Kuwo_PluginsData_panel_config',
     ('dd_Kuwo_PluginsData', 'panel_group'): 'dd_Kuwo_PluginsData_panel_group',
     ('dd_Kuwo_PluginsData', 'osname'): 'dd_Kuwo_PluginsData_osname',
-    ('dd_Kuwo_PluginsData', 'days_per_month'): 'dd_Kuwo_PluginsData_days_per_month',
 }
 
 import requests
 import json
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 import random
 import time
 
 log = print
-
 
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
@@ -246,13 +228,12 @@ def dd_delenvs(id):
 
 def DDcreate(osname, value, account, phone):
     try:
-        expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
         url = f"{panel_url}/api/envs"
 
         data = {
             "value": value,
             "name": osname,
-            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}丨到期:{expire_date}'
+            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}'
         }
         if panel_group:
             data["group"] = panel_group
@@ -277,13 +258,12 @@ def DDcreate(osname, value, account, phone):
         return False
 
 def DDupdate(osname, value, account, env_id, phone):
-    expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
     url = f"{panel_url}/api/envs/{env_id}"
 
     data = {
         "value": value,
         "name": osname,
-        "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}丨到期:{expire_date}'
+        "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}'
     }
     if panel_group:
         data["group"] = panel_group
@@ -298,65 +278,19 @@ def DDupdate(osname, value, account, env_id, phone):
         return False
 
 def PluginsData():
-    panel_type = normalize_panel_type(
-        sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='panel_type') or '',
-        sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='use_daidai') or 'false'
-    )
-    if not panel_type:
-        sender.reply('对接面板类型填写无效，请填写：青龙/青龙面板/QL 或 呆呆/呆呆面板/Daidai')
-        exit(0)
-
-    panel_config = (sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='panel_config') or '').strip()
-    legacy_qinglong = sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='Qinglong') or ''
-    legacy_dd_config = sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='dd_Kuwo_ddname') or ''
-    KuwoVipmoney = sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='KuwoVipmoney')
-    osname = sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='osname')
-    Kuwocoin = sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='Kuwocoin')
-    panel_group = (sg.bucketGet(bucket='dd_Kuwo_PluginsData', key='panel_group') or '').strip()
-
-    use_daidai = panel_type == 'daidai'
-    Qinglong = panel_config or legacy_qinglong if panel_type == 'qinglong' else legacy_qinglong
-    dd_Kuwo_ddname = panel_config or legacy_dd_config if panel_type == 'daidai' else legacy_dd_config
-
-    QLurl = ''
-    ClientID = ''
-    ClientSecret = ''
-
-    if not use_daidai:
-        if not Qinglong:
-            sender.reply('未配置青龙面板信息，请填写：对接面板类型=青龙，对接面板配置=Host丨ClientID丨ClientSecret')
-            exit(0)
-
-        qllist = Qinglong.split('丨')
-        if len(qllist) != 3:
-            sender.reply('青龙面板配置格式错误，请使用"丨"分隔 URL、ClientID 和 ClientSecret')
-            exit(0)
-
-        QLurl = qllist[0]
-        ClientID = qllist[1]
-        ClientSecret = qllist[2]
-
-    if not KuwoVipmoney or KuwoVipmoney == '0':
-        KuwoVipmoney = Decimal('0')
-    else:
-        try:
-            KuwoVipmoney = Decimal(str(KuwoVipmoney))
-        except:
-            KuwoVipmoney = Decimal('0')
-
-    if not osname:
-        sender.reply('酷我音乐未填写变量信息，请检查配参信息！')
-        exit(0)
-
-    if not Kuwocoin:
-        Kuwocoin = 9999
-    else:
-        try:
-            Kuwocoin = int(Kuwocoin)
-        except:
-            Kuwocoin = 9999
-
-    return QLurl, ClientID, ClientSecret, KuwoVipmoney, osname, Kuwocoin, use_daidai, dd_Kuwo_ddname, panel_group
+    panel_type=normalize_panel_type(sg.bucketGet('dd_Kuwo_PluginsData','panel_type') or '',sg.bucketGet('dd_Kuwo_PluginsData','use_daidai') or 'false')
+    raw=(sg.bucketGet('dd_Kuwo_PluginsData','panel_config') or '').strip()
+    osname=sg.bucketGet('dd_Kuwo_PluginsData','osname') or 'Kuwo'
+    group=(sg.bucketGet('dd_Kuwo_PluginsData','panel_group') or '').strip()
+    if not panel_type or not raw:
+        sender.reply('❌ 请配置面板类型和面板参数')
+        raise SystemExit
+    parts=[x.strip() for x in raw.split('丨')]
+    if len(parts)!=3:
+        sender.reply('❌ 面板配置格式应为 Host丨ID丨Secret')
+        raise SystemExit
+    if panel_type=='daidai':return '','','',0,osname,0,True,raw,group
+    return parts[0],parts[1],parts[2],0,osname,0,False,'',group
 
 def recognize_captcha(image_base64: str) -> str:
     try:
@@ -480,248 +414,43 @@ def login(value):
         return f"登录异常: {str(e)}", "登录异常", False
 
 def bind():
-    sender.reply(
-        "=====酷我账号登录=====\n"
-        "🎵 请输入登录参数:\n"
-        "📝 格式: 手机号#密码\n"
-        "⚠️ 建议私聊登录,密码泄露风险自负\n"
-        "⭐ 输入q退出操作\n"
-        "====================="
-    )
-
-    login_value = sender.input(120000, 1, False)
-    if login_value == '':
-        sender.reply('输入超时！')
-        exit(0)
-    elif login_value.lower() == 'q':
-        sender.reply('退出操作！')
-        exit(0)
-
-    try:
-        values = login_value.split('#')
-        if len(values) != 2:
-            sender.reply('输入格式错误！需要手机号#密码格式')
-            exit(0)
-        phone = values[0]  # 获取手机号用于显示
-    except:
-        exit(0)
-
-    account, loginSid, token = login(login_value)
+    sender.reply('请输入 手机号#密码；q退出')
+    value=sender.input(120000,1,False)
+    if not value or value.lower()=='q':return
+    if len(value.split('#'))!=2:
+        sender.reply('❌ 格式错误')
+        return
+    phone=value.split('#',1)[0]
+    account,_,token=login(value)
     if token is False:
-        sender.reply(f'{account}')
-        exit(0)
-
-    sg.bucketSet(bucket='dd_Kuwo_account', key=account, value=token)
-    sg.bucketSet(bucket='dd_Kuwo_login', key=account, value=login_value)  # 确保保存原始登录信息
-    accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=account) or ''
-
-    if len(uservalue) == 0:
-        accounts = []
-        accounts.append(account)
-        sg.bucketSet(bucket='dd_Kuwo_bind', key=userid, value=f'{accounts}')
-        if len(accountVip) != 0 and accountVip >= today_time:
-            Addenvs(osname=osname, value=login_value, account=account, phone=phone)
-            sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我管理]管理账号\n🔍 发送[酷我查询]查询状态\n===================")
-        else:
-            sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我管理]管理账号\n🔍 发送[酷我查询]查询状态\n===================")
-    else:
-        accounts = _sg_literal(uservalue)
-        if account in accounts:
-            if len(accountVip) != 0 and accountVip >= today_time:
-                Addenvs(osname=osname, value=login_value, account=account, phone=phone)
-                sender.reply("更新账号成功，可对我说'酷我管理'对账号进行管理！")
-            else:
-                sender.reply("更新账号成功,授权已过期！")
-        else:
-            accounts.append(account)
-            sg.bucketSet(bucket='dd_Kuwo_bind', key=userid, value=f'{accounts}')
-            if len(accountVip) != 0 and accountVip >= today_time:
-                Addenvs(osname=osname, value=login_value, account=account, phone=phone)
-                sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我管理]管理账号\n🔍 发送[酷我查询]查询状态\n===================")
-            else:
-                sender.reply("=====登录成功=====\n✅ 账号添加成功\n🎮 发送[酷我管理]管理账号\n🔍 发送[酷我查询]查询状态\n===================")
+        sender.reply(str(account));return
+    accounts=list(_sg_literal(sg.bucketGet('dd_Kuwo_bind',userid),[]));is_new=account not in accounts
+    sg.bucketSet('dd_Kuwo_bind',userid,str(list(dict.fromkeys(accounts+[account]))));sg.bucketSet('dd_Kuwo_account',account,token);sg.bucketSet('dd_Kuwo_login',account,value)
+    synced=Addenvs(osname=osname,value=value,account=account,phone=phone)
+    sender.reply(f'✅ {"绑定" if is_new else "更新"}成功；面板'+('已同步' if synced else '同步失败'))
 
 def Administration():
-    accst = '状态正常'
-    message = ''
-    count = 1
-
-    if len(uservalue) != 0:
-        accounts = _sg_literal(uservalue)
-        for account in accounts:
-            accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=account) or ''
-            Token = sg.bucketGet(bucket='dd_Kuwo_account', key=account)
-            try:
-                values = Token.split('#')
-                phone = values[3]  # 获取手机号
-                loginUid = values[0]  # 获取loginUid
-                loginSid = values[2]  # 获取loginSid
-
-                verify_url = "https://integralapi.kuwo.cn/api/v1/online/sign/new/todayStatus"
-                verify_headers = {
-                    'Cookie': f'tmeAppID=kwplayer;loginSid={loginSid};loginUid={loginUid}',
-                    'User-Agent': 'KWPlayer/11.1.2 (iPhone; iOS 17.7.2; Scale/3.00)'
-                }
-                verify_response = requests.get(verify_url, headers=verify_headers)
-                if verify_response.status_code != 200:
-                    accst = '账号失效'
-            except:
-                accst = '账号异常'
-
-            if len(accountVip) == 0:
-                accvip = '未授权'
-            elif accountVip < today_time:
-                accvip = '授权过期'
-            else:
-                accvip = accountVip
-
-            phone = phone[:3] + '*' * 4 + phone[7:]  # 手机号脱敏
-            message += (
-                f"[{count}] 账号信息\n"
-                f"📱 账号: {phone}\n"
-                f"💫 状态: {accst}\n"
-                f"⏰ 到期: {accvip}\n"  # 使用 accvip 而不是直接使用 accountVip
-                f"-------------------\n"
-            )
-            count += 1
-
-        sender.reply(
-            f"====酷我管理====\n"
-            f"{message}"
-            "📝 请输入[]中需要管理的账号\n"
-            "⚠️ 输入q退出操作"
-        )
-        mes = sender.input(120000, 1, False)
-        if mes.lower() == 'q':
-            sender.reply('退出操作')
-            exit(0)
-
-        try:
-            mes = int(mes)
-            if mes < 1 or mes >= count:  # 修改这里的判断条件
-                sender.reply('输入的账号序号无效')
-                exit(0)
-        except:
-            sender.reply('输入有误，请输入数字')
-            exit(0)
-
-        selected_account = accounts[mes - 1]
-        accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=selected_account) or ''
-        Token = sg.bucketGet(bucket='dd_Kuwo_account', key=selected_account)
-        values = Token.split('#')
-        phone = values[3]
-        loginUid = values[0]
-        loginSid = values[2]
-        phone_masked = phone[:3] + '*' * 4 + phone[7:]
-
-        if len(accountVip) == 0:
-            display_vip = '未授权'
-        elif accountVip < today_time:
-            display_vip = '授权过期'
-        else:
-            display_vip = accountVip
-
-        message = (
-            "=====账号详情=====\n"
-            f"📱 账号: {phone_masked}\n"
-            f"💫 状态: {accst}\n"
-            f"⏰ 到期: {display_vip}\n"  # 使用处理后的 display_vip
-            "-------------------\n"
-            "🔧 管理选项:\n"
-            "  [1] 📅 授权账号\n"
-            "  [2] ❌ 删除账号\n"
-            "⚠️ 输入q退出操作\n"
-            "==================="
-        )
-        sender.reply(message)
-
-        mes = sender.input(120000, 1, False)
-        if mes.lower() == 'q':
-            sender.reply('退出操作')
-            exit(0)
-
-        try:
-            mes = int(mes)
-            if mes < 1 or mes > 2:  # 修改这里的判断条件
-                sender.reply('输入的选项无效')
-                exit(0)
-        except:
-            sender.reply('输入有误，请输入数字')
-            exit(0)
-
-        if mes == 1:
-            sender.reply(
-                "=====授权时长=====\n"
-                "📝 请输入需要的月数\n"
-                "💡 示例: 输入1代表1个月\n"
-                "⚠️ 输入q退出操作\n"
-                "==================="
-            )
-            months = sender.input(120000, 1, False)
-            if months.lower() == 'q':
-                sender.reply('退出操作')
-                exit(0)
-
-            try:
-                months = int(months)
-                if months < 1 or months > 99:
-                    sender.reply('输入的月数无效')
-                    exit(0)
-            except:
-                sender.reply('输入有误，请输入数字')
-                exit(0)
-
-            if not zf(project='酷我授权', me_as_int=months, accountVip=accountVip, account=selected_account, token=Token, phone=values[3]):
-                return
-
-            Decimal(months) * Decimal(KuwoVipmoney)
-            accountVip = empower(empowertime=accvip, me_as_int=months)
-            sg.bucketSet(bucket='dd_Kuwo_Vip', key=selected_account, value=accountVip)
-            login_value = sg.bucketGet('dd_Kuwo_login', selected_account)
-            if not login_value:
-                sender.reply('获取账号登录信息失败')
-                exit(0)
-            Addenvs(osname=osname, value=login_value, account=selected_account, phone=values[3])
-
-        elif mes == 2:
-            sender.reply(
-                "=====删除确认=====\n"
-                f"📱 账号: {phone_masked}\n"
-                "是否删除这个账号?\n"
-                "[y]确认删除 | [n]取消操作\n"
-                "⚠️ 输入q退出操作\n"
-                "==================="
-            )
-            yesorno = sender.input(120000, 1, False)
-            if yesorno.lower() == 'y' or yesorno == '是':
-                try:
-                    qlid = allenvs(osname=osname, account=selected_account)
-                    if qlid:
-                        delenvs(id=qlid)
-
-                    if selected_account in accounts:
-                        accounts.remove(selected_account)
-                        if len(accounts) == 0:
-                            sg.bucketDel(bucket='dd_Kuwo_bind', key=userid)
-                        else:
-                            sg.bucketSet(bucket='dd_Kuwo_bind', key=userid, value=f'{accounts}')
-                        sg.bucketDel(bucket='dd_Kuwo_account', key=selected_account)
-                        sg.bucketDel(bucket='dd_Kuwo_Vip', key=selected_account)
-                        sender.reply('删除完成！')
-                    else:
-                        sender.reply('账号不存在！')
-                except Exception as e:
-                    sender.reply(f'删除失败: {str(e)}')
-            elif yesorno.lower() == 'n' or yesorno == '否':
-                sender.reply('已取消删除')
-            elif yesorno.lower() == 'q':
-                sender.reply('退出操作')
-            else:
-                sender.reply('输入有误！')
-            exit(0)
-    else:
-        sender.reply('未绑定酷我音乐账号！')
-        exit(0)
+    accounts=list(_sg_literal(sg.bucketGet('dd_Kuwo_bind',userid),[]))
+    if not accounts:
+        sender.reply('❌ 未绑定酷我账号')
+        return
+    sender.reply('=====酷我管理=====\n'+'\n'.join(f'[{i}] {a}' for i,a in enumerate(accounts,1))+'\n回复序号；q退出')
+    choice=sender.input(120000,1,False)
+    if not str(choice).isdigit():return
+    i=int(choice)-1
+    if i not in range(len(accounts)):return
+    account=accounts[i];token=sg.bucketGet('dd_Kuwo_account',account) or '';login_value=sg.bucketGet('dd_Kuwo_login',account) or ''
+    sender.reply('[1] 查询 [2] 同步面板 [3] 查看登录配置 [4] 删除账号')
+    action=sender.input(120000,1,False)
+    if action=='1':query_one(account,token)
+    elif action=='2':sender.reply('✅ 同步成功' if login_value and Addenvs(osname=osname,value=login_value,account=account,phone=login_value.split('#',1)[0]) else '❌ 同步失败')
+    elif action=='3':sender.reply(login_value or '❌ 未保存登录配置')
+    elif action=='4':
+        sender.reply('确认删除请回复 y')
+        if (sender.input(60000,1,False) or '').lower()=='y':
+            env_id=allenvs(osname=osname,account=str(account))
+            if env_id:delenvs(id=env_id)
+            accounts.remove(account);sg.bucketSet('dd_Kuwo_bind',userid,str(accounts));sg.bucketDel('dd_Kuwo_account',account);sg.bucketDel('dd_Kuwo_login',account);sender.reply('✅ 已删除')
 
 def query_withdraw_history(token):
     try:
@@ -797,52 +526,20 @@ def query_withdraw_history(token):
     except Exception as e:
         return f"查询提现记录失败: {str(e)}"
 
+def query_one(account, token):
+    if not token:
+        sender.reply(f'❌ {account}: Token不存在');return
+    point,today=cx(token)
+    if isinstance(point,str):
+        sender.reply(f'❌ {account}: {point}');return
+    values=token.split('#');phone=values[3] if len(values)>3 else str(account);masked=phone[:3]+'****'+phone[-4:]
+    sender.reply(f'=====酷我账号=====\n📱 {masked}\n💰 当前金币: {point}\n✨ 今日收益: {today}\n{query_withdraw_history(token)}')
+
 def query():
-    if len(uservalue) != 0:
-        accounts = _sg_literal(uservalue)
-        for account in accounts:
-            try:
-                accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=account) or ''
-                Token = sg.bucketGet(bucket='dd_Kuwo_account', key=account)
-                if not Token:
-                    sender.reply('【账号】Token获取失败')
-                    continue
-
-                pointValue, todaycoin = cx(Token)
-                if isinstance(pointValue, str):
-                    sender.reply(f'【账号】{pointValue}')
-                    continue
-
-                phone = Token.split('#')[3]  # 从Token中获取手机号
-                phone_masked = phone[:3] + '*' * 4 + phone[7:]  # 手机号脱敏
-
-                if len(accountVip) == 0:
-                    sender.reply(f'【{phone_masked}】账号未授权')
-                    continue
-                elif accountVip < today_time:
-                    sender.reply(f'【{phone_masked}】云授权过期')
-                    continue
-                else:
-                    withdraw_history = query_withdraw_history(Token)
-
-                    sender.reply(
-                        "=====账号详情=====\n"
-                        f"📱 账号: {phone_masked}\n"
-                        f"💰 当前金币: {pointValue}\n"
-                        f"✨ 今日收益: {todaycoin}\n"
-                        f"⏰ 授权期限: {accountVip}\n"
-                        "===================\n"
-                        f"{withdraw_history}"
-                    )
-
-            except Exception as e:
-                try:
-                    phone_masked = phone[:3] + '*' * 4 + phone[7:]
-                except:
-                    phone_masked = "未知账号"
-                sender.reply(f'【{phone_masked}】查询出错: {str(e)}')
-    else:
-        sender.reply('未绑定酷我账号')
+    accounts=list(_sg_literal(sg.bucketGet('dd_Kuwo_bind',userid),[]))
+    if not accounts:
+        sender.reply('❌ 未绑定酷我账号');return
+    for account in accounts:query_one(account,sg.bucketGet('dd_Kuwo_account',account) or '')
 
 def cx(token):
     try:
@@ -958,19 +655,6 @@ def cx(token):
         return f"查询异常: {str(e)}", 0
 
 
-def empower(empowertime, me_as_int):
-    day = me_as_int * 30
-    if empowertime == '未授权' or empowertime == '授权过期' or empowertime <= str(today_time):
-        delayed_date = today_date + timedelta(days=day)
-    elif empowertime > today_time:
-        empower_date = datetime.strptime(empowertime, "%Y-%m-%d")
-        delayed_date = empower_date + timedelta(days=day)
-        delayed_date = delayed_date.date()
-    else:
-        sender.reply('出错！')
-        exit(0)
-    return str(delayed_date)
-
 def Addenvs(osname, value, account, phone):
     if use_daidai:
         env_id = dd_allenvs(osname, account)
@@ -1009,13 +693,11 @@ def Addenvs(osname, value, account, phone):
 
 def QLzt(osname, value, account, phone):
     try:
-        expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
-
         url = f"{QLurl}/open/envs"
         data = [{
             "value": value,
             "name": osname,
-            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}丨到期:{expire_date}'
+            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}'
         }]
         headers = {
             "Authorization": f"Bearer {qltoken}",
@@ -1044,13 +726,11 @@ def QLzt(osname, value, account, phone):
 
 def QLupdate(osname, value, account, qlid, phone):
     try:
-        expire_date = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
-
         url = f"{QLurl}/open/envs"
         data = {
             "value": value,
             "name": osname,
-            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}丨到期:{expire_date}',
+            "remarks": f'酷我:{account}丨用户:{userid}丨手机:{phone}',
             "id": qlid
         }
         headers = {
@@ -1116,918 +796,24 @@ def delenvs(id):
     data = [id]
     requests.delete(url, headers=headers, json=data).json()
 
-def zf(project, me_as_int, accountVip, account, token, phone):
-    login_info = sg.bucketGet('dd_Kuwo_login', account)
-    if not login_info:
-        sender.reply('获取账号登录信息失败')
-        return False
 
-    money = Decimal(me_as_int) * Decimal(KuwoVipmoney)
 
-    int(sg.bucketGet('dd_sign_points', userid) or '0')
-    jfsl = sg.bucketGet('dd_Kuwo_PluginsData', 'Kuwocoin')
 
-    zfzt = False
-    if zfzt:
-        sender.reply('当前有人正在支付,请稍后再试！')
-        exit(0)
 
-    if money == 0:
-        try:
-            if accountVip and accountVip not in ['未授权', '授权过期'] and accountVip > today_time:
-                start_date = datetime.strptime(accountVip, "%Y-%m-%d")
-            else:
-                start_date = datetime.now()
-
-            days_per_month = int(sg.bucketGet('dd_Kuwo_PluginsData', 'days_per_month') or '30')
-            new_expire_date = (start_date + timedelta(days=me_as_int * days_per_month)).strftime("%Y-%m-%d")
-
-            sg.bucketSet('dd_Kuwo_Vip', account, new_expire_date)
-
-            if not Addenvs(osname=osname, value=login_info, account=account, phone=phone):
-                sender.reply("警告：青龙变量更新失败，但授权已完成")
-
-            msg = (
-                "=====授权完成=====\n"
-                f"🎈名称:{project}\n"
-                f"🎉数量:{me_as_int}月\n"
-                f"💰费用:免费\n"
-                f"📅到期时间:{new_expire_date}\n"
-                "=================="
-            )
-            sender.reply(msg)
-            return True
-        except Exception as e:
-            sender.reply(f"授权更新失败: {str(e)}")
-            exit(0)
-
-    zsm = sg.bucketGet('dd_Kuwo_PluginsData', 'zsm')
-    if not zsm:
-        sender.reply('未配置收款方式，请检查配置')
-        exit(0)
-
-    total_points = 0
-    if jfsl:
-        try:
-            total_points = int(jfsl) * me_as_int
-        except:
-            total_points = 0
-
-    if total_points > 0:
-        sender.reply(
-            "=====支付方式=====\n"
-            f"1️⃣ 积分支付: {total_points}积分\n"
-            f"2️⃣ 微信支付: {money}元\n"
-            "请选择支付方式(1/2):\n"
-            "⚠️ 输入q退出支付"
-        )
-        choice = sender.input(60000, 1, False)
-
-        if not choice:
-            sender.reply('输入超时')
-            return False
-        elif choice.lower() == 'q':
-            sender.reply('退出支付')
-            return False
-        elif choice == '1':
-            current_points = int(sg.bucketGet('dd_sign_points', userid) or '0')
-            if current_points < total_points:
-                sender.reply(
-                    "=====积分不足=====\n"
-                    f"💰 当前积分: {current_points}\n"
-                    f"💵 所需积分: {total_points}\n"
-                    f"❌ 积分不足，请选择其他支付方式\n"
-                    "==================="
-                )
-                sender.reply(
-                    "=====支付选择=====\n"
-                    "是否使用微信支付继续?\n"
-                    "[y]继续 | [n]取消\n"
-                    "=================="
-                )
-                if yesornos():
-                    return handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project)
-                return False
-
-            sender.reply(
-                "=====积分支付=====\n"
-                f"💰 当前积分: {current_points}\n"
-                f"💵 所需积分: {total_points}\n"
-                f"💡 使用时长: {me_as_int}月\n"
-                "是否确认支付?\n"
-                "[y]确认 | [n]取消"
-            )
-            if yesornos():
-                try:
-                    final_points = int(sg.bucketGet('dd_sign_points', userid) or '0')
-                    if final_points < total_points:
-                        sender.reply(
-                            "=====支付失败=====\n"
-                            "❌ 积分不足，无法完成支付\n"
-                            "==================="
-                        )
-                        return False
-
-                    new_balance = final_points - total_points
-                    sg.bucketSet('dd_sign_points', userid, str(new_balance))
-                    accountVip = empower(empowertime=accountVip, me_as_int=me_as_int)
-                    sg.bucketSet('dd_Kuwo_Vip', account, accountVip)
-                    Addenvs(osname=osname, value=login_info, account=account, phone=phone)
-
-                    msg = (
-                        "=====支付成功=====\n"
-                        f"🎈 商品: 酷我音乐授权\n"
-                        f"🎉 时长: {me_as_int}月\n"
-                        f"💰 支付: {total_points}积分\n"
-                        f"💎 剩余: {new_balance}积分\n"
-                        "==================="
-                    )
-                    sender.reply(msg)
-                    return True
-
-                except Exception as e:
-                    sender.reply(f"授权更新失败: {str(e)}")
-                    return False
-            else:
-                sender.reply('已取消积分支付')
-                return False
-        elif choice == '2':
-            return handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project)
-        else:
-            sender.reply('输入无效')
-            return False
-    else:
-        return handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project)
-
-def handle_wx_payment(zsm, money, me_as_int, accountVip, account, token, phone, login_info, project):
-    sender.reply(
-        "=====订单信息=====\n"
-        f"🎈名称: 酷我授权\n"
-        f"🎉数量: {me_as_int}月\n"
-        f"💰应付: {money}元\n"
-        "⚠️ 输入q退出支付\n"
-        "==================="
-    )
-    sender.replyImage(zsm)
-
-    ddzf = False
-
-    if str(ddzf) == 'q':
-        sender.reply('退出支付')
-        return False
-
-    try:
-        Money = 0
-        pay_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        if isinstance(ddzf, dict):
-            Money = Decimal(str(ddzf.get('Money', 0) or ddzf.get('money', 0)))  # 使用 Decimal
-            pay_time = ddzf.get('Time', '') or ddzf.get('time', '')
-            if pay_time:
-                pay_time = pay_time.replace('T', ' ').split('.')[0]
-            else:
-                pay_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(ddzf, str):
-            if "二维码赞赏到账" in ddzf:
-                try:
-                    amount_str = ddzf.split("收款金额￥")[1].split("\n")[0]
-                    Money = Decimal(str(amount_str))  # 使用 Decimal
-                    time_str = ddzf.split("到账时间")[1].split("\n")[0].strip()
-                    pay_time = time_str
-                except Exception as e:
-                    sender.reply(f"解析收款信息失败: {str(e)}")
-                    return False
-            else:
-                try:
-                    json_data = json.loads(ddzf)
-                    Money = Decimal(str(json_data.get('Money', 0) or json_data.get('money', 0)))  # 使用 Decimal
-                    pay_time = json_data.get('Time', '') or json_data.get('time', '')
-                    if pay_time:
-                        pay_time = pay_time.replace('T', ' ').split('.')[0]
-                    else:
-                        pay_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                except:
-                    sender.reply("支付结果格式错误")
-                    return False
-        else:
-            sender.reply("未知的支付结果格式")
-            return False
-
-        if Money <= 0:
-            sender.reply("支付金额无效")
-            return False
-
-        money = Decimal(str(money))
-        if Money == money:  # 改为精确比较
-            try:
-                if accountVip and accountVip not in ['未授权', '授权过期'] and accountVip > today_time:
-                    start_date = datetime.strptime(accountVip, "%Y-%m-%d")
-                else:
-                    start_date = datetime.now()
-
-                days_per_month = int(sg.bucketGet('dd_Kuwo_PluginsData', 'days_per_month') or '30')
-                new_expire_date = (start_date + timedelta(days=me_as_int * days_per_month)).strftime("%Y-%m-%d")
-
-                sg.bucketSet('dd_Kuwo_Vip', account, new_expire_date)
-
-                if not Addenvs(osname=osname, value=login_info, account=account, phone=phone):
-                    sender.reply("警告：青龙变量更新失败，但授权已完成")
-
-                msg = (
-                    "=====订单完成=====\n"
-                    f"🎈名称:{project}\n"
-                    f"🎉数量:{me_as_int}月\n"
-                    f"💰支付金额:{Money}元\n"
-                    f"⏰支付时间:{pay_time}\n"
-                    f"📅到期时间:{new_expire_date}\n"
-                    "=================="
-                )
-                sender.reply(msg)
-                return True
-
-            except Exception as e:
-                sender.reply(f"授权更新失败: {str(e)}")
-                return False
-
-        else:
-            sender.reply(f'支付金额错误\n应付:{money}元\n实付:{Money}元\n请稍后核对支付记录！')
-            return False
-
-    except Exception as e:
-        sender.reply(f"处理支付结果时出错: {str(e)}")
-        return False
-
-def yesornos():
-    yesorno = sender.input(120000, 1, False)
-    if yesorno == 'Y' or yesorno == 'y' or yesorno == '是':
-        return True
-    elif yesorno == 'n' or yesorno == 'N' or yesorno == '否':
-        return False
-    elif yesorno == '':
-        sender.reply('输入超时！')
-        exit(0)
-    elif yesorno == 'q' or yesorno == 'Q' or yesorno == '退出':
-        sender.reply('退出！')
-        exit(0)
-    else:
-        sender.reply('输入错误！')
-        exit(0)
-
-def kuwo_auth():
-    if not sender.isAdmin():
-        sender.reply("您没有权限执行此操作！")
-        exit(0)
-
-    sender.reply(
-        "=====酷我授权=====\n"
-        "  [1] 一键授权所有用户\n"
-        "  [2] 单独授权用户\n"
-        "-------------------\n"
-        "⚠️ 输入q退出操作\n"
-        "=================="
-    )
-    xz = sender.input(60000, 1, False)
-
-    if xz == 'q' or xz == 'Q':
-        sender.reply("退出操作")
-        return
-    elif xz is None or xz not in ['1', '2']:
-        sender.reply("输入无效")
-        return
-
-    if xz == '1':
-        users = sg.bucketAllKeys('dd_Kuwo_bind')
-        if not users:
-            sender.reply("未找到任何绑定的酷我账号")
-            return
-    else:
-        sender.reply(
-            "=====用户授权=====\n"
-            "📝 请输入需要授权的用户ID\n"
-            "💡 通过发送myuid获得\n"
-            "⚠️ 输入q退出操作\n"
-            "=================="
-        )
-        myuid = sender.input(60000, 1, False)
-        if not myuid or myuid.lower() == 'q':
-            sender.reply("退出操作")
-            return
-
-        accountlist = sg.bucketGet('dd_Kuwo_bind', myuid)
-        if not accountlist or accountlist == '{}':
-            sender.reply(f"未找到用户 {myuid} 的酷我账号信息!")
-            return
-
-        try:
-            accounts = _sg_literal(accountlist)
-            msg = "=====账号列表=====\n[0] 授权所有账号\n-------------------\n"
-
-            for i, account in enumerate(accounts, 1):
-                accountVip = sg.bucketGet('dd_Kuwo_Vip', account) or '未授权'
-                Token = sg.bucketGet('dd_Kuwo_account', account)
-                phone = Token.split('#')[3] if Token else "未知"
-                phone = phone[:3] + '*' * 4 + phone[7:] if len(phone) == 11 else phone
-                msg += (
-                    f"[{i}] 账号信息\n"
-                    f"📱 账号: {phone}\n"
-                    f"⏰ 到期: {accountVip}\n"
-                    f"-------------------\n"
-                )
-
-            msg += "⚠️ 输入q退出操作"
-            sender.reply(msg)
-
-            choice = sender.input(60000, 1, False)
-            if not choice or choice.lower() == 'q':
-                sender.reply("退出操作")
-                return
-
-            try:
-                choice = int(choice)
-                if choice < 0 or choice > len(accounts):
-                    sender.reply("输入的序号无效")
-                    return
-            except:
-                sender.reply("输入的序号无效")
-                return
-
-            users = [myuid]
-            if choice == 0:
-                target_accounts = accounts
-            else:
-                target_accounts = [accounts[choice-1]]
-
-        except Exception as e:
-            sender.reply(f"处理账号列表时出错: {str(e)}")
-            return
-
-    sender.reply(
-        "=====授权天数=====\n"
-        "📝 请输入要授权的天数\n"
-        "⚠️ 输入q退出操作\n"
-        "=================="
-    )
-    days = sender.input(60000, 1, False)
-    if days == 'q' or days == 'Q':
-        sender.reply("退出操作")
-        return
-    elif days is None:
-        sender.reply("输入超时")
-        return
-
-    try:
-        days = int(days)
-        if days <= 0:
-            sender.reply("授权天数必须大于0")
-            return
-    except:
-        sender.reply("输入的天数无效，必须是数字！")
-        return
-
-    stats = {
-        'success': 0,
-        'fail': 0,
-        'fail_accounts': []
-    }
-
-    if xz == '1':  # 一键授权所有用户
-        for user in users:
-            accountlist = sg.bucketGet('dd_Kuwo_bind', key=user)
-            if not accountlist or accountlist == '{}':
-                continue
-
-            try:
-                accounts = _sg_literal(accountlist)
-                for account in accounts:
-                    try:
-                        login_info = sg.bucketGet('dd_Kuwo_login', account)
-                        if not login_info:
-                            stats['fail'] += 1
-                            stats['fail_accounts'].append(f"账号:{account}(登录信息获取失败)")
-                            continue
-
-                        phone = login_info.split('#')[0]
-
-                        current_vip = sg.bucketGet('dd_Kuwo_Vip', account)
-                        current_date = datetime.now()
-
-                        if current_vip and current_vip > current_date.strftime("%Y-%m-%d"):
-                            start_date = datetime.strptime(current_vip, "%Y-%m-%d")
-                        else:
-                            start_date = current_date
-
-                        new_expire_date = (start_date + timedelta(days=days)).strftime("%Y-%m-%d")
-
-                        sg.bucketSet('dd_Kuwo_Vip', account, new_expire_date)
-
-                        if Addenvs(osname=osname, value=login_info, account=account, phone=phone):
-                            stats['success'] += 1
-                        else:
-                            stats['fail'] += 1
-                            stats['fail_accounts'].append(f"账号:{account}(青龙变量更新失败)")
-
-                    except Exception as e:
-                        stats['fail'] += 1
-                        stats['fail_accounts'].append(f"账号:{account}(处理失败:{str(e)})")
-            except Exception as e:
-                sender.reply(f"处理用户 {user} 的账号列表时出错: {str(e)}")
-                continue
-    else:  # 单独授权指定账号
-        for account in target_accounts:
-            try:
-                process_auth(account, days, stats)
-            except Exception as e:
-                stats['fail'] += 1
-                stats['fail_accounts'].append(f"账号:{account}(处理失败:{str(e)})")
-
-    msg = (
-        "=====授权结果=====\n"
-        f"✅ 成功: {stats['success']}个账号\n"
-        f"❌ 失败: {stats['fail']}个账号\n"
-        f"⏰ 授权天数: {days}天\n"
-    )
-
-    if stats['fail_accounts']:
-        msg += "\n失败详情:\n" + "\n".join(stats['fail_accounts'][:5])  # 只显示前5个失败账号
-        if len(stats['fail_accounts']) > 5:
-            msg += f"\n... 等共{len(stats['fail_accounts'])}个失败账号"
-
-    msg += "\n=================="
-    sender.reply(msg)
-
-def process_auth(account, days, stats):
-    try:
-        login_info = sg.bucketGet('dd_Kuwo_login', account)
-        if not login_info:
-            stats['fail'] += 1
-            stats['fail_accounts'].append(f"账号:{account}(登录信息获取失败)")
-            return
-
-        phone = login_info.split('#')[0]
-
-        current_vip = sg.bucketGet('dd_Kuwo_Vip', account)
-        current_date = datetime.now()
-
-        if current_vip and current_vip > current_date.strftime("%Y-%m-%d"):
-            start_date = datetime.strptime(current_vip, "%Y-%m-%d")
-        else:
-            start_date = current_date
-
-        new_expire_date = (start_date + timedelta(days=days)).strftime("%Y-%m-%d")
-
-        sg.bucketSet('dd_Kuwo_Vip', account, new_expire_date)
-
-        if Addenvs(osname=osname, value=login_info, account=account, phone=phone):
-            stats['success'] += 1
-        else:
-            stats['fail'] += 1
-            stats['fail_accounts'].append(f"账号:{account}(青龙变量更新失败)")
-
-    except Exception as e:
-        stats['fail'] += 1
-        stats['fail_accounts'].append(f"账号:{account}(处理失败:{str(e)})")
 
 def tutorial():
-    tutorial_text = (
-        "=====酷我教程=====\n"
-        "🎵 基础指令:\n"
-        "1️⃣ 酷我登录 - 绑定账号\n"
-        "2️⃣ 酷我查询 - 查看状态\n"
-        "3️⃣ 酷我管理 - 管理账号\n"
-        "-------------------\n"
-        "📝 使用说明:\n"
-        "1. 发送[酷我登录]绑定账号\n"
-        "2. 按提示输入手机号和密码\n"
-        "3. 登录成功后可以管理账号\n"
-        "4. 定时签到获取金币奖励\n"
-        "5. 金币达到门槛可以提现\n"
-        "-------------------\n"
-        "⚠️ 注意事项:\n"
-        "1. 建议私聊登录更安全\n"
-        "2. 密码不会被保存记录\n"
-        "3. 定期更新账号保活\n"
-        "=================="
-    )
-    sender.reply(tutorial_text)
-
-def withdraw_tutorial():
-    txjc = (
-        "=====提现说明=====\n"
-        "💰 提现说明:\n"
-        "1、指令：酷我提现\n"
-        "2、2元提现需要20000金币\n"
-        "3、10元提现需要100000金币\n"
-        "4、每天限提现一次\n"
-        "-------------------\n"
-        "🎯 登录说明:\n"
-        "1、使用手机号和密码登录\n"
-        "2、格式: 手机号#密码\n"
-        "3、建议私聊操作更安全\n"
-        "=================="
-    )
-    sender.reply(txjc)
-
-def query_today_withdrawals():
-    if not sender.isAdmin():
-        sender.reply("您没有权限执行此操作！")
-        exit(0)
-
-    all_users = sg.bucketAllKeys('dd_KuwoTX_bind')
-    if not all_users:
-        sender.reply("未找到任何绑定的酷我提现账号")
-        return
-
-    stats = {
-        'total_accounts': 0,  # 已授权账号总数
-        'withdrawn_accounts': 0,  # 已提现账号数
-        'total_amount': 0,  # 提现总金额
-        'processing_accounts': 0,  # 处理中的提现数
-        'failed_accounts': 0  # 失败的提现数
-    }
-
-    beijing_tz = timezone(timedelta(hours=8))
-    today = datetime.now(beijing_tz).strftime("%Y-%m-%d")
-
-    for user in all_users:
-        try:
-            accountlist = sg.bucketGet('dd_KuwoTX_bind', key=user)
-            if not accountlist or accountlist == '{}':
-                continue
-
-            accounts = _sg_literal(accountlist)
-            for account in accounts:
-                accountVip = sg.bucketGet('dd_KuwoTX_Vip', key=account) or ''
-                if not accountVip or accountVip <= today:
-                    continue
-
-                stats['total_accounts'] += 1
-
-                Token = sg.bucketGet('dd_KuwoTX_account', key=account)
-                if not Token:
-                    continue
-
-                try:
-                    values = Token.split('#')
-                    if len(values) != 4:
-                        continue
-
-                    loginUid = values[0]
-                    loginSid = values[2]
-
-                    url = "https://integralapi.kuwo.cn/api/v1/online/sign/v1/withdrawDetails"
-                    params = {
-                        'loginUid': loginUid,
-                        'loginSid': loginSid,
-                        'pn': '1',  # 第一页
-                        'rn': '50'  # 增加每页记录数以确保获取所有今日记录
-                    }
-
-                    headers = {
-                        'Host': 'integralapi.kuwo.cn',
-                        'Accept': 'application/json, text/plain, */*',
-                        'Origin': 'https://h5app.kuwo.cn',
-                        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_7_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KWMusic/11.1.2.0',
-                        'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
-                        'Referer': 'https://h5app.kuwo.cn/'
-                    }
-
-                    response = requests.get(url, params=params, headers=headers)
-                    if response.status_code != 200:
-                        continue
-
-                    data = response.json()
-                    if data.get('code') != 200:
-                        continue
-
-                    records = data.get('data', {}).get('list', [])
-
-                    for record in records:
-                        date_str = record.get('dateTime', '') or record.get('createTime', '')
-                        if not date_str:
-                            continue
-
-                        try:
-                            if 'T' in date_str:
-                                utc_time = datetime.strptime(date_str.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-                            else:
-                                utc_time = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            utc_time = utc_time.replace(tzinfo=timezone.utc)
-                            beijing_time = utc_time.astimezone(beijing_tz)
-                            record_date = beijing_time.strftime("%Y-%m-%d")
-
-                            if record_date == today:
-                                amount = float(record.get('amount', 0))
-                                status = str(record.get('status', ''))
-
-                                if status == '1':  # 成功
-                                    stats['withdrawn_accounts'] += 1
-                                    stats['total_amount'] += amount
-                                elif status == '0':  # 处理中
-                                    stats['processing_accounts'] += 1
-                                elif status == '2':  # 失败
-                                    stats['failed_accounts'] += 1
-                                break  # 找到今日记录后跳出循环
-                        except Exception:
-                            continue
-
-                except Exception:
-                    continue
-
-        except Exception:
-            continue
-
-    msg = (
-        "=====提现统计=====\n"
-        f"📅 统计日期: {today}\n"
-        f"📊 总账号: {stats['total_accounts']}个\n"
-        f"✅ 提现成功: {stats['withdrawn_accounts']}个\n"
-        f"⏳ 处理中: {stats['processing_accounts']}个\n"
-        f"💵 提现总额: {stats['total_amount']}元\n"
-        "=================="
-    )
-
-    sender.reply(msg)
-
-def clean_expired_accounts():
-    if not sender.isAdmin():
-        sender.reply("您没有权限执行此操作！")
-        exit(0)
-
-    stats = {
-        'total': 0,
-        'expired': 0,
-        'cleaned': 0,
-        'failed': []
-    }
-
-    try:
-        all_vips = sg.bucketAll('dd_Kuwo_Vip')
-        if not all_vips:
-            sender.reply("未找到任何 VIP 记录")
-            return
-
-        today = datetime.now().date()
-
-        all_ql_envs = {}
-        if use_daidai:
-            url = f"{panel_url}/api/envs"
-            headers = get_dd_headers()
-            params = {"keyword": osname, "page_size": 1000}
-            response = requests.get(url=url, headers=headers, params=params)
-            if response.status_code != 200:
-                sender.reply(f"获取呆呆面板变量失败: HTTP {response.status_code}")
-                return
-            data_list = response.json().get('data', [])
-            if isinstance(data_list, list):
-                for env in data_list:
-                    if env.get('name') == osname:
-                        remarks = env.get('remarks', '')
-                        if remarks and '酷我:' in remarks:
-                            try:
-                                account_info = remarks.split('酷我:')[1].split('丨')[0]
-                                all_ql_envs[account_info] = {
-                                    'id': env['id'],
-                                    'value': env.get('value', '')
-                                }
-                            except:
-                                continue
-        else:
-            url = f"{QLurl}/open/envs"
-            headers = {
-                "Authorization": f"Bearer {qltoken}",
-                "accept": "application/json"
-            }
-
-            response = requests.get(url=url, headers=headers)
-            if response.status_code != 200:
-                sender.reply(f"获取青龙变量失败: HTTP {response.status_code}")
-                return
-
-            ql_data = response.json()
-            if ql_data['code'] != 200:
-                sender.reply(f"获取青龙变量失败: {ql_data.get('message', '未知错误')}")
-                return
-
-            for env in ql_data['data']:
-                if env['name'] == osname:
-                    remarks = env.get('remarks', '')
-                    if remarks and '酷我:' in remarks:
-                        try:
-                            account_info = remarks.split('酷我:')[1].split('丨')[0]
-                            all_ql_envs[account_info] = {
-                                'id': env['id'],
-                                'value': env['value']
-                            }
-                        except:
-                            continue
-
-        for account, vip_date in all_vips.items():
-            stats['total'] += 1
-            need_clean = False
-
-            try:
-                if not vip_date or vip_date in ['未授权', '授权过期']:
-                    need_clean = True
-                    stats['expired'] += 1
-                else:
-                    try:
-                        expire_date = datetime.strptime(vip_date, "%Y-%m-%d").date()
-                        if expire_date <= today:
-                            need_clean = True
-                            stats['expired'] += 1
-                    except ValueError:
-                        need_clean = True
-                        stats['expired'] += 1
-
-                if need_clean:
-                    env_info = all_ql_envs.get(account)
-                    if env_info:
-                        try:
-                            if use_daidai:
-                                del_url = f"{panel_url}/api/envs/{env_info['id']}"
-                                del_headers = get_dd_headers()
-                                del_response = requests.delete(del_url, headers=del_headers)
-                            else:
-                                del_url = f"{QLurl}/open/envs"
-                                del_headers = {
-                                    "Authorization": f"Bearer {qltoken}",
-                                    "accept": "application/json",
-                                    "Content-Type": "application/json"
-                                }
-                                del_response = requests.delete(
-                                    del_url,
-                                    headers=del_headers,
-                                    json=[env_info['id']]
-                                )
-
-                            if del_response.status_code == 200:
-                                stats['cleaned'] += 1
-                            else:
-                                stats['failed'].append(f"{account}: 删除失败(HTTP {del_response.status_code})")
-                        except Exception as e:
-                            stats['failed'].append(f"{account}: 删除异常({str(e)})")
-
-                    sg.bucketDel(bucket='dd_Kuwo_account', key=account)
-                    sg.bucketDel(bucket='dd_Kuwo_Vip', key=account)
-
-                    users = sg.bucketAllKeys('dd_Kuwo_bind')
-                    for user in users:
-                        try:
-                            user_accounts = _sg_literal(sg.bucketGet('dd_Kuwo_bind', user) or '[]')
-                            if account in user_accounts:
-                                user_accounts.remove(account)
-                                if user_accounts:
-                                    sg.bucketSet('dd_Kuwo_bind', user, str(user_accounts))
-                                else:
-                                    sg.bucketDel('dd_Kuwo_bind', user)
-                        except:
-                            continue
-
-            except Exception as e:
-                stats['failed'].append(f"{account}: 处理异常({str(e)})")
-                continue
-
-    except Exception as e:
-        sender.reply(f"清理过程出错: {str(e)}")
-        return
-
-    msg = (
-        "=====清理报告=====\n"
-        f"📊 总账号: {stats['total']}个\n"
-        f"⚠️ 已过期: {stats['expired']}个\n"
-        f"🧹 已清理: {stats['cleaned']}个\n"
-    )
-
-    if stats['failed']:
-        msg += "\n失败详情:\n" + "\n".join(stats['failed'][:5])  # 只显示前5个失败记录
-        if len(stats['failed']) > 5:
-            msg += f"\n... 等共{len(stats['failed'])}个失败记录"
-
-    msg += "\n=================="
-    sender.reply(msg)
-
-def push(user, phone, message):
-    push_msg = f"""
-=====酷我账号通知=====
-📱 账号: {phone}
-📢 消息: {message}
-=================="""
-
-    platforms = ['wb', 'tg', 'qq', 'qb', 'wx']
-    for platform in platforms:
-        try:
-            sg.push(platform, '', user, '', push_msg)
-        except Exception as e:
-            print(f"推送到{platform}失败: {str(e)}")
+    sender.reply('=====酷我教程=====\n酷我登录：绑定账号\n酷我查询：查询金币和提现记录\n酷我管理：查询、同步或删除账号\n==================')
 
 
-today_date = datetime.now().date()
-today_time = str(today_date)
-QLurl, ClientID, ClientSecret, KuwoVipmoney, osname, Kuwocoin, use_daidai, dd_Kuwo_ddname, panel_group = PluginsData()
 
-panel_url = ''
-panel_token = ''
-qltoken = ''
-if use_daidai:
-    panel_url, panel_token = seekdd()
-else:
-    qltoken = QLtoken(QLurl, ClientID, ClientSecret)
-usermessage = sender.getMessage()
 
-if usermessage in ['酷我登录', '酷我登陆', '登陆酷我', '登录酷我']:
-    bind()
-elif usermessage in ['酷我管理', '管理酷我']:
-    Administration()
-elif usermessage in ['酷我查询', '查询酷我']:
-    query()
-elif usermessage == '酷我授权':
-    kuwo_auth()
-elif usermessage == '酷我教程':
-    tutorial()
-elif usermessage == '酷我提现说明':
-    withdraw_tutorial()
-elif usermessage == '总结今日酷我':
-    query_today_withdrawals()
-elif usermessage == '酷我清理':  # 添加新的指令处理
-    clean_expired_accounts()
-elif usermessage == 'fake':
-    users = sg.bucketAllKeys(bucket='dd_Kuwo_bind')
-    if not users:
-        exit(0)
 
-    today = datetime.now().date()
-    three_days_later = today + timedelta(days=3)
-
-    for user in users:
-        try:
-            uservalue = sg.bucketGet(bucket='dd_Kuwo_bind', key=user) or ''
-            if not uservalue:
-                continue
-
-            accounts = _sg_literal(uservalue)
-            for account in accounts:
-                try:
-                    Token = sg.bucketGet(bucket='dd_Kuwo_account', key=account)
-                    accountVip = sg.bucketGet(bucket='dd_Kuwo_Vip', key=account) or ''
-
-                    if not Token:
-                        continue
-
-                    values = Token.split('#')
-                    if len(values) != 4:
-                        continue
-
-                    phone = values[3]  # 获取手机号
-                    phone_masked = phone[:3] + '*' * 4 + phone[7:]  # 脱敏手机号
-
-                    try:
-                        loginUid = values[0]
-                        loginSid = values[2]
-
-                        verify_url = "https://integralapi.kuwo.cn/api/v1/online/sign/new/todayStatus"
-                        verify_headers = {
-                            'Cookie': f'tmeAppID=kwplayer;loginSid={loginSid};loginUid={loginUid}',
-                            'User-Agent': 'KWPlayer/11.1.2 (iPhone; iOS 17.7.2; Scale/3.00)'
-                        }
-                        verify_response = requests.get(verify_url, headers=verify_headers)
-                        if verify_response.status_code != 200:
-                            push(user, phone_masked, """
-⏰ 定时检测提醒
-------------------
-❌ 账号登录已失效
-💡 请尽快更新账号""")
-                            continue
-
-                    except Exception as e:
-                        print(f"验证账号 {account} 状态时出错: {str(e)}")
-                        continue
-
-                    if len(accountVip) == 0 or accountVip < str(today):
-                        push(user, phone_masked, """
-⏰ 定时检测提醒
-------------------
-❌ 授权已过期
-💡 请及时续费授权""")
-                    else:
-                        try:
-                            expire_date = datetime.strptime(accountVip, "%Y-%m-%d").date()
-                            if today <= expire_date <= three_days_later:
-                                days_left = (expire_date - today).days
-                                push(user, phone_masked, f"""
-⏰ 定时检测提醒
-------------------
-⚠️ 授权即将到期
-📅 到期时间: {accountVip}
-⏳ 剩余天数: {days_left}天
-💡 请及时续费授权""")
-                        except Exception as e:
-                            print(f"检查账号 {account} 过期时间时出错: {str(e)}")
-                            continue
-
-                except Exception as e:
-                    print(f"处理账号 {account} 时出错: {str(e)}")
-                    continue
-
-        except Exception as e:
-            print(f"处理用户 {user} 时出错: {str(e)}")
-            continue
+QLurl,ClientID,ClientSecret,_,osname,_,use_daidai,dd_Kuwo_ddname,panel_group=PluginsData()
+panel_url=panel_token=qltoken=''
+if use_daidai:panel_url,panel_token=seekdd()
+else:qltoken=QLtoken(QLurl,ClientID,ClientSecret)
+usermessage=sender.getMessage()
+if usermessage in ['酷我登录','酷我登陆','登陆酷我','登录酷我']:bind()
+elif usermessage in ['酷我管理','管理酷我']:Administration()
+elif usermessage in ['酷我查询','查询酷我']:query()
+elif usermessage in ['酷我教程','酷我说明']:tutorial()

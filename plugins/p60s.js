@@ -1,9 +1,9 @@
 //[title: 60s]
 //[name: p60s]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: XiaoBo_]
-//[version: v1.2.0]
+//[version: v1.2.1]
 //[public: true]
 //[disable: false]
 //[admin: false]
@@ -13,11 +13,12 @@
 //[description: 获取每日 60 秒早报，支持文字、图片及定时管理员推送]
 // [depe: []]
 
-const { sender: s, form } = require("sillygirl");
+const { sender: s, plugin } = require("sillygirl");
 
-const config = new form({
-  api: form.string().title("早报接口").default("https://60s.viki.moe/v2/60s"),
-  image: form.boolean().title("默认使用图片").default(true),
+const config = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+  api: plugin.Form.string().title("早报接口").default("https://60s.viki.moe/v2/60s"),
+  image: plugin.Form.boolean().title("默认使用图片").default(true),
 });
 
 async function load(api) {

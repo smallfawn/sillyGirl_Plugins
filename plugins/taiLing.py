@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.2.1]
+# [version: v1.2.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -12,57 +12,41 @@
 # [description: vx小程序【台铃】签到插件；指令：；台铃查询：查询签到状态与任务进度；台铃上传青龙：强制上传到青龙；台铃上传呆呆：强制上传到呆呆面板；台铃清理：清理失效或过期账号；脚本地址]
 # [depe: ["pycryptodome","requests","urllib3"]]
 
-
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 import re as _sg_re
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, container as _sg_container, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -75,18 +59,16 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
+
 def get_pay_config(): return {}
 class MaPayClient:
     def create_order(self,*a,**k): return {"error":"","status":True,"data":None}
     def is_paid(self,*a,**k): return True
-def get_user_points(user_id=None,bucket="dd_sign_points"):
-    try: return int(sg.bucketGet(bucket,user_id or sg.getSenderID()) or 0)
-    except Exception: return 0
 def _sg_panel_id(config=None):
     if isinstance(config,dict): config=config.get("id") or config.get("ID") or config.get("index") or config.get("name")
     m=_sg_re.search(r"\d+",str(config or "")); return int(m.group(0)) if m else 1
@@ -102,12 +84,12 @@ class QingLongClient:
 class DadaiPanelClient(QingLongClient):
     def __init__(self,env_name="",config=None,*a,**k): self.env_name=str(env_name or ""); self.client=_sg_container.DaiDai({"id":_sg_panel_id(config)})
 
-config = form({
-    'G_TLG_use_daidai': form.boolean().title('使用呆呆面板').default(False).description('勾选=上传呆呆面板，不勾选=上传青龙面板(默认)'),
-    'G_TLG_ql_config': form.string().title('青龙面板配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
-    'G_TLG_ql_envname': form.string().title('环境变量名').default('G_TLG_TOKEN').description('推送到青龙的环境变量名称'),
-    'G_TLG_daidai_config': form.string().title('呆呆面板配置').default('').description('呆呆面板配置信息，用丨分隔'),
-    'G_TLG_daidai_group': form.string().title('呆呆分组').default('').description('呆呆面板环境变量分组名称'),
+config = plugin.Form({
+    'G_TLG_use_daidai': plugin.Form.boolean().title('使用呆呆面板').default(False).description('勾选=上传呆呆面板，不勾选=上传青龙面板(默认)'),
+    'G_TLG_ql_config': plugin.Form.string().title('青龙面板配置').default('').description('青龙面板配置，格式：地址丨ID丨密钥'),
+    'G_TLG_ql_envname': plugin.Form.string().title('环境变量名').default('G_TLG_TOKEN').description('推送到青龙的环境变量名称'),
+    'G_TLG_daidai_config': plugin.Form.string().title('呆呆面板配置').default('').description('呆呆面板配置信息，用丨分隔'),
+    'G_TLG_daidai_group': plugin.Form.string().title('呆呆分组').default('').description('呆呆面板环境变量分组名称'),
 })
 _CONFIG_FIELD_MAP = {
     ('G_TLG', 'use_daidai'): 'G_TLG_use_daidai',
@@ -132,7 +114,6 @@ from typing import Any, Dict, List, Optional
 
 import requests
 import urllib3
-
 
 warnings = __import__('warnings')
 warnings.filterwarnings("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
@@ -180,15 +161,12 @@ TASK_MAP = {
     "product_add_cart": "商品加购",
 }
 
-
 def bucket_get(bucket: str, key: str, default: str = "") -> str:
     value = sg.bucketGet(bucket=bucket, key=key)
     return default if value is None else value
 
-
 def bucket_set(bucket: str, key: str, value: str):
     sg.bucketSet(bucket, key, value)
-
 
 def get_user_accounts(user_id: str = None) -> list:
     if not user_id:
@@ -196,12 +174,10 @@ def get_user_accounts(user_id: str = None) -> list:
     data = bucket_get(BUCKET_USER, user_id)
     return [p.strip() for p in data.split(',') if p.strip()]
 
-
 def save_user_accounts(accounts: list, user_id: str = None):
     if not user_id:
         user_id = userid
     bucket_set(BUCKET_USER, user_id, ','.join(accounts))
-
 
 def get_token_data(account_id: str) -> dict:
     data = bucket_get(BUCKET_TOKEN, account_id)
@@ -222,46 +198,34 @@ def get_token_data(account_id: str) -> dict:
         'has_client_id': False,
     }
 
-
 def save_token_data(account_id: str, authorization: str, client_id: str = ""):
     value = f"{authorization}#{client_id}" if client_id else authorization
     bucket_set(BUCKET_TOKEN, account_id, value)
 
-
 def get_auth_expire(account_id: str) -> str:
     return '2099-12-31'
-
 
 def save_auth_expire(account_id: str, expire_date: str):
     bucket_set(BUCKET_AUTH, account_id, expire_date)
 
-
 def is_authorized(account_id: str) -> bool:
     return True
-
 
 def get_remark(account_id: str) -> str:
     return bucket_get(BUCKET_REMARK, account_id)
 
-
 def save_remark(account_id: str, remark: str):
     bucket_set(BUCKET_REMARK, account_id, remark)
-
-
-
 
 def save_bind_time(account_id: str, t: str = None):
     t = t or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     bucket_set(BUCKET_AUTH, f"{account_id}_bind_time", t)
 
-
 def get_app_user_id(account_id: str) -> str:
     return bucket_get(BUCKET_APP_USER, account_id)
 
-
 def save_app_user_id(account_id: str, app_user_id: str):
     bucket_set(BUCKET_APP_USER, account_id, str(app_user_id or ""))
-
 
 def remove_account_record(account_id: str, user_id: str = None):
     if not user_id:
@@ -275,7 +239,6 @@ def remove_account_record(account_id: str, user_id: str = None):
     bucket_set(BUCKET_AUTH, f"{account_id}_bind_time", '')
     bucket_set(BUCKET_REMARK, account_id, '')
     bucket_set(BUCKET_APP_USER, account_id, '')
-
 
 def find_existing_account_for_login(accounts: List[str], app_user_id: str, remark: str, client_id: str) -> str:
     normalized_user_id = str(app_user_id or "").strip()
@@ -299,7 +262,6 @@ def find_existing_account_for_login(accounts: List[str], app_user_id: str, remar
         return candidates[0]
     return ""
 
-
 def add_account(account_id: str, user_id: str = None):
     if not user_id:
         user_id = userid
@@ -308,14 +270,12 @@ def add_account(account_id: str, user_id: str = None):
         accounts.append(account_id)
         save_user_accounts(accounts, user_id)
 
-
 def del_account(account_id: str, user_id: str = None, ql_config: str = '', ql_envname: str = ''):
     if not user_id:
         user_id = userid
     if ql_config and ql_envname:
         delete_from_qinglong(account_id, ql_config, ql_envname)
     remove_account_record(account_id, user_id)
-
 
 def get_config() -> dict:
     use_daidai_raw = bucket_get(BUCKET_CONFIG, 'use_daidai')
@@ -354,7 +314,6 @@ def get_config() -> dict:
         'ma_pay_return_url': getattr(ma_pay_client, 'return_url', '') if ma_pay_client else '',
     }
 
-
 def is_admin() -> bool:
     try:
         if sender.isAdmin():
@@ -365,15 +324,11 @@ def is_admin() -> bool:
     admin_list = [x.strip() for x in str(config.get('admin_users', '')).split(',') if x.strip()]
     return userid in admin_list
 
-
 def get_all_users() -> list:
     try:
         return sg.bucketAllKeys(bucket=BUCKET_USER) or []
     except:
         return []
-
-
-
 
 def safe_decimal(value: Any, default: str = '0') -> Decimal:
     try:
@@ -381,20 +336,16 @@ def safe_decimal(value: Any, default: str = '0') -> Decimal:
     except Exception:
         return Decimal(default)
 
-
 def parse_pay_types(raw: str) -> Dict[str, str]:
     return {}
-
 
 def is_client_id_candidate(text: str) -> bool:
     value = str(text or '').strip()
     value_len = len(value)
     return 16 <= value_len <= 64 and value.isalnum()
 
-
 def stable_hash(text: str) -> str:
     return hashlib.md5(str(text).encode("utf-8")).hexdigest()
-
 
 def mask(text: str, left: int = 6, right: int = 6) -> str:
     text = str(text or "")
@@ -402,24 +353,11 @@ def mask(text: str, left: int = 6, right: int = 6) -> str:
         return "***"
     return text[:left] + "..." + text[-right:]
 
-
-
-
 def now_str() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-
-
-
-
-
-
-
 def get_auth_status_text(account_id: str) -> str:
     return '2099-12-31'
-
-
-
 
 def build_query_result_message(account_id: str, msg_lines: List[str], index: int = 1, total: int = 1) -> str:
     remark = get_remark(account_id) or account_id
@@ -431,7 +369,6 @@ def build_query_result_message(account_id: str, msg_lines: List[str], index: int
     lines.append(f"🛡 {get_auth_status_text(account_id)}")
     lines.append("================")
     return "\n".join(lines)
-
 
 def build_next_sign_reward_line(reward_items: List[dict]) -> Optional[str]:
     pending = []
@@ -452,27 +389,6 @@ def build_next_sign_reward_line(reward_items: List[dict]) -> Optional[str]:
         return f"连签{target_day}天: 还差{remain}天"
     return None
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def get_random_ua() -> str:
     uas = [
         "Mozilla/5.0 (Linux; Android 16; 25102RKBEC Build/BP2A.250605.031.A3; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/140.0.7339.207 Mobile Safari/537.36",
@@ -480,7 +396,6 @@ def get_random_ua() -> str:
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
     ]
     return random.choice(uas)
-
 
 def parse_selection(choice: str, max_index: int) -> Optional[list]:
     if not choice or not choice.strip():
@@ -505,7 +420,6 @@ def parse_selection(choice: str, max_index: int) -> Optional[list]:
     except:
         return None
 
-
 def get_session():
     session = requests.Session()
     session.headers.update({
@@ -518,7 +432,6 @@ def get_session():
     })
     return session
 
-
 def get_dep_status() -> dict:
     raw = bucket_get(BUCKET_CONFIG, "crypto_dep_status", "") or ""
     try:
@@ -527,14 +440,12 @@ def get_dep_status() -> dict:
     except:
         return {}
 
-
 def set_dep_status(success: bool, message: str = ""):
     bucket_set(BUCKET_CONFIG, "crypto_dep_status", json.dumps({
         "success": bool(success),
         "message": str(message or ""),
         "updated_at": now_str(),
     }, ensure_ascii=False))
-
 
 def load_crypto_modules():
     global AES_Cipher, PKCS1_v1_5, RSA, pad, HAS_CRYPTO
@@ -551,7 +462,6 @@ def load_crypto_modules():
     except ImportError:
         HAS_CRYPTO = False
         return False, "import error"
-
 
 def ensure_crypto_ready(notify: bool = False):
     ok, msg = load_crypto_modules()
@@ -581,7 +491,6 @@ def ensure_crypto_ready(notify: bool = False):
     error_msg = (proc.stderr or proc.stdout or import_msg or "未知错误").strip()
     set_dep_status(False, error_msg[:500])
     return False, f"依赖安装失败: {error_msg[:200]}"
-
 
 def get_bearer_token(session, smart_token: str, client_id: str):
     ok, dep_msg = ensure_crypto_ready(notify=True)
@@ -615,7 +524,6 @@ def get_bearer_token(session, smart_token: str, client_id: str):
         return f"Bearer {resp['data']['access_token']}", "ok"
     return None, resp.get("msg", "获取 Bearer Token 失败")
 
-
 def verify_sign(session, auth: str, sign_date: str):
     session.headers["authorization"] = auth
     resp = session.post(f"{BASE_URL}/verifySign", json={"signDate": sign_date}).json()
@@ -623,26 +531,21 @@ def verify_sign(session, auth: str, sign_date: str):
         return True, resp.get("data", False), resp
     return False, None, resp
 
-
 def save_sign(session, auth: str):
     session.headers["authorization"] = auth
     return session.post(f"{BASE_URL}/saveIntegralSignIn", json={}).json()
-
 
 def get_sign_info(session, auth: str, sign_date: str, month_date: str):
     session.headers["authorization"] = auth
     return session.post(f"{BASE_URL}/getSign", json={"signDate": sign_date, "signMonthDate": month_date}).json()
 
-
 def get_reward_info(session, auth: str, sign_date: str):
     session.headers["authorization"] = auth
     return session.post(f"{BASE_URL}/getProceedSignReward", json={"signDate": sign_date}).json()
 
-
 def get_integral_user_summary(session, auth: str):
     session.headers["authorization"] = auth
     return session.post(f"{TASK_URL}/getIntegralUserSummary").json()
-
 
 def list_tasks(session, auth: str):
     session.headers["authorization"] = auth
@@ -651,14 +554,12 @@ def list_tasks(session, auth: str):
         return resp.get("data", []), resp
     return [], resp
 
-
 def get_trends_list(session, auth: str, client_id: str):
     session.headers.update({"authorization": auth, "clientid": client_id, "client-origin": "h5"})
     resp = session.get(f"{SOCIAL_URL}/trends/recommend/list?pageNum=1&pageSize=10").json()
     if resp.get("code") == 200:
         return [item["id"] for item in resp.get("rows", []) if item.get("id")]
     return []
-
 
 def get_product_list(session, auth: str):
     session.headers["authorization"] = auth
@@ -672,7 +573,6 @@ def get_product_list(session, auth: str):
         return products
     return []
 
-
 def get_product_detail(session, auth: str, product_id: str):
     session.headers["authorization"] = auth
     resp = session.post("https://www.tailgdd.com/v1/api/shop/app/product/detail",
@@ -684,38 +584,31 @@ def get_product_detail(session, auth: str, product_id: str):
             return {"productId": data["id"], "productSkuNum": skus[0]["number"]}
     return None
 
-
 def do_like(session, auth: str, client_id: str, trends_id: str):
     session.headers.update({"authorization": auth, "clientid": client_id, "client-origin": "h5"})
     return session.get(f"{SOCIAL_URL}/trends/like?trendsId={trends_id}&isLike=1").json()
-
 
 def do_share(session, auth: str, client_id: str, trends_id: str):
     session.headers.update({"authorization": auth, "clientid": client_id, "client-origin": "h5"})
     return session.get(f"{SOCIAL_URL}/trends/share?trendsId={trends_id}").json()
 
-
 def do_social_view(session, auth: str, client_id: str):
     session.headers.update({"authorization": auth, "clientid": client_id, "client-origin": "h5"})
     return session.post(f"{SOCIAL_URL}/task/completeTask", json={"taskType": "social_view"}).json()
-
 
 def do_product_view(session, auth: str, product_id: str):
     session.headers["authorization"] = auth
     return session.post(f"{TASK_URL}/completeDailyTask",
                         json={"taskType": 1, "eventCode": "product_view", "businessId": str(product_id)}).json()
 
-
 def do_add_cart(session, auth: str, product_id: str, sku_num: str):
     session.headers["authorization"] = auth
     return session.post("https://www.tailgdd.com/v1/api/shop/app/cart/setCart",
                         json={"quantity": 1, "productId": product_id, "productSkuNum": sku_num}).json()
 
-
 def draw_award(session, auth: str, event_code: str):
     session.headers["authorization"] = auth
     return session.post(f"{TASK_URL}/drawEventAward", json={"taskType": 1, "eventCode": event_code}).json()
-
 
 def parse_auth_input(text: str, default_client_id: str) -> Optional[dict]:
     raw = str(text or "").strip()
@@ -748,10 +641,8 @@ def parse_auth_input(text: str, default_client_id: str) -> Optional[dict]:
         "raw_client_id": client_id,
     }
 
-
 def make_account_id(auth: str, client_id: str) -> str:
     return "tg_" + stable_hash(f"{auth}_{client_id}")[:16]
-
 
 def query_single_account(payload: dict) -> tuple:
     auth = payload["authorization"]
@@ -791,7 +682,6 @@ def query_single_account(payload: dict) -> tuple:
             lines.append(reward_line)
 
     return True, lines
-
 
 def run_single_account(payload: dict) -> tuple:
     auth = payload["authorization"]
@@ -904,13 +794,11 @@ def run_single_account(payload: dict) -> tuple:
 
     return True, lines
 
-
 def get_ql_client(ql_config: str, ql_envname: str):
     if not ql_config or not ql_envname or QingLongClient is None:
         return None
     client = QingLongClient(ql_envname, ql_config)
     return client if client.is_configured() else None
-
 
 def get_dd_client(daidai_config: str, daidai_group: str):
     if not daidai_config or DadaiPanelClient is None:
@@ -922,7 +810,6 @@ def get_dd_client(daidai_config: str, daidai_group: str):
         group_key='daidai_group',
     )
     return client if client.is_configured() else None
-
 
 def sync_to_panel_target(account_id: str, config: dict, target: str = None):
     if target is None:
@@ -960,7 +847,6 @@ def sync_to_panel_target(account_id: str, config: dict, target: str = None):
             remark=f"{PROJECT_NAME}:{remark}|账号:{account_id}|到期:{expire}",
         )
 
-
 def delete_from_panel_target(account_id: str, config: dict, target: str = None) -> bool:
     if target is None:
         target = "daidai" if config.get('use_daidai') else "qinglong"
@@ -968,13 +854,11 @@ def delete_from_panel_target(account_id: str, config: dict, target: str = None) 
         return delete_from_daidai(account_id, config.get('daidai_config', ''))
     return delete_from_qinglong(account_id, config.get('ql_config', ''), config.get('ql_envname', 'G_TLG_TOKEN'))
 
-
 def delete_from_qinglong(account_id: str, ql_config: str, ql_envname: str) -> bool:
     client = get_ql_client(ql_config, ql_envname)
     if not client:
         return False
     return client.delete_env(account_id)
-
 
 def delete_from_daidai(account_id: str, daidai_config: str) -> bool:
     client = get_dd_client(daidai_config, '')
@@ -982,16 +866,13 @@ def delete_from_daidai(account_id: str, daidai_config: str) -> bool:
         return False
     return client.delete_env(account_id)
 
-
 def get_panel_name(config: dict) -> str:
     return "呆呆" if config.get('use_daidai') else "青龙"
-
 
 def is_panel_configured(config: dict) -> bool:
     if config.get('use_daidai'):
         return bool(config.get('daidai_config'))
     return bool(config.get('ql_config'))
-
 
 def show_tutorial():
     sender.reply(
@@ -1018,7 +899,6 @@ def show_tutorial():
         "台铃教程 - 查看本帮助"
     )
 
-
 def show_login():
     sender.reply(
         "=====台铃登录=====\n"
@@ -1026,7 +906,6 @@ def show_login():
         "支持换行批量\n"
         "回复 q 退出"
     )
-
 
 def handle_login():
     show_login()
@@ -1123,7 +1002,6 @@ def handle_login():
         result_lines.extend([f"❌ {item}" for item in fail_list])
     sender.reply("\n".join(result_lines))
 
-
 def handle_query():
     accounts = get_user_accounts()
     if not accounts:
@@ -1171,7 +1049,6 @@ def handle_query():
 
         ok, msg_lines = query_single_account(token_data)
         sender.reply(build_query_result_message(account_id, msg_lines, i, len(selected)))
-
 
 def handle_manage():
     accounts = get_user_accounts()
@@ -1231,7 +1108,6 @@ def handle_manage():
     else:
         handle_batch_menu(selected)
 
-
 def handle_single_manage(account_id: str):
     get_remark(account_id) or account_id
     expire = get_auth_expire(account_id)
@@ -1270,7 +1146,6 @@ def handle_single_manage(account_id: str):
             sender.reply(f"✅ 上传{pn}成功")
         else:
             sender.reply(f"❌ 上传{pn}失败" if is_panel_configured(config) else f"❌ {pn}未配置")
-
 
 def handle_batch_menu(selected: list):
     config = get_config()
@@ -1317,7 +1192,6 @@ def handle_batch_menu(selected: list):
             f"❌ 失败: {fail}"
         )
 
-
 def handle_delete_one(account_id: str):
     config = get_config()
     remark = get_remark(account_id) or account_id
@@ -1328,7 +1202,6 @@ def handle_delete_one(account_id: str):
         return
     del_account(account_id, ql_config=config.get('ql_config', ''), ql_envname=config.get('ql_envname', 'G_TLG_TOKEN'))
     sender.reply("✅ 删除成功")
-
 
 def handle_delete_all():
     accounts = get_user_accounts()
@@ -1345,10 +1218,8 @@ def handle_delete_all():
         del_account(acc, ql_config=config.get('ql_config', ''), ql_envname=config.get('ql_envname', 'G_TLG_TOKEN'))
     sender.reply(f"✅ 删除成功，共移除 {len(accounts)} 个账号")
 
-
 def handle_batch_auth(selected: list):
     return True
-
 
 def handle_run():
     accounts = get_user_accounts()
@@ -1403,7 +1274,6 @@ def handle_run():
 
         if i < len(selected):
             time.sleep(config.get('run_interval_seconds', 3))
-
 
 def handle_upload():
     accounts = get_user_accounts()
@@ -1471,7 +1341,6 @@ def handle_upload():
         msg += f"\n⏭ 未授权跳过: {skip}"
     sender.reply(msg)
 
-
 def handle_upload_ql():
     if not is_admin():
         sender.reply("❌ 仅管理员可用")
@@ -1499,7 +1368,6 @@ def handle_upload_ql():
         f"📦 已授权总数: {sum(1 for a in accounts if is_authorized(a))}"
         + (f"\n⏭ 未授权跳过: {skip}" if skip else "")
     )
-
 
 def handle_upload_dd():
     if not is_admin():
@@ -1529,10 +1397,8 @@ def handle_upload_dd():
         + (f"\n⏭ 未授权跳过: {skip}" if skip else "")
     )
 
-
 def handle_authorize():
     return True
-
 
 def handle_cleanup():
     if not is_admin():
@@ -1599,7 +1465,6 @@ def handle_cleanup():
         f"🗑 全局删除: {expired_count}"
     )
 
-
 def handle_menu():
     accounts = get_user_accounts()
     dep_status = get_dep_status()
@@ -1631,7 +1496,6 @@ def handle_menu():
     ]
     sender.reply("\n".join(lines))
 
-
 def main():
     try:
         msg = sender.getMessage().strip()
@@ -1662,7 +1526,6 @@ def main():
         handle_menu()
     else:
         sender.setContinue()
-
 
 if __name__ == "__main__":
     main()

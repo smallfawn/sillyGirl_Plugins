@@ -3,15 +3,14 @@
 # [language: python]
 # [class: 任务]
 # [author: yuhualhh]
-# [version: v1.1.0]
+# [version: v1.1.1]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(联通)(登录|查询|管理|清理|检测)$]
+# [rule: ^联通(登录|查询|管理)$]
 # [icon: https://gcore.jsdelivr.net/gh/lhz03/img@7c2616699a9cf7a628d4a087eb458bb013913a85/2025/12/26/e1b072befcce7bbe3a55685176de670f.png]
-# [description: ❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『联通检测』与『联通清理』定时『30 18 * * *』<img src="https://gcore.jsdelivr.net/gh/lhz03/img@1dab556e9d04a77d6b15802655355fd7be26fa9a/2026/01/21/2157c0cf735b321263a710cf978f43b0.png">]
-# [depe: ["beautifulsoup4","cryptography","pycryptodome","requests"]]
-
+# [description: 中国联通Token/密码/短信登录、积分权益查询与账号管理]
+# [depe: ["cryptography","pycryptodome","requests"]]
 
 import asyncio as _sg_asyncio
 import os as _sg_os
@@ -19,38 +18,26 @@ import time as _sg_time
 import types as _sg_types
 import json as _sg_json
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 calculate_auth_time = lambda *args, **kwargs: "2099-12-31"
 try: import ast as _sg_ast
 except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_literal(v, default=None):
     if isinstance(v,(list,dict,tuple,set,int,float,bool)) or v is None: return v if v is not None else ([] if default is None else default)
@@ -63,16 +50,16 @@ def _sg_literal(v, default=None):
     return [] if default is None else default
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,19 +72,19 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'yuhua_zglt_yuhua_zglt_qlname': form.string().title('对接容器').default('').description('各参数之间用中文符丨分割，例如: http://127.0.01:5700/丨abcdef-ghijk丨abcdefghijklmnopqrs_tuvw'),
-    'yuhua_zglt_yuhua_zglt_osname': form.string().title('环境变量').default('').description('定义提交至容器的变量名称'),
-    'yuhua_zglt_bingfa': form.string().title('查询并发').default('').description('不填默认5'),
-    'yuhua_zglt_debug_pwd': form.string().title('调试模式').default('').description('非插件开发者无需理会'),
-    'yuhua_zglt_yuedu': form.boolean().title('阅读红包').default(False).description('是否在联通查询中显示阅读红包详情，默认关闭'),
-    'yuhua_zglt_lianchao': form.boolean().title('权超记录').default(False).description('是否在联通查询中显示权益超市中奖记录，默认关闭'),
+config = plugin.Form({
+    'yuhua_zglt_yuhua_zglt_qlname': plugin.Form.string().title('对接容器').default('').description('各参数之间用中文符丨分割，例如: http://127.0.01:5700/丨abcdef-ghijk丨abcdefghijklmnopqrs_tuvw'),
+    'yuhua_zglt_yuhua_zglt_osname': plugin.Form.string().title('环境变量').default('').description('定义提交至容器的变量名称'),
+    'yuhua_zglt_bingfa': plugin.Form.string().title('查询并发').default('').description('不填默认5'),
+    'yuhua_zglt_debug_pwd': plugin.Form.string().title('调试模式').default('').description('非插件开发者无需理会'),
+    'yuhua_zglt_yuedu': plugin.Form.boolean().title('阅读红包').default(False).description('是否在联通查询中显示阅读红包详情，默认关闭'),
+    'yuhua_zglt_lianchao': plugin.Form.boolean().title('权超记录').default(False).description('是否在联通查询中显示权益超市中奖记录，默认关闭'),
 })
 _CONFIG_FIELD_MAP = {
     ('yuhua_zglt', 'yuhua_zglt_qlname'): 'yuhua_zglt_yuhua_zglt_qlname',
@@ -111,7 +98,6 @@ _CONFIG_FIELD_MAP = {
 import re
 from datetime import datetime
 import urllib.parse
-from decimal import Decimal
 import requests
 import time
 import json
@@ -120,7 +106,6 @@ import random
 import base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
-from bs4 import BeautifulSoup
 import threading
 import os
 import string
@@ -130,7 +115,6 @@ from cryptography.hazmat.primitives import serialization
 import sys
 def printf(msg,level='INFO'):
     c=32 if level in['INFO','DEBUG']else 33 if level in['WARN','WARNING']else 31;sys.stderr.write(f"\033[{c}m[{level}] {str(msg)}\033[0m\n");sys.stderr.flush()
-
 
 BASE_URL = "https://panservice.mail.wo.cn"
 CHANNEL = "wohome"
@@ -274,8 +258,6 @@ WOREAD_KEY = b"woreadst^&*12345"
 WOREAD_IV = b"16-Bytes--String"
 WOREAD_PRODUCT_ID = "10000002"
 WOREAD_SECRET = ""
-
-
 
 def load_rsa_public_key():
     try:
@@ -539,7 +521,6 @@ def token_online_login():
 
     except Exception as e:
         sender.reply(f"❌ 登录失败: {str(e)}")
-
 
 def verification_code_login():
     sender.reply("""
@@ -836,8 +817,6 @@ def account_password_login():
 ⚠️ 错误: {str(e)}
 ==================""")
 
-
-
 def send_request_global(method, url, **kwargs):
     passed_session = kwargs.pop('session', None)
 
@@ -903,7 +882,6 @@ def send_request_global(method, url, **kwargs):
 
     return None
 
-
 class LTP:
     def __init__(self, cookie_str=None, phone='未知', session=None, ecs_token=None, token_online=None):
         self.session = session or requests.Session()
@@ -941,7 +919,6 @@ class LTP:
         except:
             pass
         return False, "接口响应异常"
-
 
     def _send_request(self, method, url, **kwargs):
         if 'session' not in kwargs:
@@ -1057,7 +1034,6 @@ class LTP:
 
     def _get_epay_balance(self):
         return True
-
 
     def _get_market_watering(self):
         if not self.ecs_token: return "0/0"
@@ -1323,20 +1299,10 @@ imtype = sender.getImtype()
 uservalue = sg.bucketGet(bucket='yuhua_zglt_user', key=userid)
 
 def get_config():
-    manage_cmd = sg.bucketGet('yuhua_zglt', 'manage_cmd') or '联通管理'
-    query_cmd = sg.bucketGet('yuhua_zglt', 'query_cmd') or '联通查询'
-    login_cmd = sg.bucketGet('yuhua_zglt', 'login_cmd') or '联通登录'
-    price = Decimal(sg.bucketGet('yuhua_zglt', 'price') or '0')
-    bf_str = sg.bucketGet('yuhua_zglt', 'bingfa') or '5'
-    yuhua_zglt_qlname = sg.bucketGet('yuhua_zglt', 'yuhua_zglt_qlname') or ''
-    yuhua_zglt_osname = sg.bucketGet('yuhua_zglt', 'yuhua_zglt_osname') or 'chinaUnicomCookie'
-    aiting_var = sg.bucketGet('yuhua_zglt', 'aiting_var') # 新增
+    try:concurrent=max(1,min(int(sg.bucketGet('yuhua_zglt','bingfa') or 5),20))
+    except (TypeError,ValueError):concurrent=5
+    return '联通管理','联通查询','联通登录',0,concurrent,sg.bucketGet('yuhua_zglt','yuhua_zglt_qlname') or '',sg.bucketGet('yuhua_zglt','yuhua_zglt_osname') or 'chinaUnicomCookie',sg.bucketGet('yuhua_zglt','aiting_var') or ''
 
-    try:
-        bf_num = int(bf_str)
-    except:
-        bf_num = 5
-    return (manage_cmd, query_cmd, login_cmd, price, bf_num, yuhua_zglt_qlname, yuhua_zglt_osname, aiting_var)
 
 manage_cmd, query_cmd, login_cmd, price, bingfa, yuhua_zglt_qlname, yuhua_zglt_osname, aiting_var = get_config()
 
@@ -1454,6 +1420,8 @@ def allenvs(osname, account):
 
 def Addenvs(osname, value, account, phone, owner_id):
     if not QLurl or not qltoken:
+        return False
+    if not QLurl or not qltoken:
         return
     phone = phone[:3] + '*' * 4 + phone[7:]
     url = f"{QLurl}/open/envs"
@@ -1483,6 +1451,8 @@ def Addenvs(osname, value, account, phone, owner_id):
         QLupdate(osname, value, account, qlid, phone, owner_id)
 
 def QLupdate(osname, value, account, qlid, phone, owner_id):
+    if not QLurl or not qltoken:
+        return False
     qlurl = f"{QLurl}/open/envs"
     data = {
         "value": value, # 直接使用原始字符串
@@ -1618,9 +1588,8 @@ def QLtoken(QLurl, ClientID, ClientSecret):  # 获取青龙token
 ==================""")
         exit(0)
 
-QLurl, qltoken = seekql()
+QLurl, qltoken = seekql() if (sg.bucketGet('yuhua_zglt','yuhua_zglt_qlname') or '') else ('','')
 today_time = str(datetime.now().date())
-
 
 def login():
     login_guide = """
@@ -1657,17 +1626,11 @@ def login():
         sender.reply(f"❌ 登录失败: {str(e)}")
         return
 
-
 def _query_single_account(unique_id):
     time.sleep(random.uniform(0.2, 0.5))
     phone = sg.bucketGet('yuhua_zglt_phone', unique_id) or "未知"
     phone_mask = phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
-    auth_time = '2099-12-31'
     now_date = datetime.now().date()
-    if not auth_time: return f"【{phone_mask}】未授权"
-    auth_date = datetime.strptime(auth_time, "%Y-%m-%d").date()
-    if auth_date < now_date: return f"【{phone_mask}】授权已过期"
-
     ecs_token = sg.bucketGet('yuhua_zglt_ecs_token', unique_id)
     token_online = sg.bucketGet('yuhua_zglt_token_online', unique_id)
 
@@ -1689,7 +1652,6 @@ def _query_single_account(unique_id):
                 return f"【{phone_mask}】查询失败: {msg}"
 
         assets = ltp.query_all_assets()
-
 
         def safe_float(value):
             try:
@@ -1766,7 +1728,7 @@ def _query_single_account(unique_id):
 🎨 今日积分: {today_score_str}{tel_display}
 💳 沃立减金: {epay_str}{read_display}
 ⛱️ 浇花进度: {assets.get('watering', '0/0')}
-☁️ 授权到期: {auth_date.strftime('%Y-%m-%d')}{coupon_str}{lianchao_str}
+🎁 权益信息: {coupon_str}{lianchao_str}
 =================="""
 
     finally:
@@ -1814,154 +1776,26 @@ def _mask_identifier(identifier: str) -> str:
         return identifier
     return identifier[:4] + "****" + identifier[-4:]
 
-def auth_all_accounts_for_user(accounts):
-    prompt = "=====一键授权=====\n"
-    if price > 0:
-        prompt += f"授权价格: {price}元/月\n"
-    prompt += "请输入授权月数\n------------------\n回复数字设置月数\n回复\"q\"退出"
-    sender.reply(prompt)
-
-    months_str = sender.input(60000, 0, False)
-    if not months_str or months_str.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-
-    try:
-        months = int(months_str)
-        if months <= 0: raise ValueError()
-    except ValueError:
-        sender.reply("❌ 无效的月数")
-        return
-
-    accounts_to_auth = accounts
-
-    total_amount = len(accounts_to_auth) * months * price
-    if total_amount > 0:
-        pay_ok = process_payment(total_amount, months, f"名下所有 {len(accounts_to_auth)} 个账号")
-        if not pay_ok:
-            return
-
-    success_count = 0
-    failed_count = 0
-    for acc_id in accounts_to_auth:
-        try:
-            calculate_auth_time(acc_id, months * 30)
-            True
-
-            token = sg.bucketGet('yuhua_zglt_token_online', acc_id)
-            phone = sg.bucketGet('yuhua_zglt_phone', acc_id) or acc_id
-            if token:
-                sync_appid = sg.bucketGet('yuhua_zglt_appid', acc_id)
-                sync_val = f"{token}#{sync_appid}" if sync_appid else token
-                Addenvs(osname=yuhua_zglt_osname, value=sync_val, account=acc_id, phone=phone, owner_id=userid)
-
-                if aiting_var and aiting_var != '0':
-                    Addenvs(osname=aiting_var, value=phone, account=acc_id, phone=phone, owner_id=userid)
-
-            success_count += 1
-        except Exception:
-            failed_count += 1
-
-    sender.reply(f"""
-=====授权完成=====
-✅ 成功: {success_count}个账号
-❌ 失败: {failed_count}个账号
-⏰ 时长: 授权{months}月
-==================""")
-
 
 def manage_account():
-    if not uservalue:
-        sender.reply(f"""
-=====未绑定账号=====
-❌ 未找到任何账号信息
-💡 发送 {login_cmd} 绑定账号
-==================""")
-        return
+    accounts=list(_sg_literal(sg.bucketGet('yuhua_zglt_user',userid),[]))
+    if not accounts:return sender.reply('未绑定账号，请发送【联通登录】')
+    rows=[]
+    for i,account in enumerate(accounts,1):
+        phone=sg.bucketGet('yuhua_zglt_phone',account) or str(account);rows.append(f'{i}. {_mask_identifier(phone)}')
+    sender.reply('联通账号：\n'+'\n'.join(rows)+'\n回复序号管理，q 退出');choice=sender.input(60000,0,False)
+    if not choice or str(choice).lower()=='q':return
+    try:show_account_menu(accounts[int(choice)-1])
+    except (ValueError,IndexError):sender.reply('序号无效')
 
-    accounts = _sg_literal(uservalue)
-    if not accounts:
-        sender.reply(f"""
-=====未绑定账号=====
-❌ 未找到任何账号信息
-💡 发送 {login_cmd} 绑定账号
-==================""")
-        return
-
-    account_list = "=====账号列表=====\n[0] 授权全部账号\n"
-
-    for i, acc_id in enumerate(accounts, 1):
-        phone = sg.bucketGet('yuhua_zglt_phone', acc_id) or "未知"
-        phone_mask = _mask_identifier(phone)
-        auth_str = '2099-12-31'
-
-        status_line = ""
-        if auth_str:
-            try:
-                auth_date = datetime.strptime(auth_str, "%Y-%m-%d").date()
-                if auth_date > datetime.now().date():
-                    status_line = f"✅ {auth_date.strftime('%Y-%m-%d')}"
-                else:
-                    status_line = "❌ 已过期"
-            except ValueError:
-                status_line = "⚠️ 未授权"
-        else:
-            status_line = "⚠️ 未授权"
-
-        account_list += f"------------------\n[{i}] 账号信息\n🤪 账号: {phone_mask}\n☁ 授权: {status_line}\n"
-
-    account_list += "------------------\n回复数字选择\n回复'q'退出\n=================="
-    sender.reply(account_list)
-
-    choice = sender.input(60000, 0, False)
-    if not choice or choice.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-
-    try:
-        choice_idx = int(choice)
-        if choice_idx == 0:
-            auth_all_accounts_for_user(accounts)
-        elif 1 <= choice_idx <= len(accounts):
-            account = accounts[choice_idx - 1]
-            show_account_menu(account)
-        else:
-            raise ValueError()
-    except (ValueError, IndexError):
-        sender.reply("❌ 无效的选择")
 
 def show_account_menu(account):
-    menu = """
-=====账号操作=====
-[1] 授权账号
-[2] 删除账号
-[3] 配置AppId
-------------------
-回复数字选择操作
-回复"q"退出"""
-    sender.reply(menu)
-    choice = sender.input(60000, 0, False)
-    if not choice:
-        sender.reply("❌ 输入超时")
-        return
-    if choice.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-    if choice == '1':
-        auth_account(account)
-    elif choice == '2':
-        confirm_delete(account)
-    elif choice == '3':
-        configure_appid_manual(account)
-    else:
-        sender.reply("❌ 无效的选择")
+    sender.reply('1. 删除账号\n2. 配置 AppId\nq. 退出');choice=sender.input(60000,0,False)
+    if choice=='1':confirm_delete(account)
+    elif choice=='2':configure_appid_manual(account)
+
 
 def configure_appid_manual(account):
-    auth_time = '2099-12-31'
-    if not auth_time or auth_time < today_time:
-        sender.reply("❌ 该账号授权无效或已过期")
-        return
-
     sender.reply("""=====配置AppId=====
 ❶ 回复『d』清除数据或按②新增或更新
 ② 打开该路径中的文件『/storage/emulated/0/Documents/Unicom/appid』复制文本内容并回复
@@ -2033,311 +1867,31 @@ def confirm_delete(account):
     delete_account(account)
 
 def delete_account(account):
-    phone = sg.bucketGet('yuhua_zglt_phone', account) or "未知"
-    phone_mask = phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
-    accounts = _sg_literal(uservalue or '[]')
-    if account not in accounts:
-        sender.reply("❌ 未找到账号")
-        return
-
-    try:
-        qlid = allenvs(osname=yuhua_zglt_osname, account=account)
-        if qlid:
-            delenvs(id=qlid)
-
-        if aiting_var and aiting_var != '0':
-            qlid_aiting = allenvs(osname=aiting_var, account=account)
-            if qlid_aiting:
-                delenvs(id=qlid_aiting)
-    except:
-        pass
-
-    accounts.remove(account)
-    sg.bucketSet('yuhua_zglt_user', userid, str(accounts))
-    try:
-        sg.bucketDel('yuhua_zglt_token', account)
-    except Exception:
-        pass
-    try:
-        pass
-    except Exception:
-        pass
-    try:
-        sg.bucketDel('yuhua_zglt_phone', account)
-    except Exception:
-        pass
-    try:
-        sg.bucketDel('yuhua_zglt_password', account)
-    except Exception:
-        pass
-    try:
-        sg.bucketDel('yuhua_zglt_ecs_token', account)
-    except Exception:
-        pass
-    try:
-        sg.bucketDel('yuhua_zglt_token_online', account)
-    except Exception:
-        pass
-    sender.reply(f"✅ 已删除账号 {phone_mask}")
-
-def auth_account(account):
-    phone = sg.bucketGet('yuhua_zglt_phone', account) or "未知"
-    phone_mask = phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
-    if not price:
-        sender.reply("""
-=====账号授权=====
-请输入授权月数
-------------------
-回复数字设置月数
-回复"q"退出""")
-    else:
-        sender.reply(f"""
-=====账号授权=====
-授权价格: {price}元/月
-请输入授权月数
-------------------
-回复数字设置月数
-回复"q"退出""")
-    months_str = sender.input(60000, 0, False)
-    if not months_str:
-        sender.reply("❌ 输入超时")
-        return
-    elif months_str.lower() == 'q':
-        sender.reply("✅ 已退出操作")
-        return
-    try:
-        months = int(months_str)
-        if months <= 0:
-            raise ValueError()
-    except:
-        sender.reply("❌ 无效的月数")
-        return
-    amount = months * price
-    if amount > 0:
-        if not process_payment(amount, months, phone_mask):
-            return
-    auth_time = calculate_auth_time(account, months * 30)
-    True
-
-    token = sg.bucketGet('yuhua_zglt_token_online', account)
-    appid = sg.bucketGet('yuhua_zglt_appid', account)
-    if token:
-        sync_val = f"{token}#{appid}" if appid else token
-        Addenvs(osname=yuhua_zglt_osname, value=sync_val, account=account, phone=phone, owner_id=userid)
-
-        if aiting_var and aiting_var != '0':
-            Addenvs(osname=aiting_var, value=phone, account=account, phone=phone, owner_id=userid)
-
-    days = 30*months
-    sender.reply(f"""
-=====授权成功=====
-🤪 账号: {phone_mask}
-⏰ 时长: {days}天
-📅 到期: {auth_time}
-=======================""")
-
-
-def process_payment(amount, months, phone_mask):
-    return True
-def clean_expired():
-    try:
-        sender.reply('该管理项已取消，账号直接运行')
-    except Exception:
-        pass
-    return None
-def admin_auth():
-    try:
-        sender.reply('该管理项已取消，账号直接运行')
-    except Exception:
-        pass
-    return None
+    accounts=list(_sg_literal(sg.bucketGet('yuhua_zglt_user',userid),[]))
+    if account not in accounts:return sender.reply('未找到账号')
+    if QLurl and qltoken:
+        for name in filter(None,(yuhua_zglt_osname,aiting_var)):
+            env=allenvs(name,account)
+            if env:delenvs(env)
+    accounts.remove(account);sg.bucketSet('yuhua_zglt_user',userid,str(accounts)) if accounts else sg.bucketDel('yuhua_zglt_user',userid)
+    for bucket in ('yuhua_zglt_token','yuhua_zglt_phone','yuhua_zglt_password','yuhua_zglt_ecs_token','yuhua_zglt_token_online'):sg.bucketDel(bucket,account)
+    sender.reply('账号已删除')
 
 
 
 
-def cron_task():
-    if imtype != 'fake':
-        pass
-    today_str = str(datetime.now().date())
-    try:
-        users = sg.bucketAllKeys('yuhua_zglt_user')
-        for user in users:
-            accounts = _sg_literal(sg.bucketGet('yuhua_zglt_user', user) or '[]')
-            for acc_id in accounts:
-                time.sleep(random.uniform(0.5, 1.0))
-                try:
-                    ecs_token = sg.bucketGet('yuhua_zglt_ecs_token', acc_id)
-                    phone = sg.bucketGet('yuhua_zglt_phone', acc_id) or "未知"
-                    if not ecs_token:
-                        notify_user(user, acc_id, "未找到登录凭证")
-                        continue
-
-                    ltp = LTP(ecs_token=ecs_token, phone=phone)
-                    ok, msg = ltp.check_validity()
-                    ltp.close()
-
-                    if not ok:
-                        if not _try_auto_relogin(acc_id):
-                            if "CK已失效" in msg:
-                                notify_user(user, acc_id, "登录凭证已过期且自动刷新失败，请重新登录")
-                            else:
-                                print(f"定时检测账号 {acc_id} 失败(不推送): {msg}")
-                        continue
-
-                    auth_time = '2099-12-31'
-                    if not auth_time or auth_time <= today_str:
-                        notify_user(user, acc_id, "授权已过期，请及时续费")
-                except Exception as e:
-                    print(f"处理账号 {acc_id} 出错: {str(e)}")
-                    continue
-
-    except Exception as e:
-            print(f"定时任务出错: {str(e)}")
-    finally:
-        cleanup_resources()
 
 notified_accounts = set()
-def notify_user(user, account, message):
-    try:
-        if account in notified_accounts:
-            return
-        phone = sg.bucketGet('yuhua_zglt_phone', account) or "未知"
-        phone_mask = phone[:3] + "****" + phone[-4:] if len(phone) >= 7 else phone
-        notify_msg = f"""
-=====联通通知=====
-🤪 账号: {phone_mask}
-📢 消息: {message}
-=================="""
-        sg.push('qq', '', user, '', notify_msg)
-        sg.push('qb', '', user, '', notify_msg)
-        sg.push('wx', '', user, '', notify_msg)
-        sg.push('gw', '', user, '', notify_msg)
-        sg.push('sb', '', user, '', notify_msg)
-        sg.push('wb', '', user, '', notify_msg)
-        sg.push('tg', '', user, '', notify_msg)
-        sg.push('tb', '', user, '', notify_msg)
-        sg.push('qx', '', user, '', notify_msg)
-        sg.push('xy', '', user, '', notify_msg)
-        sg.push('ip', '', user, '', notify_msg)
-        notified_accounts.add(account)
-    except Exception as e:
-        print(f"发送通知失败: {str(e)}")
 
-
-def _perform_maintenance_check() -> bool:
-    url = "https://yuhualhh.250666.xyz/shouquan"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9",
-        "Cache-Control": "no-cache"
-    }
-    for attempt in range(3):
-        try:
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=(5, 10),
-                verify=True,
-                allow_redirects=True,
-                proxies={"http": None, "https": None}
-            )
-            response.raise_for_status()
-            response.encoding = 'UTF-8'
-            soup = BeautifulSoup(response.text, 'html.parser')
-            content_div = soup.find('div', class_='note-content')
-            if content_div:
-                return "服务正常中" in content_div.get_text(strip=True)
-            return any("服务正常中" in tag.get_text() for tag in soup.find_all(['div', 'p']))
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
-            if attempt < 2:
-                time.sleep(2)
-                continue
-            return False
-        except Exception:
-            if attempt < 2:
-                time.sleep(2)
-                continue
-            return False
-    return False
-def check_maintenance_page() -> bool:
-    import os, base64, hashlib, json
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-    cache_bucket = "time"
-    cache_key = "status_cache"
-    ttl_seconds = 1 * 3600
-    try:
-        salt = b'\x8a\x9b\x1f\xe3\x7d\x4c\x5b\x6a\x01\x23\x45\x67\x89\xab\xcd\xef'
-        identifier = "yuhua888"
-        key = hashlib.sha256(salt + identifier.encode('utf-8')).digest()
-        aesgcm = AESGCM(key)
-        cached_data_str = sg.bucketGet(cache_bucket, cache_key)
-        if cached_data_str:
-            decoded_data = base64.b64decode(cached_data_str.encode('utf-8'))
-            nonce = decoded_data[:12]
-            ciphertext = decoded_data[12:]
-            decrypted_bytes = aesgcm.decrypt(nonce, ciphertext, None)
-            cached_data = json.loads(decrypted_bytes.decode('utf-8'))
-            if (time.time() - cached_data.get("timestamp", 0)) < ttl_seconds and cached_data.get("status") is True:
-                return True
-    except Exception:
-        pass
-    live_status = _perform_maintenance_check()
-    new_cache_payload = {
-        "status": live_status,
-        "timestamp": time.time()
-    }
-    try:
-        salt = b'\x8a\x9b\x1f\xe3\x7d\x4c\x5b\x6a\x01\x23\x45\x67\x89\xab\xcd\xef'
-        identifier = "yuhua888"
-        key = hashlib.sha256(salt + identifier.encode('utf-8')).digest()
-        aesgcm = AESGCM(key)
-        nonce = os.urandom(12)
-        plaintext = json.dumps(new_cache_payload).encode('utf-8')
-        ciphertext = aesgcm.encrypt(nonce, plaintext, None)
-        base64.b64encode(nonce + ciphertext).decode('utf-8')
-        True
-    except Exception:
-        pass
-    return live_status
 def main():
     try:
-        if not check_maintenance_page():
-            sender.reply("❌ 服务端无法连通, 插件停止运行")
-            return
-        message = sender.getMessage().strip()
-        if '登录' in message:
-            login()
-        elif '管理' in message:
-            manage_account()
-        elif '查询' in message:
-            query_account()
-        elif message == '联通清理':
-            clean_expired()
-        elif message == '联通授权':
-            if not sender.isAdmin():
-                sender.reply("❌ 需要管理员权限")
-                return
-            admin_auth()
-        elif message == '联通检测':
-            if not sender.isAdmin():
-                sender.reply("❌ 需要管理员权限")
-                return
-            sender.reply("正在检测....")
-            cron_task()
-            sender.reply("✅ 已执行联通检测推送任务")
-        else:
-            sender.setContinue()
-    except Exception as e:
-        sender.reply(f"❌ 运行出错: {str(e)}")
+        message=sender.getMessage().strip()
+        if '登录' in message:login()
+        elif '管理' in message:manage_account()
+        elif '查询' in message:query_account()
+        else:sender.setContinue()
+    except Exception as error:sender.reply(f'运行出错：{error}')
+
 
 if __name__ == "__main__":
-    try:
-        manage_cmd, query_cmd, login_cmd, price, bingfa, yuhua_zglt_qlname, yuhua_zglt_osname, aiting_var = get_config()
-        today = str(datetime.now().date())
-        if imtype == 'fake':
-            pass
-        else:
-            main()
-    except Exception as e:
-        sender.reply(f"❌ 运行出错: {str(e)}")
+    manage_cmd,query_cmd,login_cmd,price,bingfa,yuhua_zglt_qlname,yuhua_zglt_osname,aiting_var=get_config();main();cleanup_resources()

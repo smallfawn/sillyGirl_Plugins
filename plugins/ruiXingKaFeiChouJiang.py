@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 工具]
 # [author: sillyGirl]
-# [version: v1.1.2]
+# [version: v1.1.4]
 # [public: true]
 # [admin: false]
 # [rule: raw ^\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\s*(查询|抽奖)?\s*$]
@@ -27,7 +27,7 @@ from typing import Any
 SmallCat = Any
 from urllib.parse import urlencode
 
-from sillygirl import container, form, sender as s, utils
+from sillygirl import container, plugin, sender as s, user
 
 try:
     import ast as _sg_ast
@@ -37,7 +37,6 @@ try:
     import decimal as decimal
 except Exception:
     decimal = None
-
 
 APP_ID = "wx21c7506e98a2fe75"
 APP_VERSION = "916"
@@ -74,11 +73,11 @@ DEFAULTS = {
     "debug": False,
 }
 
-plugin_config = form(
+plugin_config = plugin.Form(
     {
-        "enable": form.boolean().title("是否启用").default(True),
+        "enable": plugin.Form.boolean().title("是否启用").default(True),
         "smallcat_id": (
-            form.integer()
+            plugin.Form.integer()
             .title("smallcat 编号")
             .description("后台 smallcat 页面里的编号，从 1 开始；AUTH 直接使用面板配置")
             .widget("smallcat-panel")
@@ -86,7 +85,7 @@ plugin_config = form(
             .default(1)
         ),
         "account_mode": (
-            form.string()
+            plugin.Form.string()
             .title("openid 获取模式")
             .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
             .options(["authorized", "manual"])
@@ -94,72 +93,67 @@ plugin_config = form(
             .default("authorized")
         ),
         "manual_openids": (
-            form.string()
+            plugin.Form.string()
             .title("手动 openid")
             .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
             .widget("textarea")
             .default("")
         ),
         "account_selector": (
-            form.string()
+            plugin.Form.string()
             .title("执行账号")
             .description("留空取首个可用账号；可填序号、openid、昵称；填“全部”执行全部账号")
             .default("")
         ),
         "activity_no": (
-            form.string()
+            plugin.Form.string()
             .title("活动编号 activityNo")
             .description("默认使用内置的幸运星期三活动；活动更新后可在这里覆盖")
             .default(DEFAULT_ACTIVITY_NO)
         ),
         "activity_id": (
-            form.integer()
+            plugin.Form.integer()
             .title("活动 ID")
             .description("活动详情未返回 activityId 时使用的兜底值")
             .min(1)
             .default(DEFAULT_ACTIVITY_ID)
         ),
         "query_only": (
-            form.boolean()
+            plugin.Form.boolean()
             .title("仅查询")
             .description("开启后只查询活动和中奖记录，不提交抽奖；命令“瑞幸 查询”也会临时开启")
             .default(False)
         ),
         "proxy_url": (
-            form.string()
+            plugin.Form.string()
             .title("业务请求代理")
             .description("留空使用 SmallCat 账号 proxyUrl；支持 http/https 代理")
             .default("")
         ),
         "request_timeout": (
-            form.integer()
+            plugin.Form.integer()
             .title("请求超时秒数")
             .min(5)
             .max(90)
             .default(20)
         ),
-        "debug": form.boolean().title("调试日志").default(False),
+        "debug": plugin.Form.boolean().title("调试日志").default(False),
     }
 )
 import requests
 import urllib3
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 class PhoneAuthorizationRequired(RuntimeError):
     pass
 
-
 def now_ms() -> int:
     return int(time.time() * 1000)
 
-
 def mask_phone(value: Any) -> str:
     return re.sub(r"(1\d{2})\d{4}(\d{4})", r"\1****\2", str(value or ""))
-
 
 def compact_json(value: Any, limit: int = 500) -> str:
     try:
@@ -168,13 +162,11 @@ def compact_json(value: Any, limit: int = 500) -> str:
         text = str(value)
     return text if len(text) <= limit else text[:limit] + "..."
 
-
 def aes_ecb_encrypt(data: bytes, key: bytes) -> bytes:
     pad_len = 16 - len(data) % 16
     padded = data + bytes([pad_len]) * pad_len
     encryptor = Cipher(algorithms.AES(key), modes.ECB()).encryptor()
     return encryptor.update(padded) + encryptor.finalize()
-
 
 def aes_ecb_decrypt(data: bytes, key: bytes) -> bytes:
     decryptor = Cipher(algorithms.AES(key), modes.ECB()).decryptor()
@@ -186,18 +178,15 @@ def aes_ecb_decrypt(data: bytes, key: bytes) -> bytes:
         raise ValueError("AES PKCS#7 padding 异常")
     return output[:-pad_len]
 
-
 def aes_encrypt_urlsafe(text: str) -> str:
     encrypted = aes_ecb_encrypt(text.encode("utf-8"), API_KEY.encode("utf-8"))
     return base64.b64encode(encrypted).decode("ascii").replace("+", "-").replace("/", "_")
-
 
 def aes_decrypt_urlsafe(text: str) -> str:
     encoded = str(text or "").replace("-", "+").replace("_", "/")
     encoded += "=" * (-len(encoded) % 4)
     decrypted = aes_ecb_decrypt(base64.b64decode(encoded), API_KEY.encode("utf-8"))
     return decrypted.decode("utf-8")
-
 
 def md5_words(value: Any) -> str:
     digest = hashlib.md5(str(value).encode("utf-8")).digest()
@@ -206,7 +195,6 @@ def md5_words(value: Any) -> str:
         number = int.from_bytes(digest[index : index + 4], "big", signed=True)
         words.append(str(abs(number)))
     return "".join(words)
-
 
 def build_payload(data: dict[str, Any] | None, uid: str = "") -> dict[str, Any]:
     body = dict(data or {})
@@ -220,7 +208,6 @@ def build_payload(data: dict[str, Any] | None, uid: str = "") -> dict[str, Any]:
         sign_parts.append(f"uid={uid}")
     payload["sign"] = md5_words(";".join(sign_parts) + API_KEY)
     return payload
-
 
 def decrypt_capi_response(text: str) -> dict[str, Any]:
     value = str(text or "").strip()
@@ -237,26 +224,20 @@ def decrypt_capi_response(text: str) -> dict[str, Any]:
         raise RuntimeError("瑞幸响应不是 JSON 对象")
     return parsed
 
-
 def random_text(chars: str, length: int) -> str:
     return "".join(random.choice(chars) for _ in range(length))
-
 
 def generate_blackbox(prefix: str = "uMPHR") -> str:
     return f"{prefix}{int(time.time())}{random_text(string.ascii_letters + string.digits, 12)}"
 
-
 def generate_did() -> str:
     return random_text(string.ascii_lowercase + string.digits, 32)
-
 
 def generate_device_id() -> str:
     return random_text(string.ascii_letters + string.digits + "+/", 48)
 
-
 def clean_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()
-
 
 def decode_json_strings(value: Any, depth: int = 0) -> Any:
     if depth > 8 or not isinstance(value, str):
@@ -268,7 +249,6 @@ def decode_json_strings(value: Any, depth: int = 0) -> Any:
         return decode_json_strings(json.loads(text), depth + 1)
     except Exception:
         return value
-
 
 def decode_json_tree(value: Any, depth: int = 0) -> Any:
     if depth > 10:
@@ -282,7 +262,6 @@ def decode_json_tree(value: Any, depth: int = 0) -> Any:
         return {key: decode_json_tree(item, depth + 1) for key, item in value.items()}
     return value
 
-
 def response_message(payload: Any) -> str:
     value = decode_json_tree(payload)
     if not isinstance(value, dict):
@@ -292,7 +271,6 @@ def response_message(payload: Any) -> str:
             return clean_text(value[key] if not isinstance(value[key], (dict, list)) else compact_json(value[key], 300))
     nested = value.get("data")
     return response_message(nested) if nested is not None and nested is not value else ""
-
 
 def unwrap_smallcat(payload: Any) -> Any:
     value = decode_json_tree(payload)
@@ -306,7 +284,6 @@ def unwrap_smallcat(payload: Any) -> Any:
     if "code" in value and "data" in value and str(value.get("code")) in {"0", "200", "201"}:
         return decode_json_tree(value["data"])
     return value
-
 
 def find_deep_value(value: Any, keys: tuple[str, ...], pattern: str = "", depth: int = 0) -> str:
     if depth > 12 or value is None:
@@ -333,7 +310,6 @@ def find_deep_value(value: Any, keys: tuple[str, ...], pattern: str = "", depth:
                 return found
     return ""
 
-
 def has_deep_truthy(value: Any, expected_key: str, depth: int = 0) -> bool:
     if depth > 12 or value is None:
         return False
@@ -349,7 +325,6 @@ def has_deep_truthy(value: Any, expected_key: str, depth: int = 0) -> bool:
     elif isinstance(value, list):
         return any(has_deep_truthy(item, expected_key, depth + 1) for item in value)
     return False
-
 
 def normalize_accounts(payload: Any) -> list[dict[str, Any]]:
     value = unwrap_smallcat(payload)
@@ -369,10 +344,8 @@ def normalize_accounts(payload: Any) -> list[dict[str, Any]]:
             accounts.append(account)
     return accounts
 
-
 def split_openids(value: Any) -> set[str]:
     return {item for item in re.split(r"[,，;；\s]+", str(value or "")) if item}
-
 
 async def load_smallcat_accounts(smallcat: SmallCat, config: dict[str, Any]) -> list[dict[str, Any]]:
     wanted = split_openids(config["manual_openids"]) if config["account_mode"] == "manual" else await authorized_openids()
@@ -380,14 +353,13 @@ async def load_smallcat_accounts(smallcat: SmallCat, config: dict[str, Any]) -> 
     accounts = normalize_accounts(payload)
     return [account for account in accounts if account["openid"] in wanted] if wanted else accounts
 
-
 async def authorized_openids() -> set[str]:
-    users = await utils.userList()
+    users = await user.getUserList()
     allowed: set[str] = set()
-    for user in users if isinstance(users, list) else []:
-        if not isinstance(user, dict) or user.get("disabled") or not user.get("authorized"):
+    for account_user in users if isinstance(users, list) else []:
+        if not isinstance(account_user, dict) or account_user.get("disabled") or not account_user.get("authorized"):
             continue
-        bindings = user.get("bindings") if isinstance(user.get("bindings"), dict) else {}
+        bindings = account_user.get("bindings") if isinstance(account_user.get("bindings"), dict) else {}
         for openid in bindings.get("smallcat_openids") or []:
             value = str(openid or "").strip()
             if value:
@@ -395,7 +367,6 @@ async def authorized_openids() -> set[str]:
     if not allowed:
         raise RuntimeError("没有普通用户授权的 SmallCat 账号")
     return allowed
-
 
 def select_accounts(accounts: list[dict[str, Any]], selector: str) -> list[dict[str, Any]]:
     enabled = [account for account in accounts if not account.get("disabled")]
@@ -424,7 +395,6 @@ def select_accounts(accounts: list[dict[str, Any]], selector: str) -> list[dict[
             return [account]
     raise RuntimeError(f"SmallCat 未找到账号：{text}")
 
-
 def account_name(account: dict[str, Any]) -> str:
     return str(
         account.get("displayName")
@@ -434,7 +404,6 @@ def account_name(account: dict[str, Any]) -> str:
         or account.get("openid")
         or "账号"
     ).strip()
-
 
 def history_summary(records: Any, error: str = "") -> str:
     if error:
@@ -460,7 +429,6 @@ def history_summary(records: Any, error: str = "") -> str:
     suffix = f" 等 {len(records)} 条" if len(records) > len(parts) else ""
     return "历史中奖记录：" + "；".join(parts) + suffix
 
-
 def draw_summary(message: str, records: Any = None, records_error: str = "") -> str:
     text = clean_text(message)
     history = history_summary(records or [], records_error)
@@ -472,7 +440,6 @@ def draw_summary(message: str, records: Any = None, records_error: str = "") -> 
         return f"今日已达参与次数上限：{text}\n{history}"
     return f"抽奖结果：{text}\n{history}"
 
-
 def as_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
@@ -480,14 +447,12 @@ def as_bool(value: Any) -> bool:
         return value != 0
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
-
 def positive_int(value: Any, fallback: int) -> int:
     try:
         number = int(value)
         return number if number > 0 else fallback
     except Exception:
         return fallback
-
 
 def normalize_config(raw: Any) -> dict[str, Any]:
     source = raw if isinstance(raw, dict) else {}
@@ -508,13 +473,11 @@ def normalize_config(raw: Any) -> dict[str, Any]:
         raise RuntimeError("activity_no 格式异常")
     return config
 
-
 def parse_command(content: str) -> dict[str, bool]:
     match = re.fullmatch(r"\s*(瑞幸|瑞幸咖啡|luckin)\s*(查询|抽奖)?\s*", str(content or ""), re.IGNORECASE)
     if not match:
         raise RuntimeError("命令格式：瑞幸 [查询|抽奖]")
     return {"query_only": str(match.group(2) or "") == "查询"}
-
 
 class LuckinRunner:
     def __init__(self, account: dict[str, Any], config: dict[str, Any]) -> None:
@@ -743,7 +706,6 @@ class LuckinRunner:
     def close(self) -> None:
         self.session.close()
 
-
 async def get_wx_code(smallcat: SmallCat, openid: str) -> str:
     raw = await smallcat.getCode({"openid": openid, "appid": APP_ID})
     payload = unwrap_smallcat(raw)
@@ -751,7 +713,6 @@ async def get_wx_code(smallcat: SmallCat, openid: str) -> str:
     if not code:
         raise RuntimeError("SmallCat wx.login 取码失败：" + (response_message(raw) or compact_json(raw, 400)))
     return code
-
 
 async def get_phone_info(smallcat: SmallCat, openid: str) -> dict[str, str]:
     try:
@@ -769,13 +730,11 @@ async def get_phone_info(smallcat: SmallCat, openid: str) -> dict[str, str]:
     prefix = "need_auth=true；" if has_deep_truthy(raw, "need_auth") else ""
     raise RuntimeError(prefix + "SmallCat 响应缺少 iv/encryptedData 或手机号临时 code：" + compact_json(raw, 700))
 
-
 def should_retry_phone(error: Exception) -> bool:
     if isinstance(error, PhoneAuthorizationRequired):
         return True
     text = str(error)
     return any(flag in text for flag in ("needAuthorized", "需要手机号授权", "信息异常"))
-
 
 async def run_account(
     smallcat: SmallCat,
@@ -815,14 +774,12 @@ async def run_account(
     finally:
         runner.close()
 
-
 def format_result(result: dict[str, Any]) -> str:
     if result.get("success"):
         tail = "结果：成功 | " + str(result.get("summary") or "执行完成").replace("\n", " | ")
     else:
         tail = "结果：失败 | " + str(result.get("error") or "未知错误")
     return "\n".join([*result.get("lines", []), tail])
-
 
 async def main() -> None:
     config = normalize_config(await plugin_config.get())
@@ -842,7 +799,6 @@ async def main() -> None:
         await s.reply("\n\n".join(format_result(result) for result in results))
     except Exception as exc:
         await s.reply("瑞幸咖啡执行失败：" + mask_phone(exc))
-
 
 if os.environ.get("LUCKIN_PLUGIN_TEST") != "1":
     asyncio.run(main())

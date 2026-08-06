@@ -17,16 +17,16 @@ const net = require("net");
 const {
   sender: s,
   console,
-  form,
+  plugin
 } = require('sillygirl');
 
-const config = new form({
-  enable: form.boolean().title("是否开启 ups-nut-server 监控").default(false),
-  ups_nut_server_ip: form.string().title("ups-nut-server 地址").description("格式：192.168.x.x"),
-  ups_nut_server_port: form.number().title("ups-nut-server 端口").default(3493),
-  ups_nut_server_username: form.string().title("ups nut server 用户名").default("nut"),
-  ups_nut_server_password: form.string().title("ups nut server 密码").default("nut").widget("password"),
-  ups_nut_server_ups_name: form.string().title("ups nut server ups 名称").default("ups0"),
+const config = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否开启 ups-nut-server 监控").default(false),
+  ups_nut_server_ip: plugin.Form.string().title("ups-nut-server 地址").description("格式：192.168.x.x"),
+  ups_nut_server_port: plugin.Form.number().title("ups-nut-server 端口").default(3493),
+  ups_nut_server_username: plugin.Form.string().title("ups nut server 用户名").default("nut"),
+  ups_nut_server_password: plugin.Form.string().title("ups nut server 密码").default("nut").widget("password"),
+  ups_nut_server_ups_name: plugin.Form.string().title("ups nut server ups 名称").default("ups0"),
 });
 const testMap = {
   "Done and passed": "通过",

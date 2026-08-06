@@ -1,9 +1,9 @@
 //[title: 今日金价]
 //[name: jinRiJinJia]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: 974566903@qq.com]
-//[version: v1.8.0]
+//[version: v1.8.1]
 //[public: true]
 //[disable: false]
 //[admin: false]
@@ -13,8 +13,12 @@
 //[description: 查询实时金银价格，并按设定价格定时通知管理员]
 // [depe: []]
 
-const { sender: s, Bucket } = require("sillygirl");
+const { sender: s, Bucket, plugin } = require("sillygirl");
 
+
+const runtimeConfig = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+});
 const store = new Bucket("goldPriceMonitor");
 const API = "https://i.jzj9999.com/res/quote/pq.json";
 

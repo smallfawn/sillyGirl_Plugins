@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 娱乐]
 # [author: sillyGirl]
-# [version: v1.0.1]
+# [version: v1.0.2]
 # [public: true]
 # [admin: false]
 # [rule: raw ^\s*(傻妞语录|傻妞台词|陆小千语录|小千语录|小千台词|魔幻手机语录|魔幻手机台词)\s*$]
@@ -24,8 +24,6 @@ try:
     import decimal as decimal
 except Exception:
     decimal = None
-
-
 
 QUOTES = [
     {
@@ -74,7 +72,6 @@ QUOTES = [
     },
 ]
 
-
 def quote_pool(command):
     if "陆小千" in command or "小千" in command:
         return [item for item in QUOTES if item["role"] == "陆小千"]
@@ -82,12 +79,10 @@ def quote_pool(command):
         return [item for item in QUOTES if item["role"] == "傻妞"]
     return QUOTES
 
-
 async def main():
     command = (await s.getContent()).strip()
     pool = quote_pool(command)
     item = random.choice(pool or QUOTES)
     await s.reply(f"{item['role']}：{item['text']}")
-
 
 asyncio.run(main())

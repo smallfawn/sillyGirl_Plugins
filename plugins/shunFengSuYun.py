@@ -3,66 +3,50 @@
 # [language: python]
 # [class: 任务]
 # [author: sky2022]
-# [version: v1.7.0]
+# [version: v1.7.2]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^顺丰(登录|登陆)$|^登(录|陆)顺丰$|^顺丰(查询|管理)$|^(查询|管理)顺丰$|^顺丰教程$|^顺丰后台$|^顺丰(Token)?刷新$|^顺丰快递查询$]
+# [rule: ^顺丰(登录|登陆|查询|管理|教程|Token刷新|刷新|快递查询|同步)$|^登(录|陆)顺丰$|^(查询|管理)顺丰$]
 # [cron: 56 8,15 * * *]
 # [icon: https://api.iconify.design/lucide:apple.svg]
-# [description: 介绍：顺丰速运插件，支持验证码登录和微信扫码登录；指令：顺丰登录、顺丰管理、顺丰查询、顺丰快递查询、顺丰后台、顺丰教程、顺丰刷新；9.2版本移除CK登录，新增短信验证码接口登录与签名校验；8.9版本新增呆呆面板分组配置，提交变量时支持写入 group；8.8版本简化对接配置，统一为面板类型 + 对接面板配置；9.6版本新增指令：顺丰快递查询，支持查询寄件和收件的全部信息，需要重新进行验证码或扫码登录，同时登录后不可登录APP，会挤掉Token]
+# [description: 顺丰登录、查询、物流、账号管理、Token刷新与面板同步]
 # [depe: ["requests"]]
-
 
 import asyncio as _sg_asyncio
 import os as _sg_os
 import time as _sg_time
 import types as _sg_types
 from threading import Thread as _sg_Thread
-from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, form
-try: import ast as _sg_ast
-except Exception: _sg_ast=None
-try: import decimal as decimal
-except Exception: decimal=None
+from sillygirl import Adapter as _SGAdapter, Bucket as _SGBucket, Sender as _SGSender, sender as _sg_sender, plugin
 
 _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID","")); c=lambda n,*a,**k:_sg_run(getattr(s,n)(*a,**k))
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
     def wait(timeout=60000,*a,**k):
         try:
-            r=c("listen",{"timeout":int(timeout or 0)}); return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(getUserID=lambda:c("getUserId"),getUserId=lambda:c("getUserId"),getMessage=lambda:c("getContent"),getContent=lambda:c("getContent"),getUserName=lambda:c("getUserName"),getNickname=lambda:c("getUserName"),getChatID=lambda:c("getChatId"),getChatId=lambda:c("getChatId"),getImtype=lambda:c("getPlatform"),getPlatform=lambda:c("getPlatform"),getMessageID=lambda:c("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(c("isAdmin")),reply=lambda m="":c("reply",str(m)),replyImage=lambda u="":c("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:c("continue_"),breakIn=lambda *a,**k:c("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -75,18 +59,19 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; pf=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); g=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); u=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); m=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(pf or "")).push({"group_id":str(g or ""),"user_id":str(u or ""),"title":str(title or ""),"content":str(m or "")}))
-def _sg_notify(m,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(m),{"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
     Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
 
-config = form({
-    'dd_sf_panel_type': form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
-    'dd_sf_panel_config': form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
-    'dd_sf_panel_group': form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
-    'dd_sf_dd_sf_osname': form.string().title('面板变量名').default('').description('提交到面板中的顺丰变量名'),
-    'dd_sf_show_other_coupons': form.boolean().title('显示其他优惠券').default(False).description('是否显示除免单券外的其他优惠券(仅显示10元以上)'),
+config = plugin.Form({
+    "enable": plugin.Form.boolean().title("是否启用").default(True),
+    'dd_sf_panel_type': plugin.Form.string().title('对接面板类型').default('').description('填写你当前使用的面板类型，支持：青龙、青龙面板、QL、呆呆、呆呆面板、Daidai'),
+    'dd_sf_panel_config': plugin.Form.string().title('对接面板配置').default('').description('统一填写面板对接参数。青龙：Host丨ClientID丨ClientSecret；呆呆：Host丨AppKey丨AppSecret；分隔符使用中文丨'),
+    'dd_sf_panel_group': plugin.Form.string().title('对接面板分组').default('').description('仅呆呆面板生效。填写后新增或更新变量时会同步写入 group 字段；留空则不处理分组'),
+    'dd_sf_dd_sf_osname': plugin.Form.string().title('面板变量名').default('').description('提交到面板中的顺丰变量名'),
+    'dd_sf_show_other_coupons': plugin.Form.boolean().title('显示其他优惠券').default(False).description('是否显示除免单券外的其他优惠券(仅显示10元以上)'),
 })
 _CONFIG_FIELD_MAP = {
     ('dd_sf', 'panel_type'): 'dd_sf_panel_type',
@@ -99,9 +84,8 @@ _CONFIG_FIELD_MAP = {
 import re
 import ast
 import hmac as _hmac
-from datetime import datetime, timedelta
+from datetime import datetime
 import urllib.parse
-from decimal import Decimal
 import requests
 import time
 import json
@@ -134,50 +118,11 @@ def format_message(title, content, status="info"):
     icon = status_icons.get(status, "ℹ️")
     return f"{icon} {title}\n{content}"
 
-def format_account_info(login_mobile, auth_status, auth_time, **kwargs):
-    info = f"=====================\n📱 账号: {login_mobile}"
-
-    if 'coin' in kwargs:
-        info += f"\n💎 总计积分: {kwargs['coin']}"
-    if 'today_coin' in kwargs:
-        info += f"\n🎯 今日积分: {kwargs['today_coin']}"
-    if 'auth_time' in kwargs:
-        info += f"\n📅 授权到期: {kwargs['auth_time']}"
-    else:
-        info += f"\n📅 授权到期: {auth_time}"
-    if 'account_status' in kwargs:
-        info += f"\n📈 账号检测: {kwargs['account_status']}"
-    if 'express_count' in kwargs:
-        info += f"\n🚚 快递数量: {kwargs['express_count']}"
-    if 'coupons' in kwargs:
-        info += f"\n🎫 大额优惠券: {kwargs['coupons']}"
-    info += "\n====================="
-    return info
-
-def generate_qrcode(url):
-    try:
-        encoded_url = urllib.parse.quote(url, safe='')
-        return f"https://api.qrtool.cn/?text={encoded_url}"
-    except Exception as e:
-        print(f"生成二维码失败: {str(e)}")
-        return None
-
-def send_qrcode_image(sender, qrcode_url, pay_type):
-    pay_type_names = {'alipay': '支付宝', 'wxpay': '微信', 'qqpay': 'QQ钱包'}
-    pay_type_name = pay_type_names.get(pay_type, pay_type)
-
-    try:
-        sender.replyImage(qrcode_url)
-        if pay_type == 'qqpay':
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\nQQ支付打开图片若是黑屏，长按屏幕进行\"识别二维码\"即可！\n支付过程中输入'q'可取消支付")
-        else:
-            sender.reply(f"请使用【{pay_type_name}】扫描上方二维码完成支付\n支付过程中输入'q'可取消支付")
-    except:
-        if pay_type == 'qqpay':
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\nQQ支付打开图片若是黑屏，长按屏幕进行"识别二维码"即可！\n[CQ:image,file={qrcode_url}]'
-        else:
-            pay_msg = f'请使用【{pay_type_name}】扫描下方二维码完成支付，支付过程中输入"q"可取消支付:\n[CQ:image,file={qrcode_url}]'
-        sender.reply(pay_msg)
+def format_account_info(login_mobile, _status="", _legacy_time="", **kwargs):
+    lines = ["=====================", f"📱 账号: {login_mobile}"]
+    labels = (("coin", "💎 总计积分"), ("today_coin", "🎯 今日积分"), ("account_status", "📈 账号检测"), ("express_count", "🚚 快递数量"), ("coupons", "🎫 大额优惠券"))
+    lines.extend(f"{label}: {kwargs[key]}" for key, label in labels if key in kwargs)
+    return "\n".join(lines + ["====================="])
 
 def validate_input(value, max_count, field_name="输入"):
     try:
@@ -321,12 +266,6 @@ def parse_accounts(account_data):
     except Exception:
         return []
 
-def get_auth_status(account_vip, today_time):
-    return '2099-12-31'
-
-def has_valid_auth(account_vip, compare_date):
-    return True
-
 def normalize_panel_type(panel_type_value, legacy_use_daidai_value='false'):
     value = str(panel_type_value or '').strip().lower()
 
@@ -343,43 +282,15 @@ def normalize_panel_type(panel_type_value, legacy_use_daidai_value='false'):
     return 'qinglong'
 
 def getusercontent():
-    dd_sf_osname = sg.bucketGet('dd_sf', 'dd_sf_osname') or 'dd_sf_token'
-    panel_type_value = sg.bucketGet('dd_sf', 'panel_type') or ''
-    panel_config_value = (sg.bucketGet('dd_sf', 'panel_config') or '').strip()
-    panel_group = (sg.bucketGet('dd_sf', 'panel_group') or '').strip()
-    legacy_ql_config = sg.bucketGet('dd_sf', 'dd_sf_qlname') or ''
-    legacy_use_daidai = sg.bucketGet('dd_sf', 'use_daidai') or 'false'
-    legacy_dd_config = sg.bucketGet('dd_sf', 'dd_sf_ddname') or ''
-    dd_managecommand = sg.bucketGet('dd_sf', 'dd_managecommand') or '顺丰管理'
-    dd_querycommand = sg.bucketGet('dd_sf', 'dd_querycommand') or '顺丰查询'
-    dd_signcommand = sg.bucketGet('dd_sf', 'dd_signcommand') or '顺丰登录'
-    sfVipmoney = Decimal(sg.bucketGet('dd_sf', 'sfVipmoney') or '1')
-    sfcoin = int(sg.bucketGet('dd_sf', 'sfcoin') or '0')
+    panel_type = normalize_panel_type(sg.bucketGet('dd_sf', 'panel_type'))
+    return (
+        sg.bucketGet('dd_sf', 'dd_sf_osname') or 'sfsyUrl', sg.bucketGet('dd_sf', 'panel_config'),
+        '顺丰管理', '顺丰查询', '顺丰登录', None, None,
+        sg.bucketGet('dd_sf', 'show_point_status') != 'false',
+        sg.bucketGet('dd_sf', 'show_other_coupons') == 'true', None,
+        panel_type == 'daidai', sg.bucketGet('dd_sf', 'ddname'), sg.bucketGet('dd_sf', 'panel_group') or '',
+    )
 
-    show_point_status = sg.bucketGet('dd_sf', 'show_point_status') or 'false'
-    show_point_status = show_point_status.lower() == 'true'
-    show_other_coupons = sg.bucketGet('dd_sf', 'show_other_coupons') or 'false'
-    show_other_coupons = show_other_coupons.lower() == 'true'
-    use_ma_pay = '2099-12-31' or 'false'
-    use_ma_pay = use_ma_pay.lower() == 'true'
-
-    panel_type = normalize_panel_type(panel_type_value, legacy_use_daidai)
-    if not panel_type:
-        sender.reply(format_message("配置错误",
-            "对接面板类型填写无效\n请填写以下任一值:\n• 青龙 / 青龙面板 / QL\n• 呆呆 / 呆呆面板 / Daidai", "error"))
-        exit(0)
-
-    use_daidai = panel_type == 'daidai'
-    if use_daidai:
-        dd_sf_ddname = panel_config_value or legacy_dd_config
-        dd_sf_qlname = legacy_ql_config
-    else:
-        dd_sf_qlname = panel_config_value or legacy_ql_config
-        dd_sf_ddname = legacy_dd_config
-
-    return (dd_sf_osname, dd_sf_qlname, dd_managecommand, dd_querycommand,
-            dd_signcommand, sfVipmoney, sfcoin, show_point_status,
-            show_other_coupons, use_ma_pay, use_daidai, dd_sf_ddname, panel_group)
 
 def seekql():
     try:
@@ -859,9 +770,6 @@ def todaycoin(session_id):
             else:
                 break
     return coin, allcoin, user_info
-
-def ValueErrors(value, count):
-    return validate_input(value, count)
 
 def sytTokens(payload, deviceId):
     t = int(time.time() * 1000)
@@ -1361,652 +1269,44 @@ def sf_login(sender):
         exit(0)
 
 def bindaccount():
-    welcome_msg = """
-=====顺丰速运登录=====
-[1] 验证码登录
-[2] 微信扫码登录
-------------------
-回复数字选择方式
-回复"q"退出操作
-=================="""
-
-    sender.reply(welcome_msg)
-    input_choice = get_user_choice('请选择登录方式')
-
-    if input_choice == '1':
-        Token, account, mobile = sf_captcha_login(sender)
-    elif input_choice == '2':
-        Token, account, mobile = sf_login(sender)
-    else:
-        sender.reply('❌ 输入错误,请重新选择登录方式')
-        return
-
-    def accvip(account, Token, mobile):
-        accountVip = '2099-12-31'
-        auth_status = '✅ 已授权' if accountVip and accountVip >= today_time else '⚠️ 未授权'
-        next_step = f'发送 {dd_managecommand} 可管理账号' if accountVip and accountVip >= today_time else f'发送 {dd_managecommand} 可进行授权'
-
-        success_msg = f"""
-=====顺丰账号绑定=====
-📱 绑定账号: {mobile}
-🔐 授权状态: {auth_status}
-⏰ 下一步操作:
-   {next_step}
-=================="""
-
-        accounts = parse_accounts(uservalue)
-        if account not in accounts:
-            accounts.append(account)
-        accounts = list(dict.fromkeys(accounts))
-        if accounts:
-            sg.bucketSet(bucket='dd_sf_user', key=userid, value=str(accounts))
-        sg.bucketSet(bucket='dd_sf_token', key=account, value=Token)
-
-        if accountVip and accountVip >= today_time:
-            try:
-                try:
-                    td = json.loads(Token)
-                    ql_value = td.get('ck', '')
-                    if not ql_value and td.get('sign'):
-                        token_url = build_token_url(td['sign'])
-                        ql_value = get_ck_from_url(token_url) or Token
-                    elif not ql_value:
-                        ql_value = Token
-                except (json.JSONDecodeError, TypeError):
-                    ql_value = get_ck_from_url(Token) if Token.startswith('http') else Token
-                qlid = allenvs(osname=dd_sf_osname, account=account)
-                if qlid:
-                    if use_daidai:
-                        DDupdate(osname=dd_sf_osname, value=ql_value, account=account, env_id=qlid, phone=mobile, expire_time=accountVip)
-                    else:
-                        QLupdate(osname=dd_sf_osname, value=ql_value, account=account, qlid=qlid, phone=mobile, expire_time=accountVip)
-                else:
-                    Addenvs(osname=dd_sf_osname, value=ql_value, account=account, phone=mobile, expire_time=accountVip)
-            except Exception as e:
-                sender.reply(f"""
-=====更新失败=====
-❌ 更新变量失败
-⚠️ 错误: {str(e)}
-==================""")
-
-        sender.reply(success_msg)
-
-    accvip(account, Token, mobile)
-
-def empower(empowertime, me_as_int):
-    day = me_as_int * 30
-    if len(empowertime) == 0 or empowertime <= str(today_time):
-        delayed_date = today_date + timedelta(days=day)
-    elif empowertime > today_time:
-        empower_date = datetime.strptime(empowertime, "%Y-%m-%d")
-        delayed_date = empower_date + timedelta(days=day)
-        delayed_date = delayed_date.date()
-    else:
-        sender.reply('出错！')
-        exit(0)
-    return str(delayed_date)
-
-def sf_auth():
-    return True
+    sender.reply("=====顺丰速运登录=====\n[1] 验证码登录\n[2] 微信扫码登录\n==================")
+    choice = get_user_choice('请选择登录方式')
+    if choice == '1': token, account, mobile = sf_captcha_login(sender)
+    elif choice == '2': token, account, mobile = sf_login(sender)
+    else: sender.reply('❌ 输入错误'); return
+    if not token or not account: return
+    accounts = list(dict.fromkeys(parse_accounts(uservalue) + [account]))
+    sg.bucketSet('dd_sf_user', userid, str(accounts)); sg.bucketSet('dd_sf_token', account, token)
+    try:
+        value = get_token_as_ck(account) or token
+        Addenvs(dd_sf_osname, value, account, mask_phone(mobile or account), target_userid=userid, expire_time='')
+        sync = '已同步面板'
+    except Exception as exc: sync = f'面板同步失败：{exc}'
+    sender.reply(f'=====顺丰账号绑定=====\n📱 {mask_phone(mobile or account)}\n✅ 绑定成功，{sync}\n==================')
 
 def meituanmanage():
-    if not uservalue:
-        sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {dd_signcommand} 绑定", "error"))
-        return
-
-    try:
-        accounts = parse_accounts(uservalue)
-        if not accounts:
-            sender.reply(format_message("账号错误", "账号数据格式异常", "error"))
-            return
-        sg.bucketSet(bucket='dd_sf_user', key=userid, value=str(accounts))
-        account_list = "=====我的顺丰账号=====\n[0] 🎯 批量授权所有账号\n"
-        for i, account in enumerate(accounts, 1):
-            accountVip = '2099-12-31'
-            auth_status, auth_time = get_auth_status(accountVip, today_time)
-            login_mobile = mask_phone(account)
-
-            account_list += f"""
-[{i}] 账号信息
-📱 账号: {login_mobile}
-🔐 授权: {auth_status}"""
-            if i < len(accounts):
-                account_list += "\n------------------"
-
-        account_list += "\n==================\n回复数字选择账号\n回复'q'退出操作"
-
-        sender.reply(account_list)
-
-        inputmessage = get_user_choice("", 120000, True)
+    accounts = parse_accounts(uservalue)
+    if not accounts:
+        sender.reply(f'❌ 未绑定账号，请先发送 {dd_signcommand}'); return
+    sender.reply('=====顺丰账号管理=====\n' + '\n'.join(f'[{i}] {mask_phone(x)}' for i, x in enumerate(accounts, 1)) + '\n==================')
+    choice = get_user_choice('', 120000, True)
+    if not choice or choice.lower() == 'q': return
+    if not choice.isdigit() or not 1 <= int(choice) <= len(accounts): sender.reply('❌ 序号无效'); return
+    account = accounts[int(choice)-1]
+    sender.reply('[1] 查询账号\n[2] 删除账号')
+    action = get_user_choice('', 120000, True)
+    if action == '1': query_accounts([account])
+    elif action == '2':
+        sender.reply('确认删除请回复 y')
+        if get_user_choice('', 120000, True).lower() != 'y': return
+        accounts.remove(account); sg.bucketDel('dd_sf_token', account)
+        if accounts: sg.bucketSet('dd_sf_user', userid, str(accounts))
+        else: sg.bucketDel('dd_sf_user', userid)
         try:
-            me_as_int = int(inputmessage)
-            if me_as_int < 0 or me_as_int > len(accounts):
-                sender.reply(format_message("输入无效", "输入的序号无效", "error"))
-                exit(0)
-        except ValueError:
-            sender.reply(format_message("输入错误", "输入必须是数字", "error"))
-            exit(0)
-
-        if me_as_int == 0:
-            batch_auth_guide = """
-=====批量授权设置=====
-请输入授权月数(如:1)
-------------------
-回复数字设置月数
-回复"q"退出操作
-=================="""
-            sender.reply(batch_auth_guide)
-
-            mes = get_user_choice("", 120000, True)
-            mes = ValueErrors(value=mes, count=999)
-            total_money = Decimal(mes) * Decimal(sfVipmoney) * len(accounts)
-
-            confirm_msg = f"""
-=====批量授权确认=====
-📊 账号数量: {len(accounts)}个
-⏰ 授权时长: {mes}月/每个账号
-💰 总计金额: {total_money}元
-------------------
-确认批量授权？
-[y] 确认授权
-[n] 取消操作
-=================="""
-            sender.reply(confirm_msg)
-
-            if yesornos():
-                batch_zf(project='顺丰批量授权', accounts=accounts, months=mes, total_money=total_money)
-            else:
-                sender.reply(format_message("已取消", "已取消批量授权", "info"))
-                exit(0)
-        else:
-            account = accounts[me_as_int - 1]
-            accountVip = '2099-12-31'
-            login_mobile = mask_phone(account)
-
-            auth_status, auth_time = get_auth_status(accountVip, today_time)
-
-            account_info = f"""
-=====账号详情=====
-📱 账号: {login_mobile}
-🔐 授权: {auth_status}
-==================
-[1] 授权账号
-[2] 删除账号
-------------------
-回复数字选择功能
-回复"q"退出操作
-=================="""
-            sender.reply(account_info)
-
-            inputmessage = get_user_choice("", 120000, True)
-
-            if inputmessage == '2':
-                confirm_msg = """
-=====警告=====
-确定要删除该账号吗？
-此操作不可恢复！
-------------------
-[y] 确认删除
-[n] 取消操作
-=================="""
-                sender.reply(confirm_msg)
-
-                if yesornos():
-                    accounts.remove(str(account))
-                    qlid = allenvs(osname=dd_sf_osname, account=str(account))
-                    delenvs(id=qlid)
-                    if len(accounts) == 0:
-                        sg.bucketDel(bucket='dd_sf_user', key=userid)
-                    else:
-                        sg.bucketSet(bucket='dd_sf_user', key=userid, value=str(accounts))
-                    sender.reply(format_message("删除成功", "账号删除成功!", "success"))
-                else:
-                    sender.reply(format_message("已取消", "已取消删除", "info"))
-                    exit(0)
-            elif inputmessage == '1':
-                auth_guide = """
-=====设置授权时长=====
-请输入授权月数(如:1)
-------------------
-回复数字设置月数
-回复"q"退出操作
-=================="""
-                sender.reply(auth_guide)
-
-                mes = get_user_choice("", 120000, True)
-                mes = ValueErrors(value=mes, count=999)
-                money = Decimal(mes) * Decimal(sfVipmoney)
-                account_ck = get_ck_with_fallback(account)
-                if not account_ck:
-                    userurl, _ = get_token_url_auto_refresh(account)
-                    account_ck = get_ck_from_url(userurl) if userurl else None
-                zf(project='顺丰授权', me_as_int=mes, accountVip=accountVip, token=account_ck or '',
-                   phone=account, account=account)
-                accountVip = empower(empowertime=accountVip, me_as_int=mes)
-                True
-                if account_ck:
-                    try:
-                        Addenvs(osname=dd_sf_osname, value=account_ck, account=account, phone=login_mobile, expire_time=accountVip)
-                    except Exception as e:
-                        print(f"同步账号 {account} 变量失败: {str(e)}")
-
-                result_msg = f"""
-=====订单完成=====
-🎈 名称: 顺丰授权
-🎉 数量: {mes} 个月
-💰 金额: {money} 元
-=================="""
-                sender.reply(result_msg)
-
-    except Exception as e:
-        sender.reply(format_message("账号处理错误", f"账号列表处理失败\n错误: {str(e)}", "error"))
-        return
-
-def yesornos():
-    choice = get_user_choice("", 120000, True)
-    if choice in ['Y', 'y', '是']:
-        return True
-    elif choice in ['n', 'N', '否']:
-        return False
-    else:
-        sender.reply(format_message("输入错误", "请输入正确的选项", "error"))
-        exit(0)
-
-def get_payment_config():
-    return {}
-
-def parse_payment_result(ddzf):
-    return True
-
-def zf(project, me_as_int, accountVip, token, phone, account):
-    try:
-        money = Decimal(me_as_int) * Decimal(sfVipmoney)
-        if money == 0:
-            accountVip = empower(empowertime=accountVip, me_as_int=me_as_int)
-            True
-            Addenvs(osname=dd_sf_osname, value=token, account=account, phone=phone, expire_time=accountVip)
-
-            sender.reply(format_message("免费授权成功",
-                f"商品: {project}\n金额: 免费\n授权时长: {me_as_int}月", "success"))
-            return True
-
-        zsm, use_ma_pay, ma_pay_config = get_payment_config()
-        if not zsm and not use_ma_pay:
-            sender.reply(format_message("配置错误", "未配置收款方式,请检查配置!", "error"))
-            exit(0)
-
-        usercoin = sg.bucketGet('dd_sign_points', userid) or '0'
-        zfcoin = int(sfcoin) * me_as_int if sfcoin else 0
-        pay_menu = "=====选择支付方式====="
-        option_num = 1
-        options_map = {}
-
-        if zsm and not use_ma_pay:
-            pay_menu += f"\n{option_num}️⃣ 微信支付\n   💰 {money}元/{me_as_int}月"
-            options_map[str(option_num)] = 'wechat'
-            option_num += 1
-
-        if use_ma_pay:
-            pay_menu += f"\n{option_num}️⃣ 在线处理\n   💰 {money}元/{me_as_int}月"
-            options_map[str(option_num)] = 'ma'
-            option_num += 1
-
-        if sfcoin and sfcoin != '' and int(sfcoin) > 0:
-            pay_menu += f"\n{option_num}️⃣ 积分支付\n   🎯 {zfcoin}积分/{me_as_int}月\n   💫 当前积分: {usercoin}"
-            options_map[str(option_num)] = 'points'
-
-        pay_menu += "\n------------------\n回复数字选择方式\n回复'q'退出操作\n=================="
-
-        sender.reply(pay_menu)
-        choice = get_user_choice("", 60000, True)
-
-        selected_pay = options_map.get(choice)
-        if selected_pay == 'wechat' and zsm:
-            zfzt = False
-            if zfzt:
-                sender.reply(format_message("支付繁忙", "当前有人正在支付,请稍后再试！", "warning"))
-                exit(0)
-
-            pay_msg = f"""
-=====微信扫在线处理====
-🎫 商品: {project}
-📅 时长: {me_as_int}月
-💰 金额: {money}元
-------------------
-请使用微信扫在线处理
-回复"q"取消支付
-=================="""
-            sender.reply(pay_msg)
-            sender.replyImage(zsm)
-
-            ddzf = False
-
-            if str(ddzf) == 'q':
-                sender.reply(format_message("已取消", "已取消支付", "info"))
-                exit(0)
-
-            try:
-                Money, Time, From = parse_payment_result(ddzf)
-
-                if float(Money) >= float(money):
-                    accountVip = empower(empowertime=accountVip, me_as_int=me_as_int)
-                    True
-                    Addenvs(osname=dd_sf_osname, value=token, account=account, phone=phone, expire_time=accountVip)
-
-                    result_msg = f"""
-=====支付成功=====
-🎫 商品: {project}
-💰 金额: {Money}元
-⏰ 时间: {Time}
-{f'👤 付款人: {From}' if From else ''}
-=================="""
-                    sender.reply(result_msg)
-                    return True
-                else:
-                    sender.reply(format_message("支付金额错误",
-                        f"应付: {money}元\n实付: {Money}元\n{f'付款人: {From}' if From else ''}\n\n❗ 请稍后核对支付记录！", "error"))
-                    exit(0)
-            except Exception as e:
-                sender.reply(format_message("处理错误", f"处理支付结果时出错: {str(e)}", "error"))
-                exit(0)
-
-        elif selected_pay == 'ma' and use_ma_pay:
-            out_trade_no = f"SF{int(time.time())}{userid}"
-            params = {
-                'pid': ma_pay_config['pid'],
-                'type': ma_pay_config['type'].split(',')[0],
-                'out_trade_no': out_trade_no,
-                'name': f"{senderID}-顺丰授权-{str(money)}",
-                'money': str(money),
-                'notify_url': ma_pay_config['notify_url'],
-                'return_url': ma_pay_config['return_url'],
-                'param': userid
-            }
-            params = {k: v for k, v in params.items() if v}
-            sorted_params = dict(sorted(params.items(), key=lambda x: x[0]))
-            sign_str = "&".join([f"{k}={v}" for k, v in sorted_params.items()])
-            sign = hashlib.md5((sign_str + ma_pay_config['key']).encode('utf-8')).hexdigest().lower()
-            params['sign'] = sign
-            params['sign_type'] = 'MD5'
-            gateway = ma_pay_config['gateway']
-            if gateway.endswith('/'):
-                gateway = gateway[:-1]
-            mapi_url = f"{gateway}/mapi.php"
-
-            try:
-                headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-                response = requests.post(mapi_url, data=params, headers=headers, timeout=10)
-
-                if response.status_code != 200:
-                    sender.reply(format_message("支付失败", f"创建支付订单失败，HTTP状态码: {response.status_code}", "error"))
-                    exit(0)
-
-                try:
-                    result = response.json()
-                except:
-                    sender.reply(format_message("支付失败", "创建支付订单失败，返回数据格式错误", "error"))
-                    exit(0)
-
-                code = result.get('code', 0)
-                msg = result.get('msg', '未知状态')
-
-                if code == 1:
-                    payurl = result.get('payurl', '')
-                    if not payurl:
-                        sender.reply(format_message("支付失败", "未获取到支付链接", "error"))
-                        exit(0)
-
-                    qrcode_url = generate_qrcode(payurl)
-                    pay_type = ma_pay_config['type'].split(',')[0] if ma_pay_config.get('type') else 'alipay'
-                    if qrcode_url:
-                        send_qrcode_image(sender, qrcode_url, pay_type)
-                    else:
-                        sender.reply(f"""=====在线处理=====
-🎫 商品: {project}
-💰 金额: {money}元
-⏰ 有效期: 5分钟
-------------------
-二维码生成失败，请点击链接完成支付:
-{payurl}
-==================""")
-                else:
-                    if "没有找到可用支付账号" in msg or "没有找到可用的" in msg:
-                        sender.reply(format_message("支付失败", f"在线处理暂不可用({msg})", "error"))
-                    else:
-                        sender.reply(format_message("支付失败", f"创建订单失败: {msg}", "error"))
-                    exit(0)
-
-                for i in range(60):
-                    check_url = gateway
-                    if check_url.endswith('/'):
-                        check_url = check_url[:-1]
-
-                    if '/xpay/epay/api.php' not in check_url:
-                        check_url = f"{check_url}/xpay/epay/api.php"
-
-                    check_params = {
-                        'act': 'order',
-                        'pid': ma_pay_config['pid'],
-                        'key': ma_pay_config['key'],
-                        'out_trade_no': out_trade_no
-                    }
-
-                    try:
-                        check_resp = requests.get(check_url, params=check_params, timeout=10)
-                        check_result = check_resp.json()
-
-                        if check_result.get('code') == 1 and check_result.get('status') == 1:
-                            accountVip = empower(empowertime=accountVip, me_as_int=me_as_int)
-                            True
-                            Addenvs(osname=dd_sf_osname, value=token, account=account, phone=phone, expire_time=accountVip)
-
-                            sender.reply(f"""=====支付成功=====
-🎫 商品: {project}
-💰 金额: {money}元
-⏰ 授权时长: {me_as_int}月
-==================""")
-                            return True
-                    except Exception as e:
-                        print(f"查询订单状态出错: {str(e)}")
-
-                    result = sender.listen(5000)
-                    if result == 'q' or result == 'Q':
-                        sender.reply("✅ 已取消支付")
-                        exit(0)
-
-                sender.reply("❌ 支付超时,请重新发起支付!")
-                exit(0)
-            except Exception as e:
-                sender.reply(f"❌ 支付请求失败: {str(e)}")
-                exit(0)
-
-        elif selected_pay == 'points' and sfcoin != '' and sfcoin is not None and int(sfcoin) > 0:
-            if int(usercoin) < zfcoin:
-                sender.reply(format_message("积分不足", f"当前积分: {usercoin}\n需要积分: {zfcoin}", "error"))
-                exit(0)
-
-            confirm_msg = f"💫 积分支付确认\n💰 消耗积分: {zfcoin}\n⏰ 授权时长: {me_as_int}月\n------------------\n确认请回复【y】\n取消请回复【n】"
-            sender.reply(confirm_msg)
-
-            if yesornos():
-                try:
-                    new_balance = int(usercoin) - zfcoin
-                    sg.bucketSet('dd_sign_points', userid, str(new_balance))
-                    accountVip = empower(empowertime=accountVip, me_as_int=me_as_int)
-                    True
-                    Addenvs(osname=dd_sf_osname, value=token, account=account, phone=phone, expire_time=accountVip)
-
-                    result_msg = f"✅ 支付成功\n💫 扣除积分: {zfcoin}\n💰 剩余积分: {new_balance}\n⏰ 授权时长: {me_as_int}月"
-                    sender.reply(result_msg)
-                    exit(0)
-                except Exception as e:
-                    sender.reply(format_message("支付失败", f"积分处理失败\n错误信息: {str(e)}", "error"))
-                    exit(0)
-            else:
-                sender.reply(format_message("已取消支付", "操作已取消", "info"))
-                exit(0)
-        else:
-            sender.reply(format_message("输入无效", "请输入正确的选项", "error"))
-            exit(0)
-
-    except Exception as e:
-        sender.reply(format_message("系统错误", f"支付处理异常\n错误信息: {str(e)}", "error"))
-        exit(0)
-
-def _batch_authorize(accounts, months):
-    return True
-
-def batch_zf(project, accounts, months, total_money):
-    try:
-        if total_money == 0:
-            sc = _batch_authorize(accounts, months)
-            sender.reply(f"=====批量授权成功=====\n🎫 商品: {project}\n💰 金额: 免费\n📊 成功: {sc}/{len(accounts)}个账号\n⏰ 授权时长: {months}月/每个账号\n==================")
-            return True
-
-        zsm, use_ma_pay_local, ma_pay_config = get_payment_config()
-        if not zsm and not use_ma_pay_local:
-            sender.reply('未配置收款方式,请检查配置!')
-            exit(0)
-
-        usercoin = sg.bucketGet('dd_sign_points', userid) or '0'
-        zfcoin = int(sfcoin) * months * len(accounts) if sfcoin else 0
-
-        pay_menu = f"=====选择支付方式====\n💰 总金额: {total_money}元\n📊 账号: {len(accounts)}个\n⏰ 时长: {months}月/每个"
-        option_num = 1
-        options_map = {}
-        if zsm and not use_ma_pay_local:
-            pay_menu += f"\n------------------\n{option_num}️⃣ 微信支付 💰 {total_money}元"
-            options_map[str(option_num)] = 'wechat'
-            option_num += 1
-        if use_ma_pay_local:
-            pay_menu += f"\n{option_num}️⃣ 在线处理 💰 {total_money}元"
-            options_map[str(option_num)] = 'ma'
-            option_num += 1
-        if sfcoin and sfcoin != '' and int(sfcoin) > 0:
-            pay_menu += f"\n{option_num}️⃣ 积分支付 🎯 {zfcoin}积分 💫 当前: {usercoin}"
-            options_map[str(option_num)] = 'points'
-        pay_menu += "\n------------------\n回复数字选择方式\n回复\"q\"退出操作\n=================="
-
-        sender.reply(pay_menu)
-        choice = sender.input(60000, 1, False)
-        if choice in ('q', 'Q'):
-            sender.reply("✅ 已取消支付")
-            exit(0)
-
-        selected_pay = options_map.get(choice)
-        if selected_pay == 'wechat' and zsm:
-            zfzt = False
-            if zfzt:
-                sender.reply('⚠️ 当前有人正在支付,请稍后再试！')
-                exit(0)
-            sender.reply(f"=====微信扫在线处理====\n🎫 商品: {project}\n📊 账号: {len(accounts)}个\n⏰ 时长: {months}月/每个\n💰 总金额: {total_money}元\n------------------\n请使用微信扫在线处理\n回复\"q\"取消支付\n==================")
-            sender.replyImage(zsm)
-            ddzf = False
-            if str(ddzf) == 'q':
-                sender.reply('✅ 已取消支付')
-                exit(0)
-            try:
-                Money, Time, From = parse_payment_result(ddzf)
-                if float(Money) >= float(total_money):
-                    sc = _batch_authorize(accounts, months)
-                    sender.reply(f"=====支付成功=====\n🎫 商品: {project}\n💰 金额: {Money}元\n📊 成功: {sc}/{len(accounts)}个账号\n⏰ 时间: {Time}\n{f'👤 付款人: {From}' if From else ''}\n==================")
-                    return True
-                else:
-                    sender.reply(f"=====支付金额错误=====\n💰 应付: {total_money}元\n💳 实付: {Money}元\n{f'👤 付款人: {From}' if From else ''}\n❗ 请稍后核对支付记录！\n==================")
-                    exit(0)
-            except Exception as e:
-                sender.reply(f"❌ 处理支付结果时出错: {str(e)}")
-                exit(0)
-
-        elif selected_pay == 'ma' and use_ma_pay_local:
-            out_trade_no = f"SFBATCH{int(time.time())}{userid}"
-            params = {
-                'pid': ma_pay_config['pid'], 'type': ma_pay_config['type'].split(',')[0],
-                'out_trade_no': out_trade_no, 'name': f"{senderID}-顺丰批量授权-{str(total_money)}",
-                'money': str(total_money), 'notify_url': ma_pay_config['notify_url'],
-                'return_url': ma_pay_config['return_url'], 'param': userid
-            }
-            params = {k: v for k, v in params.items() if v}
-            sorted_params = sorted(params.items(), key=lambda x: x[0])
-            sign_str = "&".join([f"{k}={v}" for k, v in sorted_params])
-            sign = hashlib.md5((sign_str + ma_pay_config['key']).encode()).hexdigest().lower()
-            params['sign'] = sign
-            params['sign_type'] = 'MD5'
-            gateway = ma_pay_config['gateway'].rstrip('/')
-            mapi_url = f"{gateway}/mapi.php"
-            try:
-                response = requests.post(mapi_url, data=params, headers={'Content-Type': 'application/x-www-form-urlencoded'}, timeout=10)
-                if response.status_code != 200:
-                    sender.reply(format_message("支付失败", f"创建订单失败，HTTP {response.status_code}", "error"))
-                    exit(0)
-                try:
-                    result = response.json()
-                except:
-                    sender.reply(format_message("支付失败", "返回数据格式错误", "error"))
-                    exit(0)
-                code = result.get('code', 0)
-                msg = result.get('msg', '未知状态')
-                if code == 1:
-                    payurl = result.get('payurl', '')
-                    if not payurl:
-                        sender.reply(format_message("支付失败", "未获取到支付链接", "error"))
-                        exit(0)
-                    qrcode_url = generate_qrcode(payurl)
-                    pay_type = ma_pay_config['type'].split(',')[0] if ma_pay_config.get('type') else 'alipay'
-                    if qrcode_url:
-                        send_qrcode_image(sender, qrcode_url, pay_type)
-                    else:
-                        sender.reply(f"=====在线处理=====\n💰 金额: {total_money}元\n⏰ 有效期: 5分钟\n------------------\n{payurl}\n==================")
-                else:
-                    sender.reply(format_message("支付失败", f"创建订单失败: {msg}", "error"))
-                    exit(0)
-                check_url = gateway.rstrip('/')
-                if '/xpay/epay/api.php' not in check_url:
-                    check_url = f"{check_url}/xpay/epay/api.php"
-                for i in range(60):
-                    try:
-                        check_resp = requests.get(check_url, params={'act': 'order', 'pid': ma_pay_config['pid'], 'key': ma_pay_config['key'], 'out_trade_no': out_trade_no}, timeout=10)
-                        check_result = check_resp.json()
-                        if check_result.get('code') == 1 and check_result.get('status') == 1:
-                            sc = _batch_authorize(accounts, months)
-                            sender.reply(f"=====支付成功=====\n🎫 商品: {project}\n💰 金额: {total_money}元\n📊 成功: {sc}/{len(accounts)}个账号\n⏰ 授权时长: {months}月/每个账号\n==================")
-                            return True
-                    except:
-                        pass
-                    result = sender.listen(5000)
-                    if result in ('q', 'Q'):
-                        sender.reply("✅ 已取消支付")
-                        exit(0)
-                sender.reply("❌ 支付超时,请重新发起支付!")
-                exit(0)
-            except Exception as e:
-                sender.reply(f"❌ 支付请求失败: {str(e)}")
-                exit(0)
-
-        elif selected_pay == 'points' and sfcoin and int(sfcoin) > 0:
-            if int(usercoin) < zfcoin:
-                sender.reply(format_message("积分不足", f"当前积分: {usercoin}\n需要积分: {zfcoin}", "error"))
-                exit(0)
-            sender.reply(f"💫 积分支付确认\n消耗积分: {zfcoin}\n📊 账号: {len(accounts)}个\n⏰ 时长: {months}月/每个\n\n确认请回复【y】\n取消请回复【n】")
-            if yesornos():
-                try:
-                    new_balance = int(usercoin) - zfcoin
-                    sg.bucketSet('dd_sign_points', userid, str(new_balance))
-                    sc = _batch_authorize(accounts, months)
-                    sender.reply(f"✅ 支付成功\n💫 扣除积分: {zfcoin}\n💰 剩余积分: {new_balance}\n📊 成功: {sc}/{len(accounts)}个账号\n⏰ 授权时长: {months}月/每个账号")
-                    exit(0)
-                except Exception as e:
-                    sender.reply(format_message("支付失败", f"积分处理失败\n错误信息: {str(e)}", "error"))
-                    exit(0)
-            else:
-                sender.reply(format_message("已取消支付", "操作已取消", "info"))
-                exit(0)
-        else:
-            sender.reply(format_message("输入无效", "请输入正确的选项", "error"))
-            exit(0)
-    except Exception as e:
-        sender.reply(format_message("系统错误", f"支付处理异常\n错误信息: {str(e)}", "error"))
-        exit(0)
+            env_id = allenvs(dd_sf_osname, account)
+            if env_id: delenvs(env_id)
+        except Exception: pass
+        sender.reply('✅ 删除成功')
 
 def cx_by_session(session_id):
     coin, allcoin, user_info = todaycoin(session_id)
@@ -2036,7 +1336,6 @@ def _sf_express_headers_to_lower(headers):
         "memberId": "memberid",
     }
     return {key_map.get(k, k): v for k, v in headers.items()}
-
 
 def _sf_express_post(url, body_obj, app_token, member_id, extra_headers=None, device_id="", ck="", lowercase_headers=False):
     if not device_id:
@@ -2089,7 +1388,6 @@ def _sf_express_post(url, body_obj, app_token, member_id, extra_headers=None, de
         headers = _sf_express_headers_to_lower(headers)
     return requests.post(url, headers=headers, data=body_str.encode("utf-8"), timeout=15).json()
 
-
 def sf_query_express_list(app_token, member_id, mobile, data_type=0, page_no=1, device_id="", ck=""):
     body = {
         "pageRows": 10,
@@ -2110,15 +1408,11 @@ def sf_query_express_list(app_token, member_id, mobile, data_type=0, page_no=1, 
     url = "https://ccsp-egmas.sf-express.com/cx-app-query/query/app/waybill/queryMultAccountBillListComplex"
     return _sf_express_post(url, body, app_token, member_id, device_id=device_id, ck=ck)
 
-
 def sf_query_express_detail(app_token, member_id, waybill_no, device_id="", ck=""):
     body = {"waybillNo": waybill_no, "mediaCode": "AndroidML"}
     url = "https://ucmp.sf-express.com/cx-wechat-query/query/newWaybill/search"
     extra = {"cxgw-appid": "sfapp-valid-a85073uy"}
     return _sf_express_post(url, body, app_token, member_id, extra, device_id=device_id, ck=ck, lowercase_headers=True)
-
-
-
 
 def get_app_query_context(account):
     td = parse_token_data(account)
@@ -2130,7 +1424,6 @@ def get_app_query_context(account):
     device_id = td.get("deviceId", "")
     ck = td.get("ck", "")
     return app_token, member_id, mobile, device_id, ck
-
 
 def format_express_detail(detail_obj):
     if not detail_obj:
@@ -2205,7 +1498,6 @@ def format_express_detail(detail_obj):
     lines.append("==================")
     return "\n".join(lines)
 
-
 def sf_express_interactive_query():
     if not uservalue:
         sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {dd_signcommand} 绑定", "error"))
@@ -2232,11 +1524,6 @@ def sf_express_interactive_query():
             exit(0)
         idx = validate_input(choice, len(accounts), "序号")
         selected_account = accounts[idx - 1]
-
-    accountVip = '2099-12-31'
-    if not has_valid_auth(accountVip, today_time):
-        sender.reply(format_message("授权过期", f'账号授权已过期，请发送"{dd_managecommand}"续费', "error"))
-        return
 
     app_token, member_id, mobile, device_id, ck = get_app_query_context(selected_account)
     if not app_token or not member_id or not device_id:
@@ -2326,7 +1613,6 @@ def sf_express_interactive_query():
     detail_obj = detail_result.get("obj", {})
     sender.reply(format_express_detail(detail_obj))
 
-
 def sf_query_express_count(app_token, member_id, mobile, device_id="", ck=""):
     try:
         result = sf_query_express_list(app_token, member_id, mobile, data_type=0, page_no=1, device_id=device_id, ck=ck)
@@ -2337,264 +1623,46 @@ def sf_query_express_count(app_token, member_id, mobile, device_id="", ck=""):
         pass
     return None, None
 
+def query_accounts(accounts=None):
+    accounts = accounts or parse_accounts(uservalue)
+    if not accounts:
+        sender.reply(f'❌ 未绑定账号，请先发送 {dd_signcommand}'); return
+    for account in accounts:
+        mobile = mask_phone(account)
+        try:
+            ck = get_ck_with_fallback(account)
+            session_id = get_session_from_ck(ck) if ck and validate_ck(ck) else None
+            if not session_id:
+                url, _ = get_token_url_auto_refresh(account)
+                if not url: raise ValueError('登录态失效，请重新登录')
+                ck = get_ck_from_url(url) or ck; session_id, _ = session_ids(url)
+            today_points, total_points, coupons, info = cx_by_session(session_id)
+            extra = {}
+            try:
+                token, member_id, member_mobile, device_id, app_ck = get_app_query_context(account)
+                send_count, receive_count = sf_query_express_count(token, member_id, member_mobile, device_id, app_ck)
+                if send_count is not None: extra['express_count'] = f'{send_count}寄件, {receive_count}收件'
+            except Exception: pass
+            sender.reply(format_account_info(mobile, coin=total_points, today_coin=today_points, account_status='✅ 正常', coupons=coupons, **extra))
+            if ck: Addenvs(dd_sf_osname, ck, account, mobile, target_userid=userid, expire_time='')
+        except Exception as exc:
+            sender.reply(format_account_info(mobile, account_status=f'❌ {exc}', coupons='查询失败'))
 
 def cxs():
-    if not uservalue:
-        sender.reply(format_message("未绑定账号", f"未找到任何账号信息\n💡 发送 {dd_signcommand} 绑定", "error"))
-        return
+    query_accounts()
 
-    accounts = parse_accounts(uservalue)
-    if not accounts:
-        sender.reply(format_message("账号错误", "账号数据格式异常", "error"))
-        return
-    sg.bucketSet(bucket='dd_sf_user', key=userid, value=str(accounts))
-
-    for account in accounts:
-        accountVip = '2099-12-31'
-        login_mobile = mask_phone(account)
-
-        if has_valid_auth(accountVip, today_time):
-            auth_time_display = accountVip
-        else:
-            auth_time_display = "❌ 已过期，请发\"顺丰管理\"续费"
-
-        if has_valid_auth(accountVip, today_time):
+def sync_to_panel(quiet=False):
+    success = failed = 0
+    for user in sg.bucketAllKeys('dd_sf_user') or []:
+        for account in parse_accounts(sg.bucketGet('dd_sf_user', user)):
             try:
-                ck = get_ck_with_fallback(account)
-                session_id = get_session_from_ck(ck) if ck else None
-
-                if session_id and validate_ck(ck):
-                    coin, allcoin, large_coupons, user_info = cx_by_session(session_id)
-                    try:
-                        phone = mask_phone(account)
-                        Addenvs(osname=dd_sf_osname, value=ck, account=account, phone=phone, expire_time=accountVip)
-                    except:
-                        pass
-                else:
-                    userurl, refreshed = get_token_url_auto_refresh(account)
-                    if not userurl:
-                        sender.reply(format_account_info(
-                            login_mobile, "", auth_time_display,
-                account_status="❌ 登录态失效",
-                            coupons="查询失败"
-                        ))
-                        continue
-                    if refreshed:
-                        try:
-                            phone = mask_phone(account)
-                            new_ck = get_ck_from_url(userurl)
-                            if new_ck:
-                                Addenvs(osname=dd_sf_osname, value=new_ck, account=account, phone=phone, expire_time=accountVip)
-                        except:
-                            pass
-                    url_session_id, _ = session_ids(userurl)
-                    session_id = url_session_id
-                    coin, allcoin, large_coupons, user_info = cx_by_session(session_id)
-
-                account_status = "✅ 账号正常"
-                today_coin_display = str(coin)
-
-                if user_info and user_info.get('expiring_points', 0) > 0:
-                    try:
-                        expire_date_str = user_info['point_clear_cycle']
-                        expire_date = datetime.strptime(expire_date_str, '%Y-%m-%d')
-                        today = datetime.now()
-                        days_until_expire = (expire_date - today).days
-
-                        if 0 <= days_until_expire <= 30:
-                            today_coin_display += f"\n⚠️ 临期积分: {user_info['expiring_points']} (将于{user_info['point_clear_cycle']}过期)"
-                    except:
-                        pass
-
-                express_count_str = ""
-                try:
-                    app_token, m_id, m_mobile, m_device_id, m_ck = get_app_query_context(account)
-                    if app_token and m_id and m_device_id:
-                        send_cnt, recv_cnt = sf_query_express_count(app_token, m_id, m_mobile, device_id=m_device_id, ck=m_ck)
-                        if send_cnt is not None:
-                            express_count_str = f"{send_cnt}寄件, {recv_cnt}收件"
-                except:
-                    pass
-
-                extra_kwargs = {}
-                if express_count_str:
-                    extra_kwargs["express_count"] = express_count_str
-
-                account_info = format_account_info(
-                    login_mobile, "", auth_time_display,
-                    coin=allcoin,
-                    today_coin=today_coin_display,
-                    account_status=account_status,
-                    coupons=large_coupons,
-                    **extra_kwargs,
-                )
-                sender.reply(account_info)
-
-            except SystemExit:
-                sender.reply(format_account_info(
-                    login_mobile, "", auth_time_display,
-                    account_status="❌ 账号失效",
-                    coupons="查询失败"
-                ))
-                continue
-        else:
-            sender.reply(format_account_info(
-                login_mobile, "", auth_time_display,
-                account_status="⚠️ 授权已过期",
-                coupons="需要续费后查询"
-            ))
-
-def push(user, account, c):
-    login_mobile = mask_phone(account)
-
-    push_msg = f"""
-=====顺丰账号通知=====
-📱 账号: {login_mobile}
-📢 消息: {c}
-=================="""
-
-    platforms = ['wb', 'tg', 'qq', 'qb', 'wx']
-    for platform in platforms:
-        sg.push(platform, '', user, '', push_msg)
-
-def clean_expired_accounts():
-    users = sg.bucketAllKeys(bucket='dd_sf_user')
-
-    if not users:
-        sender.reply(format_message("清理结果", "未找到任何绑定账号", "error"))
-        return
-
-    sender.reply(format_message("开始清理", f"共找到: {len(users)}个用户\n⏳ 清理中请稍候...", "loading"))
-
-    cleaned_count = 0
-    for user in users:
-        try:
-            accountlist = sg.bucketGet(bucket='dd_sf_user', key=user)
-            if not accountlist:
-                continue
-
-            accounts = parse_accounts(accountlist)
-            valid_accounts = []
-            for account in accounts:
-                accountVip = '2099-12-31'
-
-                if not accountVip or accountVip <= today_time:
-                    try:
-                        qlid = allenvs(osname=dd_sf_osname, account=account)
-                        if qlid:
-                            delenvs(id=qlid)
-                    except:
-                        pass
-
-                    sg.bucketDel(bucket='dd_sf_token', key=account)
-                    True
-                    cleaned_count += 1
-                else:
-                    valid_accounts.append(account)
-
-            valid_accounts = list(dict.fromkeys(valid_accounts))
-
-            if valid_accounts:
-                sg.bucketSet(bucket='dd_sf_user', key=user, value=str(valid_accounts))
-            else:
-                sg.bucketDel(bucket='dd_sf_user', key=user)
-
-        except Exception as e:
-            print(f"处理用户 {user} 时出错: {str(e)}")
-            continue
-
-    sender.reply(format_message("清理完成", f"已清理: {cleaned_count}个账号", "success"))
-
-def sync_to_panel():
-    users = sg.bucketAllKeys(bucket='dd_sf_user')
-
-    if not users:
-        sender.reply(format_message("同步结果", "未找到任何绑定账号", "error"))
-        return
-
-    sender.reply(format_message("开始同步", f"共找到: {len(users)}个用户\n⏳ 同步中请稍候...", "loading"))
-
-    success_count = 0
-    skip_count = 0
-    fail_count = 0
-
-    for user in users:
-        try:
-            accountlist = sg.bucketGet(bucket='dd_sf_user', key=user)
-            if not accountlist:
-                continue
-
-            accounts = parse_accounts(accountlist)
-            for account in accounts:
-                try:
-                    accountVip = '2099-12-31'
-                    if not accountVip or accountVip <= today_time:
-                        skip_count += 1
-                        continue
-
-                    token = get_token_as_ck(account)
-                    if not token:
-                        fail_count += 1
-                        continue
-
-                    phone = mask_phone(account)
-                    Addenvs(
-                        osname=dd_sf_osname,
-                        value=token,
-                        account=account,
-                        phone=phone,
-                        target_userid=user,
-                        expire_time=accountVip
-                    )
-                    success_count += 1
-
-                except Exception as e:
-                    print(f"同步账号 {account} 失败: {str(e)}")
-                    fail_count += 1
-                    continue
-
-        except Exception as e:
-            print(f"处理用户 {user} 时出错: {str(e)}")
-            continue
-
-    result_msg = f"""=====同步完成=====
-✅ 成功同步: {success_count}个账号
-⏭️ 跳过未授权: {skip_count}个账号
-❌ 同步失败: {fail_count}个账号
-=================="""
-    sender.reply(result_msg)
-
-def sf_backend_manage():
-    if not sender.isAdmin():
-        sender.reply("❌ 您没有权限执行此操作!")
-        exit(0)
-
-    backend_menu = """=====顺丰后台管理=====
-[1] 顺丰授权
-[2] 顺丰清理
-[3] 顺丰面板同步
-------------------
-回复数字选择功能
-回复"q"退出
-=================="""
-    sender.reply(backend_menu)
-    xz = sender.listen(60000)
-
-    if xz == 'q' or xz == 'Q':
-        sender.reply("✅ 已退出后台管理")
-        return
-    elif xz is None:
-        sender.reply("⏰ 操作超时,已退出")
-        return
-    elif xz == '1':
-        sf_auth()
-    elif xz == '2':
-        clean_expired_accounts()
-    elif xz == '3':
-        sync_to_panel()
-    else:
-        sender.reply("❌ 输入错误,请重新选择")
-        return
+                token = get_token_as_ck(account)
+                if not token: raise ValueError('无有效 CK')
+                Addenvs(dd_sf_osname, token, account, mask_phone(account), target_userid=user, expire_time='')
+                success += 1
+            except Exception: failed += 1
+    if not quiet: sender.reply(f'=====同步完成=====\n✅ 成功：{success}\n❌ 失败：{failed}\n==================')
+    return success, failed
 
 def query_large_coupons(session_id, show_other_coupons=False):
     url = "https://mcs-mimp-web.sf-express.com/mcs-mimp/coupon/available/list"
@@ -2691,107 +1759,29 @@ def query_large_coupons(session_id, show_other_coupons=False):
         return "无"
 
 def show_tutorial():
-    tutorial = """📚 顺丰插件教程
+    sender.reply("""=====顺丰插件教程=====
+顺丰登录：验证码或微信扫码绑定账号
+顺丰查询：查询积分、优惠券和快递数量
+顺丰快递查询：查询物流轨迹
+顺丰管理：查询或删除账号
+顺丰刷新：刷新登录态
+顺丰同步：同步全部账号到面板
+==================""")
 
-🔰 基础功能指令:
-1️⃣ 顺丰登录 - 绑定顺丰账号(支持验证码登录 / 微信扫码登录)
-2️⃣ 顺丰查询 - 查看账号积分、大额优惠券和快递数量
-3️⃣ 顺丰快递查询 - 查询寄件/收件快递详情和物流轨迹
-4️⃣ 顺丰管理 - 管理已绑定账号([0]批量授权 [1-N]单个账号)
-5️⃣ 顺丰刷新 - 刷新登录态并同步最新 CK
-
-🔧 管理员功能:
-• 顺丰后台 - 进入管理员后台
-• 后台内可执行: 顺丰授权 / 顺丰清理 / 顺丰面板同步
-
-⚠️ 注意事项:
-1. 定期查看账号状态，授权到期后及时续费"""
-    sender.reply(tutorial)
-
-dd_sf_osname, dd_sf_qlname, dd_managecommand, dd_querycommand, dd_signcommand, \
-sfVipmoney, sfcoin, show_point_status, \
-show_other_coupons, use_ma_pay, use_daidai, dd_sf_ddname, panel_group = getusercontent()
-if use_daidai:
-    panel_url, panel_token = seekdd()
-    QLurl, qltoken = panel_url, panel_token
-else:
-    QLurl, qltoken = seekql()
-    panel_url, panel_token = QLurl, qltoken
-imtype = sender.getImtype()
-today_date = datetime.now().date()
-today_time = str(today_date)
-usermessage = sender.getMessage()
-if '登录' in usermessage or '登陆' in usermessage:
-    bindaccount()
+dd_sf_osname, dd_sf_qlname, dd_managecommand, dd_querycommand, dd_signcommand, _, _, show_point_status, show_other_coupons, _, use_daidai, dd_sf_ddname, panel_group = getusercontent()
+if use_daidai: QLurl, qltoken = seekdd()
+else: QLurl, qltoken = seekql()
+panel_url, panel_token = QLurl, qltoken
+imtype = sender.getImtype(); today_time = str(datetime.now().date()); usermessage = sender.getMessage()
+if '登录' in usermessage or '登陆' in usermessage: bindaccount()
 elif '管理' in usermessage:
-    if uservalue:
-        meituanmanage()
-    else:
-        sender.reply(f"""
-=====未绑定账号=====
-❌ 未找到任何账号信息
-💡 发送 {dd_signcommand} 绑定
-==================""")
-elif '快递查询' in usermessage:
-    sf_express_interactive_query()
-elif '查询' in usermessage:
-    if uservalue:
-        cxs()
-    else:
-        sender.reply(f"""
-=====未绑定账号=====
-❌ 未找到任何账号信息
-💡 发送 {dd_signcommand} 绑定
-==================""")
-elif usermessage == '顺丰后台':
-    sf_backend_manage()
-elif usermessage == '顺丰教程':
-    show_tutorial()
-elif usermessage in ('顺丰刷新', '顺丰Token刷新'):
-    refresh_all_signs()
-elif imtype == 'fake':
-    users = sg.bucketAllKeys(bucket='dd_sf_user')
-    for user in users:
-        accountlist = sg.bucketGet(bucket='dd_sf_user', key=f'{user}')
-        if not accountlist:
-            continue
-        accounts = parse_accounts(accountlist)
-        for account in accounts:
-            accountVip = '2099-12-31'
-            ck = get_ck_with_fallback(account)
-            if ck and validate_ck(ck):
-                if has_valid_auth(accountVip, today_time):
-                    try:
-                        expire_date = datetime.strptime(accountVip, "%Y-%m-%d")
-                        days_left = (expire_date - datetime.now()).days
-                        if days_left <= 3:
-                            push(user=user, account=account, c=f"""
-⏰ 定时检测提醒
-------------------
-⚠️ 授权即将到期
-📅 到期时间: {accountVip}
-⏳ 剩余天数: {days_left}天
-💡 请及时续费授权""")
-                    except:
-                        pass
-                    try:
-                        phone = mask_phone(account)
-                        Addenvs(osname=dd_sf_osname, value=ck, account=account, phone=phone, target_userid=user, expire_time=accountVip)
-                    except:
-                        pass
-                else:
-                    qlid = allenvs(osname=dd_sf_osname, account=account)
-                    delenvs(id=qlid)
-                    push(user=user, account=account, c="""
-⏰ 定时检测提醒
-------------------
-❌ 授权已过期
-💡 请及时续费授权""")
-            else:
-                push(user=user, account=account, c="""
-⏰ 定时检测提醒
-------------------
-❌ CK已失效，登录态异常
-💡 请尽快重新登录""")
-else:
-    sender.setContinue()
+    if uservalue: meituanmanage()
+    else: sender.reply(f'❌ 未绑定账号，请先发送 {dd_signcommand}')
+elif '快递查询' in usermessage: sf_express_interactive_query()
+elif '查询' in usermessage: cxs()
+elif usermessage in ('顺丰刷新', '顺丰Token刷新'): refresh_all_signs()
+elif usermessage == '顺丰同步':
+    if sender.isAdmin(): sync_to_panel()
+elif usermessage == '顺丰教程': show_tutorial()
+elif imtype == 'fake': sync_to_panel(quiet=True)
+else: sender.setContinue()

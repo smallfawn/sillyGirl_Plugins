@@ -3,14 +3,13 @@
 # [language: python]
 # [class: 任务]
 # [author: 8165799]
-# [version: v1.8.0]
+# [version: v1.8.1]
 # [public: true]
 # [disable: false]
 # [admin: false]
-# [rule: ^(和合)(登录|登陆)$|^登(录|陆)(和合)$|^(和合)(查询|管理)$|^(查询|管理)(和合)$|^和合清理$|^和合$|^和合教程$|^清理和合$|^和合通知 ?(.*)$|^和合广播 ?(.*)$]
-# [cron: 56 9,19 * * *]
+# [rule: ^(和合)(登录|登陆|管理|查询|教程)$|^(登录|登陆|管理|查询)(和合)$]
 # [icon: https://api.iconify.design/lucide:bot.svg]
-# [description: 和合天台代挂提交插件；2.5修复查询错误问题,2.8新增批量登录；支持青龙/呆呆变量同步]
+# [description: 和合天台账号登录、积分余额查询、管理与面板同步]
 # [depe: ["pycryptodome","requests"]]
 import asyncio as _sg_asyncio
 import os as _sg_os
@@ -31,48 +30,29 @@ _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
-    def call(name,*a,**k): return _sg_run(getattr(s,name)(*a,**k))
-    def listen(timeout=60000,*a,**k):
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
+    def wait(timeout=60000,*a,**k):
         try:
-            r=call("listen", {"timeout": int(timeout or 0)})
-            return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(
-        getUserID=lambda:call("getUserId"), getUserId=lambda:call("getUserId"), getMessage=lambda:call("getContent"), getContent=lambda:call("getContent"),
-        getUserName=lambda:call("getUserName"), getNickname=lambda:call("getUserName"), getChatID=lambda:call("getChatId"), getChatId=lambda:call("getChatId"),
-        getImtype=lambda:call("getPlatform"), getPlatform=lambda:call("getPlatform"), getMessageID=lambda:call("getMessageId"), getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""), getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),
-        isAdmin=lambda:bool(call("isAdmin")), reply=lambda msg="":call("reply", str(msg)), replyImage=lambda url="":call("reply", str(url) if str(url).startswith("[") else f"[CQ:image,file={url}]"),
-        listen=listen, input=listen, waitInput=listen, setContinue=lambda *a,**k:call("continue_"), breakIn=lambda *a,**k:call("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]
-        return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -85,22 +65,18 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; platform=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); group=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); content=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title)
-    return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(content or "")}))
-def _sg_notify(msg,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(msg), {"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
-    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
+    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-
 
 config = None
 _CONFIG_FIELD_MAP = {}
 
 import re
 import ast
-from datetime import datetime, timedelta
 from urllib.parse import unquote
-from decimal import Decimal
 import requests
 import time
 import json
@@ -110,7 +86,6 @@ import base64
 import warnings
 import random
 import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_v1_5
 
@@ -153,14 +128,11 @@ PLUGIN_SHARED_BUCKETS = ["dd_sign_points"]
 PLUGIN_AUTO_NAMESPACE = False
 PLUGIN_NAMESPACE_CANDIDATES = 50
 
-
 def build_plugin_buckets(namespace, suffixes):
     return [f"{namespace}_{suffix}" for suffix in suffixes]
 
-
 def plugin_bucket(suffix):
     return f"{PLUGIN_RUNTIME_NAMESPACE}_{suffix}"
-
 
 def build_namespace_candidates(base_namespace, max_number=50):
     candidates = [base_namespace]
@@ -168,13 +140,11 @@ def build_namespace_candidates(base_namespace, max_number=50):
     candidates.extend(f"{base_namespace}{ch}" for ch in "abcdefghijklmnopqrstuvwxyz")
     return candidates
 
-
 def _bucket_has_any_key(bucket_name):
     try:
         return bool(sg.bucketAllKeys(bucket=bucket_name))
     except Exception:
         return False
-
 
 def assert_automan_bucket_namespace_safe(
     plugin_name,
@@ -257,11 +227,10 @@ def assert_automan_bucket_namespace_safe(
     detail = "\n".join(blocked_notes[:8]) if blocked_notes else "没有可用命名空间"
     sender.reply(
         f"❌ {plugin_name} 已停止运行：无法自动找到可用数据桶前缀。\n"
-        "为避免账号、授权、token 数据错乱，本次不会写入任何数据。\n"
+        "为避免账号、状态、token 数据错乱，本次不会写入任何数据。\n"
         f"{detail}"
     )
     exit(0)
-
 
 PLUGIN_RUNTIME_NAMESPACE = assert_automan_bucket_namespace_safe(
     PLUGIN_NAME,
@@ -278,90 +247,9 @@ try:
 except:
     pass
 
-
 def getusercontent():
-    panel_type = (sg.bucketGet('dd_hhtt', 'panel_type') or 'qinglong').lower()
-    dd_hhtt_osname = sg.bucketGet('dd_hhtt', 'dd_hhtt_osname') or 'ty_hhtt'
-    dd_hhtt_qlname = sg.bucketGet('dd_hhtt', 'dd_hhtt_qlname') or ''
-    dd_managecommand = sg.bucketGet('dd_hhtt', 'dd_managecommand') or '和合管理'
-    dd_querycommand = sg.bucketGet('dd_hhtt', 'dd_querycommand') or '和合查询'
-    dd_signcommand = sg.bucketGet('dd_hhtt', 'dd_signcommand') or '和合登录'
-    zsm = sg.bucketGet('dd_hhtt', 'zsm') or ''
+    return {'dd_hhtt_osname':sg.bucketGet('dd_hhtt','dd_hhtt_osname') or 'ty_hhtt','dd_hhtt_qlname':sg.bucketGet('dd_hhtt','dd_hhtt_qlname') or '','panel_type':str(sg.bucketGet('dd_hhtt','panel_type') or 'qinglong').lower(),'randommanagecommand':'和合管理','randomquerycommand':'和合查询','randomsigncommand':'和合登录','global_q':sg.bucketGet('dd_hhtt','global_q') or '','require_q_link':str(sg.bucketGet('dd_hhtt','require_q_link') or 'false').lower()=='true','enable_proxy':str(sg.bucketGet('dd_hhtt','enable_proxy') or 'false').lower()=='true','proxy_pool_url':sg.bucketGet('dd_hhtt','proxy_pool_url') or '','enable_remark':True}
 
-    global_q = sg.bucketGet('dd_hhtt', 'global_q') or ''
-    require_q_link = sg.bucketGet('dd_hhtt', 'require_q_link') or 'false'
-    require_q_link = require_q_link.lower() == 'true'
-
-    enable_proxy = sg.bucketGet('dd_hhtt', 'enable_proxy') or 'false'
-    enable_proxy = enable_proxy.lower() == 'true'
-
-    proxy_pool_url = sg.bucketGet('dd_hhtt', 'proxy_pool_url') or ''
-
-    points_bucket = sg.bucketGet('dd_hhtt', 'points_bucket') or 'dd_sign_points'
-
-    enable_remark = sg.bucketGet('dd_hhtt', 'enable_remark') or 'false'
-    enable_remark = enable_remark.lower() == 'true'
-
-    randommanagecommand = dd_managecommand
-    randomquerycommand = dd_querycommand
-    randomsigncommand = dd_signcommand
-
-    xyVipmoney = Decimal(sg.bucketGet('dd_hhtt', 'hhttVipmoney') or '1')
-    xycoin = int(sg.bucketGet('dd_hhtt', 'hhttcoin') or '0')
-
-    show_point_status = sg.bucketGet('dd_hhtt', 'show_point_status') or 'false'
-    show_point_status = show_point_status.lower() == 'true'
-
-    use_ma_pay = '2099-12-31' or 'false'
-    use_ma_pay = use_ma_pay.lower() == 'true'
-
-    reminder_days = int(sg.bucketGet('dd_hhtt', 'reminder_days') or '2')
-    admin_notify_ids = sg.bucketGet('dd_hhtt', 'admin_notify_ids') or ''
-    epay_url = '2099-12-31' or ''
-    epay_pid = '2099-12-31' or ''
-    epay_key = '2099-12-31' or ''
-    epay_alipay = ('2099-12-31' or 'true').lower() == 'true'
-    epay_wxpay = ('2099-12-31' or 'false').lower() == 'true'
-    epay_qqpay = ('2099-12-31' or 'false').lower() == 'true'
-
-    if not dd_hhtt_qlname:
-        sender.reply("❌ 对接系统配置未设置")
-        exit(0)
-
-    if not dd_hhtt_osname:
-        sender.reply("❌ 变量名称未设置")
-        exit(0)
-
-    return {
-        'dd_hhtt_osname': dd_hhtt_osname,
-        'dd_hhtt_qlname': dd_hhtt_qlname,
-        'panel_type': panel_type,
-        'dd_managecommand': dd_managecommand,
-        'dd_querycommand': dd_querycommand,
-        'dd_signcommand': dd_signcommand,
-        'randommanagecommand': randommanagecommand,
-        'randomquerycommand': randomquerycommand,
-        'randomsigncommand': randomsigncommand,
-        'zsm': zsm,
-        'global_q': global_q,
-        'require_q_link': require_q_link,
-        'enable_proxy': enable_proxy,
-        'proxy_pool_url': proxy_pool_url,
-        'points_bucket': points_bucket,
-        'enable_remark': enable_remark,
-        'xyVipmoney': xyVipmoney,
-        'xycoin': xycoin,
-        'show_point_status': show_point_status,
-        'use_ma_pay': use_ma_pay,
-        'reminder_days': reminder_days,
-        'admin_notify_ids': admin_notify_ids,
-        'epay_url': epay_url,
-        'epay_pid': epay_pid,
-        'epay_key': epay_key,
-        'epay_alipay': epay_alipay,
-        'epay_wxpay': epay_wxpay,
-        'epay_qqpay': epay_qqpay
-    }
 
 config = getusercontent()
 
@@ -403,146 +291,13 @@ def get_owner_user_id(account, fallback_userid=None):
         pass
     return ""
 
-def send_user_notice(user_id, msg, title="和合天台通知"):
-    try:
-        imtype = sg.bucketGet(bucket=plugin_bucket('imtype'), key=str(user_id)) or sender.getImtype()
-    except:
-        imtype = sender.getImtype()
 
-    push_targets = [
-        (imtype, "", str(user_id)),
-        (sender.getImtype(), "", str(user_id)),
-    ]
-    last_error = "未知错误"
-    for im_type, group_code, target_user in list(dict.fromkeys(push_targets)):
-        for func_name in ['Push', 'push']:
-            push_func = getattr(sg, func_name, None)
-            if not callable(push_func):
-                continue
-            try:
-                push_func(str(im_type), str(group_code), str(target_user), title, msg)
-                return True, ""
-            except Exception as e:
-                last_error = f"{func_name}({im_type},{target_user}): {str(e) or e.__class__.__name__}"
 
-    targets = []
-    try:
-        saved_sender = sg.bucketGet(bucket=plugin_bucket('sender'), key=str(user_id))
-        if saved_sender:
-            targets.append(str(saved_sender))
-    except:
-        pass
-    targets.append(str(user_id))
 
-    method_names = ['Reply', 'reply', 'ReplyMarkdown', 'replyMarkdown', 'send', 'replyText', 'sendText', 'push', 'sendMsg', 'sendMessage']
-    for target in list(dict.fromkeys(targets)):
-        try:
-            target_sender = sg.Sender(target)
-        except Exception as e:
-            last_error = f"Sender({target})初始化失败: {str(e) or e.__class__.__name__}"
-            continue
 
-        tried_methods = []
-        for method_name in method_names:
-            method = getattr(target_sender, method_name, None)
-            if not callable(method):
-                continue
-            tried_methods.append(method_name)
-            try:
-                method(msg)
-                return True, ""
-            except Exception as e:
-                last_error = f"{method_name}: {str(e) or e.__class__.__name__}"
 
-        if not tried_methods:
-            available = [name for name in dir(target_sender) if not name.startswith('_')]
-            last_error = "无可用发送方法，可用方法: " + ",".join(available[:12])
-    return False, last_error
 
-def safe_send_message(user_id, msg, log_context=""):
-    ok, err = send_user_notice(user_id, msg, "和合提醒")
-    if not ok:
-        logger.warning(f"消息发送失败 {log_context}: {err}")
-    return ok
 
-def send_message_to_framework_admins(msg):
-    notify_func = getattr(sg, 'notifyMasters', None)
-    if not callable(notify_func):
-        return False
-    for arg in [None, []]:
-        try:
-            if arg is None:
-                notify_func(msg)
-            else:
-                notify_func(msg, arg)
-            return True
-        except TypeError:
-            try:
-                notify_func(msg)
-                return True
-            except Exception as e:
-                logger.warning(f"框架管理员推送失败: {e}")
-        except Exception as e:
-            logger.warning(f"框架管理员推送失败: {e}")
-    return False
-
-def send_daily_admin_report(report_data, force_send=False, notify_status=False):
-    report_date = str(report_data.get('report_date') or datetime.now().date())
-    report_key = f"daily_admin_report_{report_date}"
-    if not force_send and sg.bucketGet(plugin_bucket('runtime'), report_key):
-        if notify_status:
-            sender.reply("ℹ️ 今日管理员汇总已发送过，如需重发请再次手动清理。")
-        return False
-
-    msg = (
-        "=====和合维护完成=====\n"
-        f"✅ 检测完成，共 {report_data.get('scanned_accounts', 0)} 个账号\n"
-        f"📢 通知发送: {report_data.get('sent_notifications', 0)} 条\n"
-        f"⚠️ CK失效通知: {report_data.get('ck_expired_count', 0)} 个\n"
-        f"🧹 未授权面板清理: {report_data.get('unauth_panel_cleaned_count', 0)} 个\n"
-        f"🗑️ 清理过期: {report_data.get('cleaned_count', 0)} 个\n"
-        "=================="
-    )
-
-    if send_message_to_framework_admins(msg):
-        try:
-            sg.bucketSet(plugin_bucket('runtime'), report_key, "framework")
-        except Exception:
-            pass
-        if notify_status:
-            sender.reply("✅ 管理员汇总已发送（框架自动管理员）")
-        return True
-    if notify_status:
-        sender.reply("❌ 管理员汇总发送失败：框架自动管理员推送未成功，请检查傻妞默认管理员配置。")
-    return False
-
-def get_points_bucket_candidates():
-    buckets = []
-    configured_bucket = str(config.get('points_bucket') or '').strip()
-    if configured_bucket and configured_bucket != 'dd_sign_points':
-        buckets.append(configured_bucket)
-    for bucket in ['dd_sign_points', configured_bucket]:
-        bucket = str(bucket or '').strip()
-        if bucket and bucket not in buckets:
-            buckets.append(bucket)
-    return buckets
-
-def get_user_points():
-    return 0
-
-def set_user_points(points, bucket=None):
-    candidates = get_points_bucket_candidates()
-    target_bucket = bucket or (candidates[0] if candidates else str(config.get('points_bucket') or 'dd_sign_points'))
-    sg.bucketSet(target_bucket, userid, str(points))
-
-def is_cron_trigger():
-    imtype = ""
-    try:
-        imtype = str(sender.getImtype() or "").lower()
-    except:
-        pass
-    msg = str(usermessage or "").strip().lower()
-    return imtype in ["fake", "cron"] or msg in ["", "cron", "定时任务"]
 
 def mask_account(account):
     account = str(account or "")
@@ -552,10 +307,6 @@ def mask_account(account):
         return account[:3] + "****" + account[-3:]
     return account
 
-def get_account_display(account, remark=""):
-    account_display = mask_account(account)
-    remark = str(remark or "").strip()
-    return f"{account_display} - {remark}" if remark else account_display
 
 def generate_ua_from_phone(phone_number: str) -> str:
     version = "4.5.6"
@@ -612,26 +363,7 @@ def generate_ua_from_phone(phone_number: str) -> str:
     random.seed()
     return ua_string
 
-def empower(empowertime, days):
-    try:
-        today_date = datetime.now().date()
-        if not empowertime or empowertime <= str(today_date):
-            delayed_date = today_date + timedelta(days=days)
-        elif empowertime > str(today_date):
-            empower_date = datetime.strptime(empowertime, "%Y-%m-%d").date()
-            delayed_date = empower_date + timedelta(days=days)
-        else:
-            raise Exception('时间计算出错！')
-        if days < 0 and delayed_date < today_date:
-            delayed_date = today_date
-        return str(delayed_date)
-    except Exception as e:
-        logger.error("授权时间计算失败: " + str(e))
-        raise Exception("授权时间计算失败: " + str(e))
 
-
-def _create_epay_qr(out_trade_no, channel, project_name, money_str):
-    return True
 
 def encrypt_token(token):
     try:
@@ -1188,8 +920,6 @@ class QingLongAPI:
         try:
             phone_display = phone[:3] + '*' * 4 + phone[7:] if len(phone) >= 11 else phone
             remarks_parts = [f'和合:{account}']
-            if auth_time: remarks_parts.append(f'到期:{auth_time}')
-            else: remarks_parts.append('到期:未授权')
             if remark: remarks_parts.append(f'备注:{remark}')
             owner_user = get_owner_user_id(account, owner_user_id)
             if not owner_user:
@@ -1214,8 +944,6 @@ class QingLongAPI:
         try:
             phone_display = phone[:3] + '*' * 4 + phone[7:] if len(phone) >= 11 else phone
             remarks_parts = [f'和合:{account}']
-            if auth_time: remarks_parts.append(f'到期:{auth_time}')
-            else: remarks_parts.append('到期:未授权')
             if remark: remarks_parts.append(f'备注:{remark}')
             owner_user = get_owner_user_id(account, owner_user_id)
             if not owner_user:
@@ -1246,7 +974,7 @@ class QingLongAPI:
         except: return False
 
 try:
-    ql_api = QingLongAPI()
+    ql_api = QingLongAPI() if config['dd_hhtt_qlname'] else None
     if not ql_api.enabled and sender.getImtype() != 'fake':
         sender.reply("⚠️ 系统API初始化失败，青龙/呆呆同步功能不可用，请检查配置。")
 except Exception:
@@ -1262,150 +990,29 @@ except Exception:
     if sender.getImtype() != 'fake':
         sender.reply("⚠️ 系统API初始化异常，青龙/呆呆同步功能不可用，请检查配置。")
 
-
-def process_single_account(account, index, total_count, account_remarks):
+def process_single_account(account,index,total,remarks):
+    encrypted=sg.bucketGet(plugin_bucket('token'),account);credential=decrypt_token(encrypted) if encrypted else '';display=mask_account(account);remark=remarks.get(account,'')
+    if not credential:return f'{index}/{total} {remark or display}：凭证不存在'
     try:
-        account_display = mask_account(account)
-        token_data = sg.bucketGet(bucket=plugin_bucket('token'), key=f'{account}')
-        if token_data:
-            full_token = decrypt_token(token_data)
-        else:
-            full_token = None
+        parts=credential.split('#');phone,password=parts[:2];q=parts[2] if len(parts)>2 else ''
+        info=HeHeTianTai(phone,password,q).check_info()
+        if not info:return f'{index}/{total} {remark or display}：查询失败'
+        wallet=info.get('wallet',{});return f"{index}/{total} {remark or display}：积分 {info.get('integral',0)}，余额 {wallet.get('price',0)}，累计提现 {wallet.get('totalPrice',0)}"
+    except Exception as error:return f'{index}/{total} {remark or display}：查询失败 {error}'
 
-        accountVip = '2099-12-31'
-        remark = ""
-        if config['enable_remark']:
-            remark = account_remarks.get(account, "")
-
-        today_time = str(datetime.now().date())
-        if not accountVip:
-            auth_time = "无"
-        elif accountVip <= today_time:
-            auth_time = f"{accountVip} (已过期)"
-        else:
-            auth_time = accountVip
-
-        if accountVip and accountVip > today_time and full_token:
-            try:
-                parts = full_token.split('#')
-                if len(parts) >= 2:
-                    phone, pwd = parts[0], parts[1]
-                    q = parts[2] if len(parts) >= 3 else ""
-
-                    if q and "http" in q and "q=" not in q:
-                        return f"""
-=====配置错误提醒=====
-📝 备注: {remark if remark else account_display}
-🔑 账号: {account_display}
-❌ 错误: 检测到您上传的是[邀请链接]而非[抽奖链接]
-💡 解决: Q值无效，请重新发送 [{config['randomsigncommand']}] 录入正确格式
-=================="""
-
-                    client = HeHeTianTai(phone, pwd, q)
-                    info = client.check_info()
-
-                    if not info:
-                        error_reason = client.last_error if client.last_error else "未知连接错误"
-                        raise Exception(error_reason)
-
-                    recs = info['wallet'].get('records', [])
-                    rec_str = "\n".join(recs) if recs else "暂无记录"
-
-                    account_info = f"""
-📝 【备注名称】 : {remark if remark else account_display}
-📛 【用户昵称】 : {info['nickname']}
-🏆 【当前积分】 : {info['integral']}
-💵 【当前余额】 : {info['wallet']['price']}
-💴 【累计提现】 : {info['wallet']['totalPrice']}
-⏰ 【授权时间】 : {auth_time}
-------------------------------
-🎁 最近 5 次钱包记录:
-{rec_str}
-"""
-                    return account_info.strip()
-                else:
-                    return f"❌ 账号 {account_display} 格式错误"
-            except Exception as e:
-                return f"""
-=====和合查询失败=====
-🔑 账号: {account_display}
-❌ 原因: {str(e)[:50]}...
-=================="""
-        else:
-            return f"""
-📝 【备注名称】 : {remark if remark else account_display}
-🔑 【登录账号】 : {account_display}
-🔐 【授权状态】 : {'⚠️ 未授权' if not accountVip else '❌ 已过期'}
-⏰ 【授权时间】 : {auth_time}
-"""
-    except Exception:
-        return None
 
 def cxs():
-    try:
-        accounts = AccountManager.get_accounts(userid)
-        if not accounts:
-            sender.reply(f"""
-=====未绑定账号=====
-❌ 未找到任何账号信息
-💡 发送 {config['randomsigncommand']} 绑定
-==================""")
-            return
+    accounts=AccountManager.get_accounts(userid)
+    if not accounts:return sender.reply('未绑定账号，请发送【和合登录】')
+    remarks=RemarkManager.get_all_remarks(userid);sender.reply('请输入查询序号，a 查询全部，q 退出\n'+'\n'.join(f'{i}. {remarks.get(str(a)) or mask_account(str(a))}' for i,a in enumerate(accounts,1)))
+    choice=get_user_input()
+    if not choice or choice=='q':return
+    targets=list(enumerate(accounts,1)) if choice=='a' else []
+    if not targets:
+        indexes,_=parse_index_selection(choice,len(accounts),False);targets=[(i,accounts[i-1]) for i in indexes]
+    if not targets:return sender.reply('序号无效')
+    for index,account in targets:sender.reply(process_single_account(str(account),index,len(accounts),remarks))
 
-        account_remarks = {}
-        if config['enable_remark']:
-            account_remarks = RemarkManager.get_all_remarks(userid)
-
-        total_count = len(accounts)
-        today_time = str(datetime.now().date())
-        menu = "=====和合查询====="
-        for i, acc in enumerate(accounts, 1):
-            acc = str(acc)
-            remark = account_remarks.get(acc, "") if config['enable_remark'] else ""
-            vip = '2099-12-31'
-            if not vip:
-                vip_tag = '⚠️未授权'
-            elif vip < today_time:
-                vip_tag = '❌已过期'
-            else:
-                vip_tag = f'✅{vip}'
-            remark_disp = f" [{remark}]" if remark else ""
-            menu += f"\n[{i}] {mask_account(acc)}{remark_disp} {vip_tag}"
-        menu += "\n------------------\n[a] 查询全部\n支持单选/多选/区间，如 1,2 或 3-6\n回复q退出\n=================="
-        sender.reply(menu)
-
-        sel = get_user_input(timeout=60)
-        if not sel or sel.lower() == 'q':
-            sender.reply("✅ 已退出")
-            return
-
-        if sel.lower() == 'a':
-            target_accounts = list(enumerate(accounts, 1))
-        else:
-            selected_idxs, invalid_parts = parse_index_selection(sel, total_count, allow_all=False)
-            target_accounts = [(idx, accounts[idx - 1]) for idx in selected_idxs]
-            if not target_accounts:
-                sender.reply("❌ 请输入有效序号，例如 1,2 或 3-6")
-                return
-            if invalid_parts:
-                sender.reply(f"⚠️ 已忽略无效内容: {','.join(invalid_parts[:5])}")
-
-        sender.reply(f"🚀 正在并发查询 {len(target_accounts)} 个账号，请稍候...")
-
-        max_workers = min(10, len(target_accounts))
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_account = {}
-            for index, account in target_accounts:
-                future = executor.submit(process_single_account, account, index, total_count, account_remarks)
-                future_to_account[future] = account
-
-            for future in as_completed(future_to_account):
-                result_msg = future.result()
-                if result_msg: sender.reply(result_msg)
-
-    except Exception as e:
-        logger.error("批量查询失败: " + str(e))
-        sender.reply("❌ 查询失败: " + str(e))
 
 def get_user_input(timeout=60):
     try:
@@ -1416,24 +1023,10 @@ def get_user_input(timeout=60):
         return response
     except: return None
 
-def listen_payment_cancel(interval_ms=500):
-    return True
-
-def is_cancel_input(value):
-    try:
-        return str(value).strip().lower() in ['q', 'quit', 'exit', '退出', 'cancel', '取消']
-    except:
-        return False
-
-def cancel_payment_reply():
-    return True
 
 
-def validate_wx_payment(res, expected_amount):
-    return True
 
-def wait_epay_result(query_url, timeout_seconds=180, check_interval=3):
-    return True
+
 
 def parse_index_selection(text, total_count, allow_all=True):
     try:
@@ -1481,11 +1074,7 @@ def parse_index_selection(text, total_count, allow_all=True):
     except:
         return [], [str(text)]
 
-def pick_accounts_by_indexes(accounts, indexes):
-    return [str(accounts[i - 1]) for i in indexes if 1 <= i <= len(accounts)]
 
-def selection_tip(action="选择"):
-    return "回复 a 全选\n支持单选/多选/区间，如 1,2 或 3-6 或 1,3-8,10\n回复 q 退出"
 
 def split_login_entries(input_text):
     text = str(input_text or "").strip()
@@ -1639,7 +1228,7 @@ def bindaccount():
                 msg_lines.append(f"... 另有 {len(fail_msgs) - 15} 个失败账号")
         if success_count:
             msg_lines.append("------------------")
-            msg_lines.append(f"下一步可发送 {config['randommanagecommand']} 进行授权或管理")
+            msg_lines.append(f"下一步可发送 {config['randommanagecommand']} 进行管理")
         msg_lines.append("==================")
         sender.reply("\n".join(msg_lines))
 
@@ -1647,632 +1236,79 @@ def bindaccount():
         logger.error("绑定失败: " + str(e))
         sender.reply("❌ 绑定失败: " + str(e))
 
-def process_account_binding(full_token, phone, nickname, remark="", reply=True):
-    try:
-        account = phone
-        accountVip = '2099-12-31'
-        today_time = str(datetime.now().date())
+def process_account_binding(full_token,phone,nickname,remark='',reply=True):
+    account=str(phone);existing=AccountManager.get_accounts(userid)
+    if account in existing:AccountManager.update_account_token(userid,account,full_token)
+    else:AccountManager.add_account(userid,account);sg.bucketSet(plugin_bucket('token'),account,encrypt_token(full_token))
+    if remark:RemarkManager.set_account_remark(userid,account,remark)
+    sync='仅本地保存'
+    if ql_api:
+        try:
+            env=ql_api.find_env_by_account(account,full_token)
+            if env:ql_api.update_env(env,full_token,account,phone,remark,'')
+            else:ql_api.add_env(full_token,account,phone,remark,'')
+            sync='面板同步成功'
+        except Exception as error:sync=f'面板同步失败：{error}'
+    message=f'{nickname}（{mask_account(phone)}）绑定成功；{sync}'
+    if reply:sender.reply(message)
+    return message
 
-        is_authorized = False
-        if accountVip and accountVip >= today_time:
-            is_authorized = True
-            auth_status = f'✅ 已授权 ({accountVip})'
-            next_step = f'发送 {config["randommanagecommand"]} 可管理账号'
-        else:
-            auth_status = '⚠️ 未授权'
-            next_step = f'发送 {config["randommanagecommand"]} 进行授权'
-
-        remark_info = f"\n📝 备注: {remark}" if remark else ""
-
-        existing_accounts = AccountManager.get_accounts(userid)
-        if account in existing_accounts:
-            AccountManager.update_account_token(userid, account, full_token)
-        else:
-            AccountManager.add_account(userid, account)
-            encrypted_token = encrypt_token(full_token)
-            sg.bucketSet(bucket=plugin_bucket('token'), key=account, value=encrypted_token)
-
-        if config['enable_remark'] and remark:
-            RemarkManager.set_account_remark(userid, account, remark)
-
-        ql_msg = ""
-        if is_authorized:
-            try:
-                qlid = ql_api.find_env_by_account(account, full_token)
-                if qlid:
-                    ql_api.update_env(qlid, full_token, account, phone, remark, auth_time=accountVip)
-                else:
-                    ql_api.add_env(full_token, account, phone, remark, auth_time=accountVip)
-                ql_msg = "\n🔄 状态: ✅ 已同步到系统"
-            except:
-                ql_msg = "\n🔄 状态: ❌ 系统同步失败"
-        else:
-            ql_msg = "\n🔄 状态: ⏸️ 未授权，暂不提交"
-
-        message = f"""
-=====和合账号绑定=====
-✅ 绑定成功!
-👤 用户: {nickname}
-🔑 账号: {mask_account(phone)}{remark_info}
-🔐 授权: {auth_status}{ql_msg}
-⏰ 下一步操作:
-   {next_step}
-=================="""
-        if reply:
-            sender.reply(message)
-        return message
-    except Exception as e:
-        err = f"绑定处理异常: {str(e)}"
-        if reply:
-            sender.reply(err)
-        return err
 
 def xy_manage():
-    accounts = AccountManager.get_accounts(userid)
-    if not accounts:
-        sender.reply(f"❌ 未找到账号，请发送 {config['randomsigncommand']} 绑定")
-        return
-
-    account_remarks = RemarkManager.get_all_remarks(userid) if config['enable_remark'] else {}
-    count = len(accounts)
-    account_list = "======我的和合账号====="
-    today_time = str(datetime.now().date())
-
-    for i, account in enumerate(accounts, 1):
-        account = str(account)
-        accountVip = '2099-12-31'
-        if not accountVip: vip_status = '⚠️ 未授权'
-        elif accountVip < today_time: vip_status = '❌ 已过期'
-        else: vip_status = f'✅ {accountVip}'
-
-        remark = account_remarks.get(account, "") if config['enable_remark'] else ""
-        account_display = get_account_display(account, remark)
-
-        account_list += f"\n------------------\n[{i}] 账号: {account_display}\n🔐 授权: {vip_status}"
-
-    account_list += "\n------------------\n[b] 批量授权\n[d] 批量删除\n[q] 退出管理\n提示: 可回复 1,2 或 3-6 多选管理\n=================="
-    sender.reply(account_list)
-
-    response = get_user_input()
-    if not response or response == 'q':
-        sender.reply('✅ 已退出')
-        return
-
-    if response.lower() == 'b':
-        batch_auth_flow(accounts, account_remarks)
-        return
-    elif response.lower() == 'd':
-        batch_delete_flow(accounts)
-        return
-
-    selected_idxs, invalid_parts = parse_index_selection(response, count, allow_all=False)
-    if invalid_parts:
-        sender.reply(f"⚠️ 已忽略无效内容: {','.join(invalid_parts[:5])}")
-
-    if len(selected_idxs) == 1:
-        manage_single_account(str(accounts[selected_idxs[0] - 1]), account_remarks)
-    elif len(selected_idxs) > 1:
-        selected_accs = [str(accounts[i - 1]) for i in selected_idxs]
-        manage_multiple_accounts(selected_accs, account_remarks)
-    else:
-        sender.reply('❌ 序号无效或格式错误')
-
-def manage_multiple_accounts(selected_accs, account_remarks):
-    sender.reply(f"""=====批量管理=====
-已选择 {len(selected_accs)} 个账号
-------------------
-[1] 批量授权
-[2] 批量删除
-------------------
-回复数字选择，Q退出
-==================""")
-    sel = get_user_input()
-    if sel == '1':
-        batch_auth_selected(selected_accs, account_remarks)
-    elif sel == '2':
-        batch_delete_selected(selected_accs)
-    elif sel and sel.lower() == 'q':
-        sender.reply("✅ 已退出")
-
-def batch_auth_flow(all_accounts, account_remarks):
-    sender.reply(f"""=====选择授权账号=====
-请输入要授权的账号序号
-------------------
-{selection_tip('授权')}
-==================""")
-    sel = get_user_input()
-    if not sel or sel.lower() == 'q':
-        return
-
-    selected_idxs, invalid_parts = parse_index_selection(sel, len(all_accounts), allow_all=True)
-    selected_accs = pick_accounts_by_indexes(all_accounts, selected_idxs)
-    if selected_accs:
-        if invalid_parts:
-            sender.reply(f"⚠️ 已忽略无效内容: {','.join(invalid_parts[:5])}")
-        batch_auth_selected(selected_accs, account_remarks)
-    else:
-        sender.reply("❌ 无效的序号，请回复如 1,2 或 3-6")
-
-def batch_delete_flow(all_accounts):
-    sender.reply(f"""=====选择删除账号=====
-请输入要删除的账号序号
-------------------
-{selection_tip('删除')}
-==================""")
-    sel = get_user_input()
-    if not sel or sel.lower() == 'q':
-        return
-
-    selected_idxs, invalid_parts = parse_index_selection(sel, len(all_accounts), allow_all=True)
-    selected_accs = pick_accounts_by_indexes(all_accounts, selected_idxs)
-    if selected_accs:
-        if invalid_parts:
-            sender.reply(f"⚠️ 已忽略无效内容: {','.join(invalid_parts[:5])}")
-        batch_delete_selected(selected_accs)
-    else:
-        sender.reply("❌ 无效的序号，请回复如 1,2 或 3-6")
-
-def manage_single_account(account, account_remarks):
-    try:
-        encrypted_token = sg.bucketGet(bucket=plugin_bucket('token'), key=f'{account}')
-        token = decrypt_token(encrypted_token) if encrypted_token else ""
-        accountVip = '2099-12-31'
-        remark = account_remarks.get(account, "") if config['enable_remark'] else ""
-
-        today_time = str(datetime.now().date())
-        vip_status = '⚠️ 未授权' if not accountVip else ('❌ 已过期' if accountVip < today_time else f'✅ {accountVip}')
-
-        sender.reply(f"""
-=====账号详情=====
-🔑 账号: {mask_account(account)}
-📝 备注: {remark}
-🔐 授权: {vip_status}
-==================
-[1] 授权账号
-[2] 删除账号
-[3] 修改备注
-------------------
-回复数字选择，Q退出
-==================""")
-
-        choice = get_user_input()
-        if not choice or choice == 'q': return
-
-        if choice == '1': # 授权
-            sender.reply("请输入授权月数(如:1)，Q退出")
-            months_str = get_user_input()
-            if not months_str or months_str == 'q': return
-            try:
-                months = int(months_str)
-                if months <= 0: raise ValueError
-            except:
-                sender.reply("❌ 数字无效")
-                return
-
-            if process_payment('和合授权', months, accountVip, token, account, account, account, remark):
-                days = months * 30
-                new_auth_time = empower(accountVip, days)
-                if token:
-                    try:
-                        qlid = ql_api.find_env_by_account(account, token)
-                        if qlid: ql_api.update_env(qlid, token, account, account, remark, new_auth_time)
-                        else: ql_api.add_env(token, account, account, remark, new_auth_time)
-                        sender.reply("🔄 授权成功并同步到系统！")
-                    except: sender.reply("⚠️ 授权成功但系统同步失败")
-
-                money = Decimal(months) * config['xyVipmoney']
-                sender.reply(f"=====订单完成=====\n💰 金额: {money}元\n📅 到期: {new_auth_time}")
-
-        elif choice == '2': # 删除
-            sender.reply("确认删除回复【y】")
-            if get_user_input() == 'y':
-                AccountManager.remove_account(userid, account)
-                qlid = ql_api.find_env_by_account(account, token)
-                if qlid: ql_api.delete_env(qlid)
-                sg.bucketDel(bucket=plugin_bucket('token'), key=account)
-                if config['enable_remark']: RemarkManager.delete_account_remark(userid, account)
-                sender.reply("✅ 删除成功")
-
-        elif choice == '3': # 备注
-             sender.reply("请输入新备注:")
-             new_remark = get_user_input()
-             if new_remark and new_remark != 'q':
-                 RemarkManager.set_account_remark(userid, account, new_remark)
-                 if token:
-                     qlid = ql_api.find_env_by_account(account, token)
-                     if qlid: ql_api.update_env(qlid, token, account, account, new_remark, accountVip)
-                 sender.reply("✅ 备注更新成功")
-
-    except Exception as e:
-        sender.reply(f"操作失败: {e}")
-
-def process_payment(project, months, accountVip, token, phone, account, yt_account, remark=""):
-    return True
-def batch_auth_selected(accounts, account_remarks):
-    sender.reply(f"已选择 {len(accounts)} 个账号\n请输入授权月数，Q退出")
-    m = get_user_input()
-    if not m or not m.isdigit(): return
-    months = int(m)
-    if months <= 0: return
-
-    count = len(accounts)
-    total_money = Decimal(months) * config['xyVipmoney'] * count
-    total_points = config['xycoin'] * months * count
-    user_points, points_bucket = get_user_points()
-
-    options = []
-    idx = 1
-    if config['zsm']:
-        options.append({'id': idx, 'type': 'wx', 'name': '微信支付', 'amount': total_money})
-        idx += 1
-    if config['epay_url'] and config['epay_pid'] and config['epay_key']:
-        if config['epay_alipay']:
-            options.append({'id': idx, 'type': 'epay', 'channel': 'alipay', 'name': '支付宝', 'amount': total_money})
-            idx += 1
-        if config['epay_wxpay']:
-            options.append({'id': idx, 'type': 'epay', 'channel': 'wxpay', 'name': '微信支付', 'amount': total_money})
-            idx += 1
-        if config['epay_qqpay']:
-            options.append({'id': idx, 'type': 'epay', 'channel': 'qqpay', 'name': 'QQ钱包', 'amount': total_money})
-            idx += 1
-    if config['use_ma_pay']:
-        ma_conf = {
-            'switch': '2099-12-31',
-            'gateway': '2099-12-31',
-            'pid': '2099-12-31',
-            'key': '2099-12-31'
-        }
-        if ma_conf['switch'] == 'true':
-            options.append({'id': idx, 'type': 'ma', 'name': '在线处理', 'amount': total_money, 'conf': ma_conf})
-            idx += 1
-    if config['xycoin'] > 0:
-        options.append({'id': idx, 'type': 'pt', 'name': '积分支付', 'amount': total_points, 'curr': user_points})
-
-    if not options:
-        sender.reply("❌ 未配置支付方式")
-        return
-
-    msg = f"=====批量授权确认=====\n👥 账号数量: {count}个\n📅 授权时长: {months}个月\n💰 总需金额: {total_money}元\n💎 总需积分: {total_points}"
-    msg += "\n------------------"
-    for opt in options:
-        amount_str = f"{opt['amount']}积分" if opt['type'] == 'pt' else f"{opt['amount']}元"
-        suffix = f" (当前: {opt['curr']})" if opt['type'] == 'pt' else ""
-        msg += f"\n[{opt['id']}] {opt['name']} ({amount_str}){suffix}"
-    msg += "\n------------------\n回复数字选择，Q退出\n=================="
-    sender.reply(msg)
-
-    sel = get_user_input()
-    if not sel or sel == 'q':
-        cancel_payment_reply()
-        return
-
-    try:
-        choice = int(sel)
-        opt = next((o for o in options if o['id'] == choice), None)
-        if not opt: raise ValueError
-
-        if opt['type'] == 'wx':
-            if False:
-                sender.reply("⚠️ 当前有人支付中")
-                return
-            out_trade_no = f"WX_BATCH_{int(time.time())}_{random.randint(100,999)}"
-            sender.reply(f"=====等待支付=====\n💰 金额: {opt['amount']}元\n💳 方式: 微信收款\n📋 订单: {out_trade_no}\n------------------\n请在 60 秒内完成扫在线处理\n回复\"q\"取消支付")
-            sender.replyImage(config['zsm'])
-            res = False
-            if not validate_wx_payment(res, opt['amount']):
-                return
-
-        elif opt['type'] == 'pt':
-            if int(opt['curr']) < int(opt['amount']):
-                sender.reply(f"❌ 积分不足，需要 {opt['amount']}，当前 {opt['curr']}")
-                return
-            sender.reply(f"确认消耗 {opt['amount']} 积分？回复【y】")
-            confirm = get_user_input()
-            if is_cancel_input(confirm) or not confirm:
-                cancel_payment_reply()
-                return
-            if confirm != 'y':
-                sender.reply("✅ 已取消支付")
-                return
-            new_pt = int(opt['curr']) - int(opt['amount'])
-            set_user_points(new_pt, points_bucket)
-
-        elif opt['type'] == 'epay':
-            out_trade_no = f"HHTT_BATCH_EPAY_{int(time.time())}_{userid}_{random.randint(1000,9999)}"
-            formatted_money = f"{float(opt['amount']):.2f}"
-            channel_name = "支付宝" if opt['channel'] == 'alipay' else ("微信支付" if opt['channel'] == 'wxpay' else "QQ钱包")
-            qr_image_url, _ = _create_epay_qr(out_trade_no, opt['channel'], f"和合批量-{count}号-{months}月", formatted_money)
-            sender.reply(f"=====等待支付=====\n💰 金额: {formatted_money}元\n💳 方式: {channel_name}\n📋 订单: {out_trade_no}\n------------------\n请在 180 秒内完成扫在线处理\n回复\"q\"取消支付")
-            sender.replyImage(qr_image_url)
-            query_url = f"{config['epay_url'].rstrip('/')}/api.php?act=order&pid={config['epay_pid']}&key={config['epay_key']}&out_trade_no={out_trade_no}"
-            pay_result = wait_epay_result(query_url, timeout_seconds=180, check_interval=3)
-            if pay_result == "cancel":
-                return
-            if pay_result != "paid":
-                sender.reply("❌ 支付超时，请重新发起。")
-                return
-
-        elif opt['type'] == 'ma':
-            conf = opt['conf']
-            out_trade_no = f"HHTT_BATCH_{int(time.time())}{userid}"
-            params = {
-                'pid': conf['pid'],
-                'type': 'alipay',
-                'out_trade_no': out_trade_no,
-                'name': f"和合批量-{count}号-{months}月",
-                'money': str(opt['amount']),
-                'notify_url': '', 'return_url': '', 'param': userid
-            }
-            sorted_params = sorted(params.items(), key=lambda x: x[0])
-            sign_str = "&".join([f"{k}={v}" for k, v in sorted_params])
-            sign = hashlib.md5((sign_str + conf['key']).encode()).hexdigest().lower()
-            params['sign'] = sign
-            params['sign_type'] = 'MD5'
-
-            url = conf['gateway'].rstrip('/') + '/submit.php'
-            res = requests.post(url, data=params, timeout=5)
-            if 'http' in res.text:
-                sender.reply("请完成支付后检查配置；如需取消请回复 q")
-                if listen_payment_cancel(5000):
-                    cancel_payment_reply()
-                    return
-                return
-            else:
-                 sender.reply("❌ 创建订单失败")
-                 return
-
-    except Exception:
-        sender.reply("❌ 输入错误或支付取消")
-        return
-
-    sender.reply(f"🚀 支付成功，正在处理 {count} 个账号...")
-    for account in accounts:
-        try:
-            accountVip = '2099-12-31'
-            new_date = empower(accountVip, months*30)
-            encrypted_token = sg.bucketGet(bucket=plugin_bucket('token'), key=account)
-            token = decrypt_token(encrypted_token) if encrypted_token else None
-
-            curr_remark = account_remarks.get(account, "") if account_remarks else ""
-
-            if token:
-                 try:
-                     qid = ql_api.find_env_by_account(account, token)
-                     if qid: ql_api.update_env(qid, token, account, account, curr_remark, new_date)
-                     else: ql_api.add_env(token, account, account, curr_remark, new_date)
-                 except: pass
-        except: pass
-
-    sender.reply("✅ 批量授权完成")
+    accounts=AccountManager.get_accounts(userid)
+    if not accounts:return sender.reply('未绑定账号，请发送【和合登录】')
+    remarks=RemarkManager.get_all_remarks(userid);sender.reply('和合账号：\n'+'\n'.join(f'{i}. {remarks.get(str(a)) or mask_account(str(a))}' for i,a in enumerate(accounts,1))+'\n回复序号管理，q 退出')
+    choice=get_user_input()
+    if not choice or choice=='q':return
+    try:account=str(accounts[int(choice)-1])
+    except (ValueError,IndexError):return sender.reply('序号无效')
+    manage_single_account(account,remarks)
 
 
-def batch_delete_selected(accounts):
-    preview = []
-    for account in accounts[:5]:
-        preview.append(str(account))
-    more = f"\n...等 {len(accounts)} 个账号" if len(accounts) > 5 else ""
-    sender.reply(f"=====确认批量删除=====\n已选择 {len(accounts)} 个账号\n{chr(10).join(preview)}{more}\n------------------\n确认删除请回复【确认删除】\n回复 q 取消\n==================")
-    if get_user_input() != "确认删除":
-        sender.reply("✅ 已取消删除")
-        return
-
-    today_date = datetime.now().date()
-    for account in accounts:
-        try:
-            account = str(account)
-            token = AccountManager.get_token(account)
-            ql_api.delete_env_by_account(account, token)
-            AccountManager.remove_account(userid, account)
-            try: sg.bucketDel(bucket=plugin_bucket('token'), key=account)
-            except: pass
-            try:
-                pass
-            except: pass
-            if config['enable_remark']:
-                RemarkManager.delete_account_remark(userid, account)
-            for d in range(config['reminder_days'] + 1):
-                remind_key = f"{userid}_{account}_{today_date - timedelta(days=d)}"
-                try: sg.bucketDel(plugin_bucket('remind_log'), remind_key)
-                except: pass
-        except Exception as e:
-            logger.warning(f"批量删除账号失败 {account}: {e}")
-    sender.reply("✅ 批量删除完成")
 
 
-def clean_expired_accounts(force_report=False):
-    try:
-        users = AccountManager.get_all_users()
-        if not users:
-            if sender.isAdmin() and (force_report or usermessage in ['和合清理', '清理和合']):
-                sender.reply("=====执行结果=====\n📭 暂无用户数据")
-            return {
-                "report_date": str(datetime.now().date()),
-                "scanned_users": 0,
-                "scanned_accounts": 0,
-                "sent_notifications": 0,
-                "ck_expired_count": 0,
-                "unauth_panel_cleaned_count": 0,
-                "cleaned_count": 0,
-                "reminded_count": 0,
-            }
 
-        if sender.isAdmin() and (force_report or usermessage in ['和合清理', '清理和合']):
-            sender.reply(f"=====开始执行维护=====\n📊 扫描用户数: {len(users)}\n⚙️ 提醒天数: {config['reminder_days']}天\n⏳ 处理中...")
-
-        scanned_accounts = 0
-        cleaned_count = 0
-        reminded_count = 0
-        unauth_panel_cleaned_count = 0
-        today_date = datetime.now().date()
-
-        for user in users:
-            try:
-                sg.Sender(str(user))
-                valid_accounts = []
-                user_has_change = False
-                for account in AccountManager.get_accounts(user):
-                    account = str(account)
-                    scanned_accounts += 1
-                    accountVip = '2099-12-31'
-                    if not accountVip:
-                        token = AccountManager.get_token(account)
-                        try:
-                            if ql_api.delete_env_by_account(account, token):
-                                unauth_panel_cleaned_count += 1
-                        except Exception as e:
-                            logger.warning(f"未授权账号面板清理失败 {account}: {e}")
-                        valid_accounts.append(account)
-                        continue
-
-                    try:
-                        expiration_date = datetime.strptime(str(accountVip), "%Y-%m-%d").date()
-                        expiration_str = str(accountVip)
-                    except:
-                        expiration_date = today_date - timedelta(days=1)
-                        expiration_str = "日期错误"
-
-                    days_diff = (expiration_date - today_date).days
-                    if days_diff >= 0:
-                        valid_accounts.append(account)
-                        if days_diff <= config['reminder_days']:
-                            remind_key = f"{user}_{account}_{today_date}"
-                            if not sg.bucketGet(plugin_bucket('remind_log'), remind_key):
-                                msg = f"""=====⏰ 到期提醒=====
-您的和合账号授权即将到期！
-🔑 账号: {mask_account(account)}
-📅 到期: {expiration_str} (剩余 {days_diff} 天)
-------------------
-为避免影响挂机，请及时续费。
-发送 {config['randommanagecommand']} 进行续费
-=================="""
-                                if safe_send_message(user, msg, f"到期提醒 {user}-{account}"):
-                                    try: sg.bucketSet(plugin_bucket('remind_log'), remind_key, "1")
-                                    except: pass
-                                    reminded_count += 1
-                        continue
-
-                    token = AccountManager.get_token(account)
-                    ql_api.delete_env_by_account(account, token)
-                    try: sg.bucketDel(bucket=plugin_bucket('token'), key=account)
-                    except: pass
-                    try:
-                        pass
-                    except: pass
-                    if config['enable_remark']:
-                        RemarkManager.delete_account_remark(user, account)
-                    clean_msg = f"""=====🗑️ 过期清理通知=====
-您的和合账号授权已过期并清理。
-🔑 账号: {mask_account(account)}
-📅 到期: {expiration_str}
-------------------
-相关配置已失效移除。
-如需继续使用，请重新登录并授权。
-=================="""
-                    safe_send_message(user, clean_msg, f"过期清理通知 {user}-{account}")
-                    cleaned_count += 1
-                    user_has_change = True
-
-                if user_has_change:
-                    if valid_accounts:
-                        try: sg.bucketSet(bucket=plugin_bucket('user'), key=str(user), value=str(valid_accounts))
-                        except: pass
-                    else:
-                        try: sg.bucketDel(bucket=plugin_bucket('user'), key=str(user))
-                        except: pass
-            except Exception as e:
-                logger.warning(f"维护用户失败 {user}: {e}")
-
-        if sender.isAdmin() and (force_report or usermessage in ['和合清理', '清理和合']):
-            sender.reply(
-                f"=====和合维护完成=====\n"
-                f"✅ 检测完成，共 {scanned_accounts} 个账号\n"
-                f"📢 授权提醒: {reminded_count} 个\n"
-                f"🧹 未授权面板清理: {unauth_panel_cleaned_count} 个\n"
-                f"🗑️ 清理过期: {cleaned_count} 个\n"
-                f"=================="
-            )
-
-        return {
-            "report_date": str(today_date),
-            "scanned_users": len(users),
-            "scanned_accounts": scanned_accounts,
-            "sent_notifications": reminded_count + cleaned_count,
-            "ck_expired_count": 0,
-            "unauth_panel_cleaned_count": unauth_panel_cleaned_count,
-            "cleaned_count": cleaned_count,
-            "reminded_count": reminded_count,
-        }
-
-    except Exception as e:
-        logger.error(f"清理任务执行异常: {e}")
-        if usermessage in ['和合清理', '清理和合'] or force_report:
-            sender.reply(f"❌ 清理过程发生异常: {str(e)}")
-        return {
-            "report_date": str(datetime.now().date()),
-            "scanned_users": 0,
-            "scanned_accounts": 0,
-            "sent_notifications": 0,
-            "ck_expired_count": 0,
-            "unauth_panel_cleaned_count": 0,
-            "cleaned_count": 0,
-            "reminded_count": 0,
-        }
-
-def admin_auth_options():
-    return True
+def manage_single_account(account,remarks):
+    encrypted=sg.bucketGet(plugin_bucket('token'),account);token=decrypt_token(encrypted) if encrypted else '';remark=remarks.get(account,'')
+    sender.reply('1. 删除账号\n2. 修改备注\n3. 重新同步面板\nq. 退出');choice=get_user_input()
+    if choice=='1':
+        sender.reply('回复 y 确认删除')
+        if get_user_input()=='y':
+            AccountManager.remove_account(userid,account)
+            if ql_api:
+                env=ql_api.find_env_by_account(account,token)
+                if env:ql_api.delete_env(env)
+            sg.bucketDel(plugin_bucket('token'),account);RemarkManager.delete_account_remark(userid,account);sender.reply('账号已删除')
+    elif choice=='2':
+        sender.reply('请输入新备注，n 清空');new=get_user_input()
+        if new=='n':RemarkManager.delete_account_remark(userid,account);new=''
+        elif new:RemarkManager.set_account_remark(userid,account,new[:20])
+        else:return
+        if token and ql_api:
+            env=ql_api.find_env_by_account(account,token)
+            if env:ql_api.update_env(env,token,account,account,new,'')
+        sender.reply('备注已更新')
+    elif choice=='3':
+        if not token:return sender.reply('凭证不存在，请重新登录')
+        if not ql_api:return sender.reply('未配置面板')
+        env=ql_api.find_env_by_account(account,token)
+        if env:ql_api.update_env(env,token,account,account,remark,'')
+        else:ql_api.add_env(token,account,account,remark,'')
+        sender.reply('面板同步完成')
 
 
 
 
 
 
-def notify_authorized_users():
-    return True
 
 def show_tutorial():
-    panel_name = '青龙' if config.get('panel_type') == 'qinglong' else '呆呆'
-    sender.reply(f"""
-=====和合插件教程=====
-当前模式: 🌐 提交至{panel_name}面板
+    sender.reply('【和合登录】绑定账号；【和合查询】查询积分和余额；【和合管理】删除、备注或重新同步面板。')
 
-1️⃣ {config['randomsigncommand']}
-   输入：手机号#密码#Q值
-   自动RSA加密登录并同步系统
 
-2️⃣ {config['randomquerycommand']}
-   查询积分与余额(支持单选/多选/区间)
-
-3️⃣ {config['randommanagecommand']}
-   续费授权、删除账号、批量管理
-
-4️⃣ 和合授权
-   管理员总管理：授权、总览、CK预览、反查、同步、清理。
-
-⚠️ 变量名: {config['dd_hhtt_osname']}
-==================""")
-
-try:
-    command_text = str(usermessage or '')
-    if re.search(r'(通知|广播)', command_text):
-        notify_authorized_users()
-    elif '登录' in command_text or '登陆' in command_text:
-        bindaccount()
-    elif '管理' in command_text:
-        xy_manage()
-    elif '查询' in command_text:
-        cxs()
-    elif command_text in ['和合清理', '清理和合']:
-        report_data = clean_expired_accounts(force_report=True)
-        send_daily_admin_report(report_data, force_send=True, notify_status=True)
-    elif command_text == '和合授权':
-        admin_auth_options()
-    elif command_text == '和合教程':
-        show_tutorial()
-    elif command_text.startswith('和合通知') or command_text.startswith('和合广播'):
-        notify_authorized_users()
-    elif is_cron_trigger():
-        report_data = clean_expired_accounts()
-        send_daily_admin_report(report_data)
-except Exception as e:
-    logger.error(f"Error: {e}")
-    sender.reply(f"❌ 系统错误: {e}")
+command_text=str(usermessage or '')
+if '登录' in command_text or '登陆' in command_text:bindaccount()
+elif '管理' in command_text:xy_manage()
+elif '查询' in command_text:cxs()
+elif command_text=='和合教程':show_tutorial()
+else:sender.setContinue()

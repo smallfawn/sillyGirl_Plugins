@@ -3,7 +3,7 @@
 # [language: python]
 # [class: 任务]
 # [author: huawei]
-# [version: v1.1.0]
+# [version: v1.1.1]
 # [public: true]
 # [disable: false]
 # [admin: false]
@@ -11,7 +11,6 @@
 # [icon: https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg]
 # [description: 顺易充时间调整、库存管理、账号运行]
 # [depe: ["requests"]]
-
 
 import asyncio as _sg_asyncio
 import os as _sg_os
@@ -32,48 +31,29 @@ _sg_loop = None
 
 def _sg_get_loop():
     global _sg_loop
-    if _sg_loop is not None and not _sg_loop.is_closed():
-        return _sg_loop
+    if _sg_loop is not None and not _sg_loop.is_closed(): return _sg_loop
     box = {}
     def runner():
-        loop = _sg_asyncio.new_event_loop()
-        _sg_asyncio.set_event_loop(loop)
-        box["loop"] = loop
-        loop.run_forever()
-    t = _sg_Thread(target=runner, daemon=True)
-    t.start()
-    while "loop" not in box:
-        _sg_time.sleep(0.01)
-    _sg_loop = box["loop"]
-    return _sg_loop
+        loop = _sg_asyncio.new_event_loop(); _sg_asyncio.set_event_loop(loop); box["loop"] = loop; loop.run_forever()
+    _sg_Thread(target=runner, daemon=True).start()
+    while "loop" not in box: _sg_time.sleep(0.01)
+    _sg_loop = box["loop"]; return _sg_loop
 
-def _sg_run(coro):
-    if not _sg_asyncio.iscoroutine(coro):
-        return coro
-    loop = _sg_get_loop()
-    future = _sg_asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result()
-
+def _sg_run(value):
+    if not _sg_asyncio.iscoroutine(value): return value
+    return _sg_asyncio.run_coroutine_threadsafe(value, _sg_get_loop()).result()
 
 def _sg_sender_sync(uuid=""):
-    s=_SGSender(uuid or _sg_os.environ.get("SENDER_ID", ""))
-    def call(name,*a,**k): return _sg_run(getattr(s,name)(*a,**k))
-    def listen(timeout=60000,*a,**k):
+    s = _SGSender(uuid or _sg_os.environ.get("SENDER_ID", "")); call = lambda name,*a,**k: _sg_run(getattr(s,name)(*a,**k))
+    def wait(timeout=60000,*a,**k):
         try:
-            r=call("listen", {"timeout": int(timeout or 0)})
-            return _sg_run(r.getContent()) if r else ""
+            reply = call("listen", {"timeout": int(timeout or 0)}); return _sg_run(reply.getContent()) if reply else ""
         except Exception: return ""
-    return _sg_types.SimpleNamespace(
-        getUserID=lambda:call("getUserId"), getUserId=lambda:call("getUserId"), getMessage=lambda:call("getContent"), getContent=lambda:call("getContent"),
-        getUserName=lambda:call("getUserName"), getNickname=lambda:call("getUserName"), getChatID=lambda:call("getChatId"), getChatId=lambda:call("getChatId"),
-        getImtype=lambda:call("getPlatform"), getPlatform=lambda:call("getPlatform"), getMessageID=lambda:call("getMessageId"), getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""), getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),
-        isAdmin=lambda:bool(call("isAdmin")), reply=lambda msg="":call("reply", str(msg)), replyImage=lambda url="":call("reply", str(url) if str(url).startswith("[") else f"[CQ:image,file={url}]"),
-        listen=listen, input=listen, waitInput=listen, setContinue=lambda *a,**k:call("continue_"), breakIn=lambda *a,**k:call("continue_"))
+    return _sg_types.SimpleNamespace(getUserID=lambda:call("getUserId"),getUserId=lambda:call("getUserId"),getMessage=lambda:call("getContent"),getContent=lambda:call("getContent"),getUserName=lambda:call("getUserName"),getNickname=lambda:call("getUserName"),getChatID=lambda:call("getChatId"),getChatId=lambda:call("getChatId"),getImtype=lambda:call("getPlatform"),getPlatform=lambda:call("getPlatform"),getMessageID=lambda:call("getMessageId"),getPluginName=lambda:_sg_os.environ.get("PLUGIN_NAME",""),getPluginVersion=lambda:_sg_os.environ.get("PLUGIN_VERSION",""),isAdmin=lambda:bool(call("isAdmin")),reply=lambda m="":call("reply",str(m)),replyImage=lambda u="":call("reply",str(u) if str(u).startswith("[") else f"[CQ:image,file={u}]"),listen=wait,input=wait,waitInput=wait,setContinue=lambda *a,**k:call("continue_"),breakIn=lambda *a,**k:call("continue_"))
 
 def _sg_bucket_get(bucket=None,key=None,default="",**kw):
     try:
-        v=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]
-        return default if v in (None,"") and default not in (None,"") else (v if v is not None else "")
+        value=_SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]; return default if value in (None,"") and default not in (None,"") else (value if value is not None else "")
     except Exception: return default or ""
 def _sg_bucket_set(bucket=None,key=None,value=None,**kw):
     try: _SGBucket(str(kw.get("bucket",bucket) or ""))[str(kw.get("key",key) or "")]=kw.get("value",value); return True
@@ -86,13 +66,11 @@ def _sg_bucket_all(bucket=None,**kw):
     try: return _sg_run(_SGBucket(str(kw.get("bucket",bucket) or "")).getAll()) or {}
     except Exception: return {}
 def _sg_push(*a,**kw):
-    i=a[0] if a and isinstance(a[0],dict) else {}; platform=i.get("imType") or i.get("platform") or kw.get("platform") or (a[0] if a else ""); group=i.get("groupCode") or i.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=i.get("userID") or i.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=i.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); content=i.get("content") or i.get("message") or kw.get("content") or (a[4] if len(a)>4 else title)
-    return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(content or "")}))
-def _sg_notify(msg,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(msg), {"platforms":list(channels or [])} if channels else {}))
+    item=a[0] if a and isinstance(a[0],dict) else {}; platform=item.get("imType") or item.get("platform") or kw.get("platform") or (a[0] if a else ""); group=item.get("groupCode") or item.get("group_id") or kw.get("group_id") or (a[1] if len(a)>1 else ""); user=item.get("userID") or item.get("user_id") or kw.get("userID") or (a[2] if len(a)>2 else ""); title=item.get("title") or kw.get("title") or (a[3] if len(a)>3 else ""); message=item.get("content") or item.get("message") or kw.get("content") or (a[4] if len(a)>4 else title); return _sg_run(_SGAdapter(str(platform or "")).push({"group_id":str(group or ""),"user_id":str(user or ""),"title":str(title or ""),"content":str(message or "")}))
+def _sg_notify(message,channels=None,*a,**k): return _sg_run(_sg_sender.pushAdmin(str(message),{"platforms":list(channels or [])} if channels else {}))
 class _SGFacade:
-    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda msg="":_sg_sender_sync().reply(msg)); get=staticmethod(lambda key,default="":_sg_bucket_get(*(str(key).split(".",1) if "." in str(key) else ["otto",key]), default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
+    Sender=staticmethod(_sg_sender_sync); getSenderID=staticmethod(lambda:_sg_os.environ.get("SENDER_ID","")); getPluginName=staticmethod(lambda:_sg_os.environ.get("PLUGIN_NAME","")); bucketGet=staticmethod(_sg_bucket_get); bucketSet=staticmethod(_sg_bucket_set); bucketDel=staticmethod(_sg_bucket_del); bucketDelete=staticmethod(_sg_bucket_del); bucketAllKeys=staticmethod(_sg_bucket_keys); bucketKeys=staticmethod(_sg_bucket_keys); bucketAll=staticmethod(_sg_bucket_all); notifyMasters=staticmethod(_sg_notify); pushAdmin=staticmethod(_sg_notify); push=staticmethod(_sg_push); Push=staticmethod(_sg_push); reply=staticmethod(lambda m="":_sg_sender_sync().reply(m)); get=staticmethod(lambda k,default="":_sg_bucket_get(*(str(k).split(".",1) if "." in str(k) else ["otto",k]),default=default)); getParam=get; version=staticmethod(lambda:{"sn":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0"),"version":_sg_os.environ.get("SILLYGIRL_VERSION","3.0.0")}); port=staticmethod(lambda:_sg_os.environ.get("SILLYGIRL_PORT","8080")); sleep=staticmethod(lambda sec:_sg_time.sleep(float(sec or 0)))
 sg=_SGFacade(); Sender=sg.Sender; getSenderID=sg.getSenderID; bucketGet=sg.bucketGet; bucketSet=sg.bucketSet; bucketAllKeys=sg.bucketAllKeys; notifyMasters=sg.notifyMasters
-
 
 config = None
 _CONFIG_FIELD_MAP = {}
@@ -106,19 +84,16 @@ from typing import Optional
 
 BASE_URL = "https://app.wodeev.com"
 
-
 def get_proxy_api() -> str:
     try:
         return sg.bucketGet(bucket="G_SYC", key="proxy_api") or ""
     except:
         return ""
 
-
 proxy_url = get_proxy_api()
 IS_PROXY = bool(proxy_url)
 proxy_cache = {}
 proxy_lock = threading.Lock()
-
 
 def get_proxy(force_new=False, account_key=None):
     if not IS_PROXY or not proxy_url:
@@ -142,7 +117,6 @@ def get_proxy(force_new=False, account_key=None):
     except:
         return None
 
-
 def get_headers(token: str) -> dict:
     return {
         "authorization": f"Bearer {token}",
@@ -154,7 +128,6 @@ def get_headers(token: str) -> dict:
         "loginchannel": "01",
         "client-version": "5.5.2",
     }
-
 
 def get_score_rank(token: str, account_key: str = None) -> Optional[dict]:
     url = f"{BASE_URL}/bil-front/v2.0/accounts/myScoreRank"
@@ -180,7 +153,6 @@ def get_score_rank(token: str, account_key: str = None) -> Optional[dict]:
     except:
         return None
 
-
 def get_score_mall(token: str, account_key: str = None) -> Optional[list]:
     url = f"{BASE_URL}/bil-front/v2.0/accounts/scoreMall"
     try:
@@ -199,7 +171,6 @@ def get_score_mall(token: str, account_key: str = None) -> Optional[list]:
         return None
     except:
         return None
-
 
 def exchange_goods(token: str, product_no: str, account_key: str = None) -> tuple:
     url = f"{BASE_URL}/bil-front/v2.0/exchange"
@@ -222,11 +193,9 @@ def exchange_goods(token: str, product_no: str, account_key: str = None) -> tupl
     except Exception as e:
         return False, f"请求异常: {e}"
 
-
 senderID = sg.getSenderID()
 sender = sg.Sender(senderID)
 userid = sender.getUserID()
-
 
 def get_config():
     try:
@@ -271,28 +240,17 @@ def get_config():
             "agent_points_per_month": 800,
         }
 
-
 def get_user_points(user_id=None):
     return 0
-
-
-
-
-
-
-
 
 def agent_wechat_payment_flow(days, amount, config):
     return True
 
-
 def agent_point_payment_flow(days, required_points):
     return True
 
-
 def get_all_authorized_accounts():
     return True
-
 
 def get_user_by_phone(phone):
     try:
@@ -306,10 +264,8 @@ def get_user_by_phone(phone):
     except:
         return None
 
-
 def adjust_authorization_time(phone, days):
     return True
-
 
 def batch_adjust_all_users(days):
     authorized_accounts = get_all_authorized_accounts()
@@ -328,7 +284,6 @@ def batch_adjust_all_users(days):
             fail_count += 1
             results.append(f"❌ {masked_phone}: {result}")
     return success_count, fail_count, results
-
 
 def parse_selection(choice_str, max_index):
     indices = []
@@ -354,7 +309,6 @@ def parse_selection(choice_str, max_index):
                 pass
     return list(set(indices))
 
-
 def adjust_single_user():
     sender.reply("请输入需要授权的用户ID:")
     user_id_input = sender.input(60000, 1, False)
@@ -376,7 +330,7 @@ def adjust_single_user():
         return
     account_list = []
     for phone in phones:
-        expire_date = '2099-12-31' or "未授权"
+        expire_date = '2099-12-31'
         masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
         account_list.append(
             {"phone": phone, "masked_phone": masked_phone, "expire_date": expire_date}
@@ -463,7 +417,6 @@ def adjust_single_user():
     summary += "\n".join(results)
     sender.reply(summary)
 
-
 def fix_expire_year():
     authorized_accounts = get_all_authorized_accounts()
     if not authorized_accounts:
@@ -541,7 +494,6 @@ def fix_expire_year():
             + "\n".join(results[-10:])
         )
     sender.reply(summary)
-
 
 def delete_expired_accounts():
     today = datetime.now().strftime("%Y-%m-%d")
@@ -621,7 +573,6 @@ def delete_expired_accounts():
         )
     sender.reply(summary)
 
-
 def delete_user_accounts():
     sender.reply(
         "=====删除操作=====\n"
@@ -666,7 +617,7 @@ def delete_user_accounts():
             if phones:
                 valid_users.append({"user_id": target_user_id, "phones": phones})
                 for phone in phones:
-                    expire_date = '2099-12-31' or "未授权"
+                    expire_date = '2099-12-31'
                     masked_phone = (
                         phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
                     )
@@ -756,7 +707,6 @@ def delete_user_accounts():
     summary += "\n".join(user_results)
     sender.reply(summary)
 
-
 def query_exchange_stock():
     phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
     try:
@@ -789,7 +739,6 @@ def query_exchange_stock():
         msg += f"🎫 {name}\n💰 {price}分 | 📦 库存: {stock}\n--------------------\n"
     msg += "===================="
     sender.reply(msg)
-
 
 def do_exchange_stock():
     phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
@@ -915,7 +864,6 @@ def do_exchange_stock():
         f"=====兑换完成=====\n📱 账号: {masked}\n🎫 商品: {goods_name}\n✅ 成功: {success_count}个\n❌ 失败: {fail_count}个\n===================="
     )
 
-
 def summarize_all_users():
     sender.reply("🔍 正在统计所有用户账号...")
     all_users = sg.bucketAllKeys("G_SYC_user") or []
@@ -934,7 +882,7 @@ def summarize_all_users():
                 continue
             auth_count = 0
             for phone in phones:
-                expire_date = '2099-12-31' or ""
+                expire_date = '2099-12-31'
                 if expire_date and expire_date >= today:
                     auth_count += 1
             total_accounts += len(phones)
@@ -966,7 +914,6 @@ def summarize_all_users():
         summary += f"{idx}. {stat['uid_short']}: {stat['count']}个 {auth_info}\n"
     sender.reply(summary)
 
-
 def run_user_accounts():
     try:
         phones_json = sg.bucketGet("G_SYC_user", userid) or "[]"
@@ -980,7 +927,7 @@ def run_user_accounts():
         invalid_accounts = []
 
         for phone in phones:
-            expire_date = '2099-12-31' or ""
+            expire_date = '2099-12-31'
             token = sg.bucketGet("G_SYC_token", phone) or ""
 
             if not expire_date:
@@ -1037,7 +984,6 @@ def run_user_accounts():
 
     except Exception as e:
         sender.reply(f"❌ 运行异常: {str(e)}")
-
 
 def agent_auth_purchase():
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
@@ -1161,7 +1107,6 @@ def agent_auth_purchase():
 --------------------
 💡 发送「顺易充代理」可将名下所有账号同步到此到期时间""")
 
-
 def agent_sync_accounts():
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
 
@@ -1204,7 +1149,7 @@ def agent_sync_accounts():
 
     account_list = []
     for phone in phones:
-        current_expire = '2099-12-31' or "未授权"
+        current_expire = '2099-12-31'
         masked_phone = phone[:3] + "****" + phone[-4:] if len(phone) == 11 else phone
         account_list.append(f"📱 {masked_phone} | 当前到期: {current_expire}")
 
@@ -1255,7 +1200,6 @@ def agent_sync_accounts():
 
     sender.reply(summary)
 
-
 def agent_query_status():
     userid_display = userid[:20] + "..." if len(userid) > 20 else userid
 
@@ -1301,7 +1245,6 @@ def agent_query_status():
 --------------------
 💡 发送「顺易充代理」同步账号到期时间
 💡 发送「顺易充代理授权」续费""")
-
 
 def admin_agent_config():
     if not sender.isAdmin():
@@ -1482,7 +1425,6 @@ def admin_agent_config():
     else:
         sender.reply("❌ 无效选择")
 
-
 def main():
     if not sender.isAdmin():
         sender.reply("❌ 此功能仅限管理员使用")
@@ -1561,7 +1503,6 @@ def main():
         summary += "\n前10个结果:\n" + "\n".join(results[:10])
         summary += "\n...\n后10个结果:\n" + "\n".join(results[-10:])
     sender.reply(summary)
-
 
 try:
     usermessage = sender.getMessage()

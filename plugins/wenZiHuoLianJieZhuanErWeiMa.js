@@ -1,6 +1,6 @@
 //[title: 文字或链接转二维码]
 //[name: wenZiHuoLianJieZhuanErWeiMa]
-//[language: nodejs]
+//[language: javascript]
 //[class: 工具]
 //[author: 偷CK的六舅哥]
 //[version: v1.2.0]

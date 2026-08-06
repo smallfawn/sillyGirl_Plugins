@@ -1,6 +1,6 @@
 //[title: 网抑云热评]
 //[name: wangYiYunRePing]
-//[language: nodejs]
+//[language: javascript]
 //[class: 娱乐]
 //[author: qw21560]
 //[version: v1.1.0]

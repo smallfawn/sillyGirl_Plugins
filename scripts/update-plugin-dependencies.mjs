@@ -1,12 +1,11 @@
-import { builtinModules, createRequire } from "node:module";
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { builtinModules } from "node:module";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const require = createRequire(import.meta.url);
 const root = process.cwd();
 const pluginsDir = path.join(root, "plugins");
+const checkOnly = process.argv.includes("--check");
 const pluginExts = new Set([".js", ".py"]);
 const nodeBuiltins = new Set([
   ...builtinModules,
@@ -17,7 +16,7 @@ function commandOutput(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: root,
-      shell: process.platform === "win32",
+      shell: false,
       ...options,
     });
     let stdout = "";
@@ -73,6 +72,12 @@ function normalizePythonPackage(value) {
   return /^[a-z0-9][a-z0-9.-]*$/.test(text) ? text : "";
 }
 
+const pythonPackageNames = new Map([
+  ["bs4", "beautifulsoup4"], ["Crypto", "pycryptodome"], ["Cryptodome", "pycryptodomex"],
+  ["cv2", "opencv-python"], ["dateutil", "python-dateutil"], ["jwt", "pyjwt"],
+  ["PIL", "pillow"], ["sklearn", "scikit-learn"], ["yaml", "pyyaml"],
+]);
+
 function fallbackNodeDependencies(content) {
   const deps = new Set();
   const patterns = [
@@ -91,48 +96,19 @@ function fallbackNodeDependencies(content) {
 }
 
 async function scanNodeDependencies(file) {
-  const deps = new Set();
-  const content = await readFile(file, "utf8");
-  try {
-    const madge = require("madge");
-    const result = await madge(file, {
-      baseDir: root,
-      includeNpm: true,
-      fileExtensions: ["js", "mjs", "cjs"],
-    });
-    const graph = await result.obj();
-    for (const values of Object.values(graph)) {
-      for (const item of values || []) {
-        const name = normalizeNodePackage(item);
-        if (name) deps.add(name);
-      }
-    }
-  } catch (error) {
-    console.warn(`madge 扫描失败，改用基础语法扫描：${path.relative(root, file)} ${error.message}`);
-  }
-  for (const name of fallbackNodeDependencies(content)) deps.add(name);
-  return [...deps].sort();
+  return fallbackNodeDependencies(await readFile(file, "utf8")).sort();
 }
 
 async function scanPythonDependencies(file) {
-  const temp = await mkdtemp(path.join(os.tmpdir(), "sillygirl-plugin-pipreqs-"));
-  try {
-    const target = path.join(temp, path.basename(file));
-    await writeFile(target, await readFile(file, "utf8"));
-    const savePath = path.join(temp, "requirements.txt");
-    await commandOutput("pipreqs", [temp, "--force", "--mode", "no-pin", "--savepath", savePath], { cwd: temp });
-    const raw = await readFile(savePath, "utf8").catch(() => "");
-    const deps = new Set();
-    for (const line of raw.split(/\r?\n/)) {
-      const clean = line.trim();
-      if (!clean || clean.startsWith("#")) continue;
-      const name = normalizePythonPackage(clean);
-      if (name && name !== "sillygirl") deps.add(name);
-    }
-    return [...deps].sort();
-  } finally {
-    await rm(temp, { recursive: true, force: true });
-  }
+  const scanner = [
+    "import ast,json,pathlib,sys",
+    "tree=ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))",
+    "names={a.name.split('.')[0] for n in ast.walk(tree) if isinstance(n,ast.Import) for a in n.names}",
+    "names|={n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n,ast.ImportFrom) and n.module}",
+    "print(json.dumps(sorted(names-set(sys.stdlib_module_names)-{'sillygirl'})))",
+  ].join(";");
+  const imports = JSON.parse(await commandOutput(process.env.PYTHON || "python", ["-c", scanner, file]));
+  return [...new Set(imports.map((name) => pythonPackageNames.get(name) || normalizePythonPackage(name)).filter(Boolean))].sort();
 }
 
 function lineForDepe(deps, style = "js") {
@@ -157,13 +133,18 @@ function updateDepeComment(content, deps) {
   return lines.join("\n");
 }
 
+const stale = [];
 for (const file of await pluginFiles()) {
   const ext = path.extname(file).toLowerCase();
   const deps = ext === ".py" ? await scanPythonDependencies(file) : await scanNodeDependencies(file);
   const content = await readFile(file, "utf8");
   const updated = updateDepeComment(content, deps);
   if (updated !== content) {
-    await writeFile(file, updated);
+    if (checkOnly) stale.push(path.relative(root, file).replaceAll("\\", "/"));
+    else await writeFile(file, updated);
   }
   console.log(`${path.relative(root, file).replaceAll("\\", "/")}: ${JSON.stringify(deps)}`);
+}
+if (stale.length) {
+  throw new Error(`依赖注释需要更新：\n${stale.join("\n")}`);
 }

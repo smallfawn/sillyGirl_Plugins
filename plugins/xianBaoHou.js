@@ -1,0 +1,52 @@
+// [title: 线报猴]
+// [name: xianBaoHou]
+// [language: javascript]
+// [class: 任务]
+// [author: sillyGirl]
+// [version: v2.0.0]
+// [public: true]
+// [disable: false]
+// [admin: false]
+// [rule: ^线报猴$]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [description: 从线报酷开放接口读取最新线报]
+// [depe: []]
+
+const { plugin, sender: s } = require("sillygirl");
+
+const config = new plugin.Form({
+  enable: plugin.Form.boolean().title("是否启用").default(true),
+  limit: plugin.Form.number().title("返回条数").default(5),
+  source_url: plugin.Form.string().title("线报开放接口").default("https://new.ixbk.net/plus/json/push.json"),
+});
+
+async function main() {
+  const cfg = await config.get() || {};
+  if (cfg.enable === false) return s.reply("线报猴未启用");
+  try {
+    const response = await fetch(String(cfg.source_url || "https://new.ixbk.net/plus/json/push.json"), { headers: { accept: "application/json" } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const items = unwrap(await response.json());
+    const limit = Math.min(10, Math.max(1, Number(cfg.limit) || 5));
+    if (!items.length) throw new Error("接口没有返回线报");
+    const text = items.slice(0, limit).map((item, index) => {
+      const url = new URL(String(item.url || ""), "https://new.ixbk.net/").toString();
+      return `${index + 1}. ${item.title || "未命名线报"}\n${item.shorttime || item.datetime || ""}\n${url}`;
+    }).join("\n\n");
+    return s.reply(`最新线报\n${text}\n\n来源：线报酷开放接口`);
+  } catch (error) {
+    return s.reply(`线报获取失败：${message(error)}`);
+  }
+}
+
+function unwrap(value) {
+  if (Array.isArray(value)) return value;
+  for (const key of ["data", "list", "items", "result"]) if (Array.isArray(value?.[key])) return value[key];
+  return [];
+}
+
+function message(error) {
+  return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300);
+}
+
+main();

@@ -1,389 +1,345 @@
 {
-  "4dea686e-06ab-7572-1da8-022bcd5eaef1": {
-    "id": "4dea686e-06ab-7572-1da8-022bcd5eaef1",
+  "3aaba3db-4396-86b8-d7f4-e85c51614e4c": {
+    "id": "3aaba3db-4396-86b8-d7f4-e85c51614e4c",
     "name": "aiHaiYan",
     "title": "爱海盐",
     "author": "8165799",
-    "version": "v1.3.1",
-    "desc": "爱海盐账号登录、查询、面板同步与管理",
+    "version": "v2.0.0",
+    "desc": "爱海盐凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^爱海盐(登录|登陆|查询|管理|教程)?$|^登(录|陆)爱海盐$|^(查询|管理)爱海盐$",
     "public": true,
     "admin": false,
-    "path": "plugins/aiHaiYan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiHaiYan.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/aiHaiYan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiHaiYan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.273Z"
   },
-  "47bd4167-cf0b-bd7c-479f-9a0dd5d5267a": {
-    "id": "47bd4167-cf0b-bd7c-479f-9a0dd5d5267a",
+  "a7ba9e5b-9c96-a98b-7768-a8fa4602be05": {
+    "id": "a7ba9e5b-9c96-a98b-7768-a8fa4602be05",
     "name": "aiKunZhuShou",
     "title": "爱坤助手",
     "author": "rujingxianghai",
-    "version": "v1.0.3",
-    "desc": "爱坤/ik登录、爱坤/ik管理、爱坤/ik查询",
+    "version": "v2.0.0",
+    "desc": "爱坤助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(爱坤|ik)(登录|登陆)$|^登(录|陆)(爱坤|ik)$|^(爱坤|ik)(查询|管理|检测|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/aiKunZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiKunZhuShou.py",
-    "dependencies": [
-      "parsel",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/aiKunZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiKunZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.075Z"
   },
-  "2d51c094-671c-b50a-ee87-2ff1f3abe8cc": {
-    "id": "2d51c094-671c-b50a-ee87-2ff1f3abe8cc",
+  "3b5775af-328c-8c30-26eb-85acc81969c3": {
+    "id": "3b5775af-328c-8c30-26eb-85acc81969c3",
     "name": "aiLuQiao",
     "title": "爱路桥",
     "author": "rujingxianghai",
-    "version": "v1.3.2",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "爱路桥凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(爱路桥|alq)(登录|登陆)$|^登(录|陆)(爱路桥|alq)$|^(爱路桥|alq)(查询|管理|检测|教程)$|^(查询|管理|检测|教程)(爱路桥|alq)$",
     "public": true,
     "admin": false,
-    "path": "plugins/aiLuQiao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiLuQiao.py",
-    "dependencies": [
-      "cryptography",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/aiLuQiao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiLuQiao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.077Z"
   },
-  "1741df7b-90ab-15cb-5787-5deb842a2e9f": {
-    "id": "1741df7b-90ab-15cb-5787-5deb842a2e9f",
+  "273c3ba1-ade8-4e2f-582d-92029c72c491": {
+    "id": "273c3ba1-ade8-4e2f-582d-92029c72c491",
     "name": "aiXianJuZhuShou",
     "title": "爱仙居助手",
     "author": "8165799",
-    "version": "v1.8.2",
-    "desc": "爱仙居提交插件；1. 支持短信/抓包登录；新增短信登录开关 1.7修复查询登录问题；📞",
+    "version": "v2.0.0",
+    "desc": "爱仙居助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(爱仙居)(登录|登陆)$|^登(录|陆)(爱仙居)$|^(爱仙居)(查询|管理)$|^(查询|管理)(爱仙居)$|^爱仙居清理$|^爱仙居$|^爱仙居教程$|^爱仙居通知 ?(.*)$|^清理爱仙居$",
     "public": true,
     "admin": false,
-    "path": "plugins/aiXianJuZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiXianJuZhuShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/aiXianJuZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiXianJuZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.854Z"
   },
-  "6b7fa606-ff7b-11fc-8763-3d8d1e5c6d2d": {
-    "id": "6b7fa606-ff7b-11fc-8763-3d8d1e5c6d2d",
+  "8996f85d-f589-b905-2a59-aa6eb0837256": {
+    "id": "8996f85d-f589-b905-2a59-aa6eb0837256",
     "name": "appWuYi",
     "title": "app_武义",
     "author": "601712460",
-    "version": "v1.0.2",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "app_武义凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^武义登陆$|^武义登录$|^武义签到$|^武义管理$|^武义超管$|^武义配置$|^wyfk$",
     "public": true,
     "admin": false,
-    "path": "plugins/appWuYi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appWuYi.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/appWuYi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appWuYi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.855Z"
   },
-  "3899a8d8-797e-6626-ea7e-bb0e0b5203b0": {
-    "id": "3899a8d8-797e-6626-ea7e-bb0e0b5203b0",
+  "8169c483-f0f4-7264-abb6-6957f6c35592": {
+    "id": "8169c483-f0f4-7264-abb6-6957f6c35592",
     "name": "appXiShi",
     "title": "app_西施",
     "author": "601712460",
-    "version": "v1.0.2",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "app_西施凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^西施登陆$|^西施登录$|^西施签到$|^西施管理$|^西施超管$|^西施配置$|^xishifk$",
     "public": true,
     "admin": false,
-    "path": "plugins/appXiShi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appXiShi.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/appXiShi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appXiShi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.855Z"
   },
-  "e3956b47-6ff3-ee4d-b886-f9c6b1ab39ac": {
-    "id": "e3956b47-6ff3-ee4d-b886-f9c6b1ab39ac",
+  "82ecd8c3-243a-c0d1-0cba-db16eb205057": {
+    "id": "82ecd8c3-243a-c0d1-0cba-db16eb205057",
     "name": "baiJingYuHuiShou",
     "title": "白鲸鱼回收",
     "author": "rujingxianghai",
-    "version": "v1.3.2",
-    "desc": "白鲸鱼回收，每日签到答题领鲸鱼币；更新日志：",
+    "version": "v2.0.0",
+    "desc": "白鲸鱼回收凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(白鲸鱼|bjy)(登录|登陆)$|^登(录|陆)(白鲸鱼|bjy)$|^(白鲸鱼|bjy)(查询|管理|教程)$|^(查询|管理)(白鲸鱼|bjy)$|^白鲸鱼$|^白鲸鱼检测$",
     "public": true,
     "admin": false,
-    "path": "plugins/baiJingYuHuiShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/baiJingYuHuiShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/baiJingYuHuiShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/baiJingYuHuiShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.856Z"
   },
-  "767950d7-b133-2080-9cae-93a5c6710ac8": {
-    "id": "767950d7-b133-2080-9cae-93a5c6710ac8",
+  "24442085-b4aa-bade-0e0e-adac4a41faf7": {
+    "id": "24442085-b4aa-bade-0e0e-adac4a41faf7",
     "name": "chaJianFeiMaYi",
     "title": "【插件】-飞蚂蚁",
     "author": "huawei",
-    "version": "v1.1.1",
-    "desc": "飞蚂蚁APP插件；指令：；蚂蚁登录：绑定账号；蚂蚁查询：查询状态；蚂蚁教程：使用指南；蚂蚁一键运行：执行任务",
+    "version": "v2.0.0",
+    "desc": "【插件】-飞蚂蚁凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^蚂蚁登录$|^蚂蚁绑定$|^蚂蚁管理$|^蚂蚁查询$|^蚂蚁$|^蚂蚁教程$|^蚂蚁积分$|^蚂蚁一键运行$",
     "public": true,
     "admin": false,
-    "path": "plugins/chaJianFeiMaYi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianFeiMaYi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/chaJianFeiMaYi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianFeiMaYi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.856Z"
   },
-  "aa31578c-063a-d7cf-809c-d419e7898857": {
-    "id": "aa31578c-063a-d7cf-809c-d419e7898857",
+  "2336e67c-61ee-ac9c-2ea7-89d30cb2291e": {
+    "id": "2336e67c-61ee-ac9c-2ea7-89d30cb2291e",
     "name": "chaJianSenXuanZhiBo",
     "title": "【插件】-森选直播",
     "author": "huawei",
-    "version": "v1.5.4",
-    "desc": "森选直播账号绑定、开播订阅和红包任务提醒。",
+    "version": "v2.0.0",
+    "desc": "【插件】-森选直播凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^森选直播(登录|登陆)$|^登(录|陆)森选直播$|^森选直播(查询|管理)$|^(查询|管理)森选直播$|^森选直播$|^森选直播教程$|^森选直播清理$|^森选订阅$|^森选推送$",
     "public": true,
     "admin": false,
-    "path": "plugins/chaJianSenXuanZhiBo.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiBo.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/chaJianSenXuanZhiBo.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiBo.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.857Z"
   },
-  "356c6f02-fc05-616a-2e02-ae79398f53d7": {
-    "id": "356c6f02-fc05-616a-2e02-ae79398f53d7",
+  "619b60c8-e6d1-bb0e-680a-f969644cc60f": {
+    "id": "619b60c8-e6d1-bb0e-680a-f969644cc60f",
     "name": "chaJianSenXuanZhiXiang",
     "title": "【插件】-森选质享",
     "author": "huawei",
-    "version": "v1.7.3",
-    "desc": "vx小程序【银辉助手】插件自带任务；指令：；森选登录：绑定账号(支持批量,每行备注#token)；森选上传：批量同步到青龙(管理员)；森选清理：清理过期账号(管理员)；森选教程：使用指南",
+    "version": "v2.0.0",
+    "desc": "【插件】-森选质享凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(森选|sz)(登录|登陆|查询|管理|教程|清理|上传|一键运行)$",
     "public": true,
     "admin": false,
-    "path": "plugins/chaJianSenXuanZhiXiang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiXiang.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/chaJianSenXuanZhiXiang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiXiang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.857Z"
   },
-  "15ec6a20-3e4c-189e-d97c-a91d8d3156c3": {
-    "id": "15ec6a20-3e4c-189e-d97c-a91d8d3156c3",
+  "16976d9f-1084-5d41-55e5-932cea6f46e6": {
+    "id": "16976d9f-1084-5d41-55e5-932cea6f46e6",
     "name": "chaJianShunYiChongDuiHuan",
     "title": "【插件】-顺易充兑换",
     "author": "huawei",
-    "version": "v1.1.1",
-    "desc": "顺易充时间调整、库存管理、账号运行",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg",
     "class": "任务",
     "rule": "^顺易充(时间|删除|修正|总结|库存|库存兑换|代理代理|代理配置|代理查询)$",
     "public": true,
     "admin": false,
-    "path": "plugins/chaJianShunYiChongDuiHuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianShunYiChongDuiHuan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/chaJianShunYiChongDuiHuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianShunYiChongDuiHuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "f70795d3-eb18-d231-5477-777b99b24d72": {
-    "id": "f70795d3-eb18-d231-5477-777b99b24d72",
+  "188559eb-ead3-385c-f7b2-09bb66878c6a": {
+    "id": "188559eb-ead3-385c-f7b2-09bb66878c6a",
     "name": "daChao",
     "title": "大潮",
     "author": "rujingxianghai",
-    "version": "v1.4.2",
-    "desc": "大潮现金毛，概率0.2~1；1.0.3:增加备注功能，推送显示对应备注",
+    "version": "v2.0.0",
+    "desc": "大潮凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(大潮|dc)(登录|登陆)$|^登(录|陆)(大潮|dc)$|^(大潮|dc)(查询|管理)$|^(查询|管理)(大潮|dc)$|^大潮$|^大潮检测$|^大潮红包推送$|^大潮教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/daChao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daChao.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/daChao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daChao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.858Z"
   },
-  "e8a186a0-f80b-1eb1-602b-ac9117178213": {
-    "id": "e8a186a0-f80b-1eb1-602b-ac9117178213",
+  "6c61693f-bba8-5aec-1418-3c7375bcc7d9": {
+    "id": "6c61693f-bba8-5aec-1418-3c7375bcc7d9",
     "name": "daNengYiSheng",
     "title": "达能益生",
     "author": "sillyGirl",
-    "version": "v1.0.2",
-    "desc": "达能益生账号绑定、查询、管理和每日任务",
+    "version": "v2.0.0",
+    "desc": "达能益生凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "raw ^\\s*(达能登录|达能登陆|登录达能|登陆达能|达能查询|查询达能|达能管理|管理达能|达能教程|达能一键运行)\\s*$",
     "public": true,
     "admin": false,
-    "path": "plugins/daNengYiSheng.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daNengYiSheng.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/daNengYiSheng.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daNengYiSheng.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.858Z"
   },
-  "125f8ca5-dfed-2827-cc9b-699aae00de89": {
-    "id": "125f8ca5-dfed-2827-cc9b-699aae00de89",
+  "806093f9-349a-3c92-c586-398a897b3651": {
+    "id": "806093f9-349a-3c92-c586-398a897b3651",
     "name": "dangDangYiXia",
     "title": "铛铛一下",
     "author": "8165799",
-    "version": "v1.0.2",
-    "desc": "铛铛一下代挂提交；2. 采用token登录，批量登录自动识别手机号无损续期；4.",
+    "version": "v2.0.0",
+    "desc": "铛铛一下凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(铛铛|铛铛一下)(登录|登陆)$|^登(录|陆)(铛铛|铛铛一下)$|^(铛铛|铛铛一下)(查询|管理)$|^(查询|管理)(铛铛|铛铛一下)$|^铛铛清理$|^铛铛$|^铛铛教程$|^铛铛通知 ?(.*)$|^清理铛铛$|^铛铛广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/dangDangYiXia.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dangDangYiXia.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/dangDangYiXia.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dangDangYiXia.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.859Z"
   },
-  "7cd26808-70c9-138d-5cd6-ada361772d00": {
-    "id": "7cd26808-70c9-138d-5cd6-ada361772d00",
+  "d575081b-9e40-b816-03c2-bb5024a184e3": {
+    "id": "d575081b-9e40-b816-03c2-bb5024a184e3",
     "name": "dd018DeJian",
     "title": "dd_018_得间",
     "author": "dandan8",
-    "version": "v1.0.3",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "dd_018_得间凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(得间|得间小说|dj)(教程|登录|查询|管理|清理|统计|同步|检测)$",
     "public": true,
     "admin": false,
-    "path": "plugins/dd018DeJian.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/dd018DeJian.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.859Z"
   },
-  "25e05a31-f0ee-1356-fc74-fb708ba64d3b": {
-    "id": "25e05a31-f0ee-1356-fc74-fb708ba64d3b",
+  "26ab94e9-f081-1ed8-d9ba-7f9f4d22ed95": {
+    "id": "26ab94e9-f081-1ed8-d9ba-7f9f4d22ed95",
     "name": "dianDangDang",
     "title": "店铛铛",
     "author": "rujingxianghai",
-    "version": "v1.3.2",
-    "desc": "店铛铛插件，必须走邀请才有入口：https://mallapps.jiudageapp.com/#/pages/subject/newcomerDebut?id=0&shardCode=NbcBNLbRz&unlockStatus=0&showNewbiePoster=1&platform=web&level=2；v1.0：初始版本",
+    "version": "v2.0.0",
+    "desc": "店铛铛凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(店铛铛|ddd)(登录|登陆)$|^登(录|陆)(店铛铛|ddd)$|^(店铛铛|ddd)(查询|管理|检测|提醒|教程)$|^(查询|管理|检测|提醒|教程)(店铛铛|ddd)$",
     "public": true,
     "admin": false,
-    "path": "plugins/dianDangDang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianDangDang.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/dianDangDang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianDangDang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.859Z"
   },
-  "e7282b04-f5bd-489b-4329-cdb737d2e91c": {
-    "id": "e7282b04-f5bd-489b-4329-cdb737d2e91c",
+  "5270b71c-8887-07c3-d2c6-fe2c7bea76be": {
+    "id": "5270b71c-8887-07c3-d2c6-fe2c7bea76be",
     "name": "dianXin",
     "title": "电信",
     "author": "sky2022",
-    "version": "v1.4.2",
-    "desc": "介绍：电信金豆查询管理插件，支持账号管理，查询签到，金豆余额查询，本月话费抢购记录查询；登录格式：手机号#密码；V2.0:此版本更新适配了呆呆面板；V2.1:统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置；V2.4:新增电信517活动查询",
+    "version": "v2.0.0",
+    "desc": "电信凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://i.pinimg.com/564x/39/f2/20/39f2204f052bb3eeb89a7b6a93276cc0.jpg",
     "class": "任务",
     "rule": "^(电信|dx)(登录|登陆)$|^登(录|陆)(电信|dx)$|^(电信|dx)(查询|管理)$|^(查询|管理)(电信|dx)$|^电信清理$|^电信$|^电信教程$|^电信同步$",
     "public": true,
     "admin": false,
-    "path": "plugins/dianXin.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianXin.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/dianXin.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianXin.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.860Z"
   },
-  "2e4da3be-386c-7473-d691-c6b52ca5809e": {
-    "id": "2e4da3be-386c-7473-d691-c6b52ca5809e",
+  "b878b15e-7d40-6066-06c1-c081e04074fb": {
+    "id": "b878b15e-7d40-6066-06c1-c081e04074fb",
     "name": "dongFangCaiFu",
     "title": "东方财富",
     "author": "rujingxianghai",
-    "version": "v1.4.2",
-    "desc": "刷视频领现金，1.5r/日，需实名；微信扫码登录 + 账号密码登录，需要手动登录app绑定账号，进入活动页面一次；脚本群内获取；1.0.7：更新自动识别验证码，使用ddddocr，推荐自行搭建接口；接口项目：https://github.com/sml2h3/ddddocr-fastapi",
+    "version": "v2.0.0",
+    "desc": "东方财富凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^东方登录$|^登录东方$|^东方查询$|^东方管理$|^东方$|^东方$|^东方检测$|^东方教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/dongFangCaiFu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dongFangCaiFu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/dongFangCaiFu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dongFangCaiFu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.860Z"
   },
   "89591553-f823-f3ea-a50a-bb1a7b7f76e0": {
     "id": "89591553-f823-f3ea-a50a-bb1a7b7f76e0",
@@ -402,70 +358,64 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-03T10:49:13.000Z"
   },
-  "fd86a84b-cc75-eccd-11d7-f12b9e55bc39": {
-    "id": "fd86a84b-cc75-eccd-11d7-f12b9e55bc39",
+  "f7138e5a-6790-3da1-9b85-ad7861b77d23": {
+    "id": "f7138e5a-6790-3da1-9b85-ad7861b77d23",
     "name": "eLeMeXuQi",
     "title": "饿了么续期",
     "author": "chuan",
-    "version": "v1.2.4",
-    "desc": "指令：饿了么续期；介绍：对对接容器中的elmck进行续期，需要查看续期详情请配参填写wxpusher参数；注意事项：需在“系统管理”->“插件权限”中开启qls数据权限；更新：对推送结果切割，避免消息太长无法推送；更新：对续期成功或有效账号进行启用；更新：对sign接口负载均衡，旧版本已不能使用，务必更新；更新：同步刷新我不饿数据桶ck，新增支持多变量；更新：更新接口",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^饿了么续期$",
     "public": true,
     "admin": true,
-    "path": "plugins/eLeMeXuQi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/eLeMeXuQi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/eLeMeXuQi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/eLeMeXuQi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "4bb0e9cc-29ef-14fd-dcd2-b769e38931d0": {
-    "id": "4bb0e9cc-29ef-14fd-dcd2-b769e38931d0",
+  "7e4d89bd-1018-995a-882e-c137df98faab": {
+    "id": "7e4d89bd-1018-995a-882e-c137df98faab",
     "name": "epicXianMian",
     "title": "Epic限免",
     "author": "buzhi",
-    "version": "v1.0.2",
-    "desc": "Epic限免",
+    "version": "v1.0.3",
+    "desc": "查询 Epic Games Store 当前和即将开始的免费领取游戏",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(epic|EPIC|Epic)限免$|^(epic|EPIC|Epic)限免?$",
     "public": true,
     "admin": false,
-    "path": "plugins/epicXianMian.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/epicXianMian.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/epicXianMian.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/epicXianMian.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:07:42.421Z"
   },
-  "6a8122ea-133e-9a83-23c6-03f4a874d4fb": {
-    "id": "6a8122ea-133e-9a83-23c6-03f4a874d4fb",
+  "9a05bb39-9fad-bf28-32f4-03ead39407bb": {
+    "id": "9a05bb39-9fad-bf28-32f4-03ead39407bb",
     "name": "fangHuaWeiLai",
     "title": "芳华未来",
     "author": "8165799",
-    "version": "v1.1.2",
-    "desc": "芳华未来代挂提交；2. 用户提交 手机号#密码；4.",
+    "version": "v2.0.0",
+    "desc": "芳华未来凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(芳华未来|芳华)(登录|登陆)$|^登(录|陆)(芳华未来|芳华)$|^(芳华未来|芳华)(查询|管理)$|^(查询|管理)(芳华未来|芳华)$|^(芳华未来|芳华)清理$|^(芳华未来|芳华)$|^(芳华未来|芳华)教程$|^(芳华未来|芳华)通知 ?(.*)$|^清理(芳华未来|芳华)$|^(芳华未来|芳华)广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/fangHuaWeiLai.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fangHuaWeiLai.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/fangHuaWeiLai.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fangHuaWeiLai.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.861Z"
   },
   "9e331de1-3d12-a519-e08a-a7c2ba24a0f5": {
     "id": "9e331de1-3d12-a519-e08a-a7c2ba24a0f5",
@@ -484,50 +434,45 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "c23efd3a-14e3-b84d-dbfd-95b665af2590": {
-    "id": "c23efd3a-14e3-b84d-dbfd-95b665af2590",
+  "a65ae9c4-f382-387d-43d1-83ac9c8ee88b": {
+    "id": "a65ae9c4-f382-387d-43d1-83ac9c8ee88b",
     "name": "fuTianEJia",
     "title": "福田e家",
     "author": "sky2022",
-    "version": "v1.0.1",
-    "desc": "福田e家账号登录、批量导入、积分/订单查询、管理与面板同步",
+    "version": "v2.0.0",
+    "desc": "福田e家凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://images.mingming.dev/file/7c1c97c112588fbf7c0db.png",
     "class": "任务",
     "rule": "^福田(登录|登陆|批量登录|批量登陆|查询|管理|订单查询|清理)$|^(登录|登陆|批量登录|批量登陆|查询|管理)福田$|^清理福田$",
     "public": true,
     "admin": false,
-    "path": "plugins/fuTianEJia.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianEJia.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/fuTianEJia.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianEJia.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.077Z"
   },
-  "5ecf1991-9964-94e8-041b-c7e92a74379a": {
-    "id": "5ecf1991-9964-94e8-041b-c7e92a74379a",
+  "10c64abe-9993-8ccf-266a-c03645de6368": {
+    "id": "10c64abe-9993-8ccf-266a-c03645de6368",
     "name": "fuTianXiaDan",
     "title": "福田下单",
     "author": "rujingxianghai",
-    "version": "v1.0.1",
-    "desc": "呆呆出品；福田下单插件；指令：福田下单、福田物流查询；功能如下：；1. 支持单账号和多账号批量下单；2.支持在线搜索自定义商品并选择下单；3.支持在线添加自定义地址下单；4.支持查询订单物流信息；4.",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://images.mingming.dev/file/7c1c97c112588fbf7c0db.png",
     "class": "任务",
     "rule": "^福田下单$|^福田物流查询$",
     "public": true,
     "admin": false,
-    "path": "plugins/fuTianXiaDan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianXiaDan.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/fuTianXiaDan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianXiaDan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:41:27.866Z"
   },
   "fbd8dead-f6ca-56e8-8293-d7980d1bbf91": {
     "id": "fbd8dead-f6ca-56e8-8293-d7980d1bbf91",
@@ -548,7 +493,7 @@
     ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
   "f87bce03-b983-64ab-8c63-27e0f1170d3a": {
     "id": "f87bce03-b983-64ab-8c63-27e0f1170d3a",
@@ -567,92 +512,83 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
-  "361f9872-bb4e-abec-a57a-6b96eabb8dcd": {
-    "id": "361f9872-bb4e-abec-a57a-6b96eabb8dcd",
+  "10ae435f-5846-158a-9d5e-919e9a879db0": {
+    "id": "10ae435f-5846-158a-9d5e-919e9a879db0",
     "name": "guangQi",
     "title": "广汽",
     "author": "8165799",
-    "version": "v1.1.2",
-    "desc": "广汽代挂提交；2. 用户提交 手机号#AT#RT，环境变量只写 AT#RT，手机号写入备注并脱敏展示；4.",
+    "version": "v2.0.0",
+    "desc": "广汽凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(广汽)(登录|登陆)$|^登(录|陆)(广汽)$|^(广汽)(查询|管理)$|^(查询|管理)(广汽)$|^广汽清理$|^广汽$|^广汽教程$|^广汽通知 ?(.*)$|^清理广汽$|^广汽广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/guangQi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/guangQi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/guangQi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/guangQi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.078Z"
   },
-  "ea7a847c-b36a-61c5-85cf-3354a5136abf": {
-    "id": "ea7a847c-b36a-61c5-85cf-3354a5136abf",
+  "66dfad1c-eebc-6e2b-88c8-5c97bde2cc7e": {
+    "id": "66dfad1c-eebc-6e2b-88c8-5c97bde2cc7e",
     "name": "haoEE",
     "title": "好饿饿",
     "author": "Lxg-021002",
-    "version": "v1.2.8",
-    "desc": "如果需要账密续期 请在我的市场下载我的续期食用 增加提交 账号密码  (饿了管理>选择账号>提交账密)  也可以在ck中添加loginId=xxx；password=xxx",
+    "version": "v2.0.0",
+    "desc": "好饿饿凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://pp.myapp.com/ma_icon/0/icon_1029694_1725435529/256",
     "class": "任务",
     "rule": "^.*cookie2=.*$|^吃饱了$|^我快饿死了$|^夺宝信息$|^(饿了.*|.*饿了)$",
     "public": true,
     "admin": false,
-    "path": "plugins/haoEE.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoEE.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/haoEE.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoEE.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:42:02.079Z"
   },
-  "5507e17d-17e3-3977-eb01-0ffea7cc9837": {
-    "id": "5507e17d-17e3-3977-eb01-0ffea7cc9837",
+  "f74a323b-45a0-b6f2-4967-4b7c9974b8f7": {
+    "id": "f74a323b-45a0-b6f2-4967-4b7c9974b8f7",
     "name": "haoQiCheShengHuo",
     "title": "好奇车生活",
     "author": "sky2022",
-    "version": "v1.9.1",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "好奇车生活凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^车生活(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/haoQiCheShengHuo.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoQiCheShengHuo.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/haoQiCheShengHuo.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoQiCheShengHuo.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.861Z"
   },
-  "0d6087f4-9dc8-242e-6174-aff686d9ea49": {
-    "id": "0d6087f4-9dc8-242e-6174-aff686d9ea49",
+  "56b95374-cf24-8682-2ff0-2044dc792861": {
+    "id": "56b95374-cf24-8682-2ff0-2044dc792861",
     "name": "heHeTianTai",
     "title": "和合天台",
     "author": "8165799",
-    "version": "v1.8.1",
-    "desc": "和合天台账号登录、积分余额查询、管理与面板同步",
+    "version": "v2.0.0",
+    "desc": "和合天台凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(和合)(登录|登陆|管理|查询|教程)$|^(登录|登陆|管理|查询)(和合)$",
     "public": true,
     "admin": false,
-    "path": "plugins/heHeTianTai.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/heHeTianTai.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/heHeTianTai.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/heHeTianTai.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.274Z"
   },
   "01be5c41-8d36-506e-ada7-9fb08841ff4f": {
     "id": "01be5c41-8d36-506e-ada7-9fb08841ff4f",
@@ -671,7 +607,7 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-03T10:49:13.000Z"
   },
   "16c8bb7e-5d81-27f1-6d9d-3b941f527c21": {
     "id": "16c8bb7e-5d81-27f1-6d9d-3b941f527c21",
@@ -690,7 +626,7 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
   "7c5b44d4-f595-2f26-083b-0a4073402483": {
     "id": "7c5b44d4-f595-2f26-083b-0a4073402483",
@@ -709,92 +645,83 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
-  "94cdac16-3b0a-6c1f-4320-6abdf45161e6": {
-    "id": "94cdac16-3b0a-6c1f-4320-6abdf45161e6",
+  "a4f58c24-f23a-1437-e5e8-f7b1a5e7bfa3": {
+    "id": "a4f58c24-f23a-1437-e5e8-f7b1a5e7bfa3",
     "name": "jiangHuaiKaYou",
     "title": "江淮卡友",
     "author": "rujingxianghai",
-    "version": "v1.7.2",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "江淮卡友凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://y.gtimg.cn/music/photo_new/T053M000001NYort1rZecQ.png",
     "class": "任务",
     "rule": "^(江淮|jh)(登录|登陆)$|^登(录|陆)(江淮|jh)$|^(江淮|jh)(查询|管理|检测|教程|迁移)$|^(查询|管理|检测|教程|迁移)(江淮|jh)$",
     "public": true,
     "admin": false,
-    "path": "plugins/jiangHuaiKaYou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangHuaiKaYou.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/jiangHuaiKaYou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangHuaiKaYou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.079Z"
   },
-  "505851f5-30d5-5ae6-4ed2-64bd4688855b": {
-    "id": "505851f5-30d5-5ae6-4ed2-64bd4688855b",
+  "b94c7e97-1a65-96a4-6430-28dd5b19b209": {
+    "id": "b94c7e97-1a65-96a4-6430-28dd5b19b209",
     "name": "jiangXinZhongHua",
     "title": "匠心中华",
     "author": "huawei",
-    "version": "v1.3.8",
-    "desc": "介绍：匠心插件，支持扫码登录、CK批量登录、查询、兑换、批量兑换、物流、地址管理与管理；更新日志：1.3.7 新增「匠心CK」指令，支持批量CK登录，格式：备注#ck",
+    "version": "v2.0.0",
+    "desc": "匠心中华凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^匠心登录$|^登录匠心$|^匠心管理$|^管理匠心$|^匠心查询$|^查询匠心$|^匠心物流$|^物流匠心$|^匠心兑换$|^兑换匠心$|^匠心批量兑换$|^匠心批量地址$|^匠心$|^匠心教程$|^匠心清理$|^匠心上传$|^匠心地址$|^匠心注销$|^匠心CK$",
     "public": true,
     "admin": false,
-    "path": "plugins/jiangXinZhongHua.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangXinZhongHua.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/jiangXinZhongHua.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangXinZhongHua.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:42:02.080Z"
   },
-  "d05f58f5-60bf-eb4d-6d8d-264a8090a55f": {
-    "id": "d05f58f5-60bf-eb4d-6d8d-264a8090a55f",
+  "07e534b6-0238-5f54-9a54-ba00c84bb821": {
+    "id": "07e534b6-0238-5f54-9a54-ba00c84bb821",
     "name": "jiaShan",
     "title": "嘉善",
     "author": "8165799",
-    "version": "v1.1.2",
-    "desc": "嘉善代挂提交；3. 支持查询最近5天抽奖记录，手机号中间四位脱敏；4.",
+    "version": "v2.0.0",
+    "desc": "嘉善凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(嘉善)(登录|登陆)$|^登(录|陆)(嘉善)$|^(嘉善)(查询|管理)$|^(查询|管理)(嘉善)$|^嘉善清理$|^嘉善$|^嘉善教程$|^嘉善通知 ?(.*)$|^清理嘉善$|^嘉善广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/jiaShan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiaShan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/jiaShan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiaShan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.862Z"
   },
-  "dd3f8f3e-ad23-f124-1b03-7b6a55b08131": {
-    "id": "dd3f8f3e-ad23-f124-1b03-7b6a55b08131",
+  "dd234a61-2d4c-1df6-f669-aea6be4cb428": {
+    "id": "dd234a61-2d4c-1df6-f669-aea6be4cb428",
     "name": "jieTingChe",
     "title": "捷停车",
     "author": "huawei",
-    "version": "v1.5.4",
-    "desc": "捷停车小程序自动登录，支持验证码自动识别",
+    "version": "v2.0.0",
+    "desc": "捷停车凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://free.picui.cn/free/2025/12/17/69418a3031112.png",
     "class": "任务",
     "rule": "^捷停车登录$|^登录捷停车$|^捷停车查询$|^捷停车管理$|^捷停车$|^捷停车清理$|^捷停车上传$",
     "public": true,
     "admin": false,
-    "path": "plugins/jieTingChe.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/jieTingChe.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.862Z"
   },
   "78c4af24-4427-b8d1-08ad-4aee5fbd1154": {
     "id": "78c4af24-4427-b8d1-08ad-4aee5fbd1154",
@@ -813,684 +740,596 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "aef62362-8f44-f57b-05fa-1332eb4ab7e9": {
-    "id": "aef62362-8f44-f57b-05fa-1332eb4ab7e9",
+  "c6b12afc-bdeb-6f84-1ca1-628c591c2290": {
+    "id": "c6b12afc-bdeb-6f84-1ca1-628c591c2290",
     "name": "jiuXian",
     "title": "酒仙",
     "author": "rujingxianghai",
-    "version": "v1.7.2",
-    "desc": "酒仙签到，每日签到浏览任务领金币；1.5：支持AI验证码识别，可配置开关、API地址、密钥、模型",
+    "version": "v2.0.0",
+    "desc": "酒仙凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(酒仙|jx)(登录|登陆)$|^登(录|陆)(酒仙|jx)$|^(酒仙|jx)(查询|管理)$|^(查询|管理)(酒仙|jx)$|^酒仙$|^酒仙检测$|^(酒仙|jx)教程$|^教程(酒仙|jx)$",
     "public": true,
     "admin": false,
-    "path": "plugins/jiuXian.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiuXian.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/jiuXian.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiuXian.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.862Z"
   },
-  "6a637772-b47b-7274-8c9c-09b21a48011b": {
-    "id": "6a637772-b47b-7274-8c9c-09b21a48011b",
+  "87655cd8-dc8c-4045-7d77-d206074401a4": {
+    "id": "87655cd8-dc8c-4045-7d77-d206074401a4",
     "name": "juLiangGuanLi",
     "title": "巨量管理",
     "author": "chuan",
-    "version": "v1.1.1",
-    "desc": "巨量账号管理、签到和余额查询。",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^ip$|^剩余ip$|^巨量账号管理$|^巨量$|^生成api$|^巨量余额$|^巨量签到$",
     "public": true,
     "admin": true,
-    "path": "plugins/juLiangGuanLi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/juLiangGuanLi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/juLiangGuanLi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/juLiangGuanLi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.533Z"
   },
-  "0f15d46f-1f98-e0e7-b368-0df99210ef44": {
-    "id": "0f15d46f-1f98-e0e7-b368-0df99210ef44",
+  "377a1321-9e51-33f9-bfd8-01fab4778737": {
+    "id": "377a1321-9e51-33f9-bfd8-01fab4778737",
     "name": "kaKan",
     "title": "卡看",
     "author": "dandan8",
-    "version": "v1.0.2",
-    "desc": "卡看账号登录、查询、进度任务、面板同步与管理",
+    "version": "v2.0.0",
+    "desc": "卡看凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^卡看(教程|登录|管理|查询|刷进度)$",
     "public": true,
     "admin": false,
-    "path": "plugins/kaKan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kaKan.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/kaKan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kaKan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.274Z"
   },
-  "b8e8793c-270b-32ab-9b31-b8279a0385b7": {
-    "id": "b8e8793c-270b-32ab-9b31-b8279a0385b7",
+  "036ae0cc-53ff-1071-73ad-5f578a45590f": {
+    "id": "036ae0cc-53ff-1071-73ad-5f578a45590f",
     "name": "kanYuHang",
     "title": "看余杭",
     "author": "Lies",
-    "version": "v1.9.2",
-    "desc": "看余杭插件，支持短信跟Token登录；由流云集团附属集团开发，维护能力有限，；账号交青龙禁用启用逻辑；更新:  修复未登录查询异常bug；更新:  修复未登录管理异常；更新:  优化了一些已知问题；更新:  优化了一些已知问题2/26/22:20；相关脚本链接：【看余杭交流学习文件.py",
+    "version": "v2.0.0",
+    "desc": "看余杭凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://www.helloimg.com/i/2025/02/03/67a06719bd58f.jpg",
     "class": "任务",
     "rule": "^(看余杭)(登录|登陆)$|^登(录|陆)(看余杭)$|^(看余杭)(查询|管理)$|^(查询|管理)(看余杭)$|^清理看余杭$|^看余杭$",
     "public": true,
     "admin": false,
-    "path": "plugins/kanYuHang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/kanYuHang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.863Z"
   },
-  "1e04549d-3115-5e39-af87-928c6fe7a50c": {
-    "id": "1e04549d-3115-5e39-af87-928c6fe7a50c",
+  "131bf25d-003b-0234-626c-a0dc9194de77": {
+    "id": "131bf25d-003b-0234-626c-a0dc9194de77",
     "name": "keepYunDong",
     "title": "Keep运动",
-    "author": "8165799",
-    "version": "v1.2.2",
-    "desc": "Keep运动币代挂提交；2. 采用Token配置登录，支持带备注提交；3. 支持查询接口实时获取运动币余额、签到状态和抽奖记录；4.",
+    "author": "sillyGirl",
+    "version": "v1.0.1",
+    "desc": "Keep Token 绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(Keep|keep)(登录|登陆|管理|查询|清理|授权|教程)$|^(登录|登陆|管理|查询|清理)(Keep|keep)$",
     "public": true,
     "admin": false,
-    "path": "plugins/keepYunDong.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/keepYunDong.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/keepYunDong.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/keepYunDong.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:21:31.499Z"
   },
-  "72b34365-a84a-aec0-485c-3604f4abc19d": {
-    "id": "72b34365-a84a-aec0-485c-3604f4abc19d",
+  "f6c52c79-65ef-6326-ed3c-1adb462e78da": {
+    "id": "f6c52c79-65ef-6326-ed3c-1adb462e78da",
     "name": "kuaKeTuiGuang",
     "title": "夸克推广",
-    "author": "rujingxianghai",
-    "version": "v1.0.1",
-    "desc": "使用方法：发送\"我要看XXXX\"进行搜索；推广方法：关注公众号\"蜂小推\"，邀请码：15999112，申请夸克网盘推广项目即可",
-    "icon": "https://api.iconify.design/lucide:apple.svg",
+    "author": "sillyGirl",
+    "version": "v2.0.0",
+    "desc": "生成限定夸克网盘分享域名的资源检索入口",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^我要看(.+)$|^夸克清理$|^夸克登录$",
     "public": true,
     "admin": false,
-    "path": "plugins/kuaKeTuiGuang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuaKeTuiGuang.py",
-    "dependencies": [
-      "httpx",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/kuaKeTuiGuang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuaKeTuiGuang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:39:58.021Z"
   },
-  "f415779b-0e32-6312-e65a-611b9ae6d905": {
-    "id": "f415779b-0e32-6312-e65a-611b9ae6d905",
+  "9d2a8d25-67bc-d656-9f99-f7cbfa449ab0": {
+    "id": "9d2a8d25-67bc-d656-9f99-f7cbfa449ab0",
     "name": "kuWoDuiHuanVip",
     "title": "酷我兑换VIP",
     "author": "sky2022",
-    "version": "v1.1.1",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^酷我兑换$",
     "public": true,
     "admin": false,
-    "path": "plugins/kuWoDuiHuanVip.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoDuiHuanVip.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/kuWoDuiHuanVip.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoDuiHuanVip.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "9005ace1-16fe-c9d6-8b95-d2f54e47474c": {
-    "id": "9005ace1-16fe-c9d6-8b95-d2f54e47474c",
+  "29ac3364-14c7-b0f6-c031-7ec4fa017f4a": {
+    "id": "29ac3364-14c7-b0f6-c031-7ec4fa017f4a",
     "name": "kuWoMusic",
     "title": "酷我Music",
     "author": "sky2022",
-    "version": "v1.4.0",
-    "desc": "酷我账号登录、金币查询、面板同步与管理",
+    "version": "v2.0.0",
+    "desc": "酷我Music凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(酷我登录|酷我登陆|登陆酷我|登录酷我|酷我查询|查询酷我|酷我管理|管理酷我|酷我教程|酷我说明)$",
     "public": true,
     "admin": false,
-    "path": "plugins/kuWoMusic.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusic.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/kuWoMusic.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusic.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.274Z"
   },
-  "8326e76d-6bab-e142-b591-f94ca7c07d7f": {
-    "id": "8326e76d-6bab-e142-b591-f94ca7c07d7f",
+  "d8bf12a3-b934-98f5-bb4d-1e84f953b5bf": {
+    "id": "d8bf12a3-b934-98f5-bb4d-1e84f953b5bf",
     "name": "kuWoMusicTiXian",
     "title": "酷我Music提现",
     "author": "sky2022",
-    "version": "v1.0.2",
-    "desc": "格式：手机号#密码；无需抓包，无需抓包；内置定时检测次数数量",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(酷我酷我次数检测|酷我次数迁移)$",
     "public": true,
     "admin": false,
-    "path": "plugins/kuWoMusicTiXian.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusicTiXian.py",
-    "dependencies": [
-      "ntplib",
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/kuWoMusicTiXian.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusicTiXian.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "c941e25c-ead9-7bce-f2ef-1ef8e35f620e": {
-    "id": "c941e25c-ead9-7bce-f2ef-1ef8e35f620e",
+  "283d7439-429b-7b27-7321-7ed2e34dd720": {
+    "id": "283d7439-429b-7b27-7321-7ed2e34dd720",
     "name": "laoZhongYiZhuShou",
     "title": "老中医助手",
     "author": "8165799",
-    "version": "v1.1.2",
-    "desc": "老中医提交计费版；2. 支持登录验证，防止数据错误也提交；3.",
+    "version": "v2.0.0",
+    "desc": "老中医助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(老中医)(登录|登陆)$|^登(录|陆)(老中医)$|^(老中医)(查询|管理)$|^(查询|管理)(老中医)$|^老中医清理$|^老中医$|^老中医教程$|^老中医通知 ?(.*)$|^清理老中医$|^老中医广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/laoZhongYiZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/laoZhongYiZhuShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/laoZhongYiZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/laoZhongYiZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.863Z"
   },
-  "ff4a1a3d-15ac-3070-15c4-4cfbaab4ad78": {
-    "id": "ff4a1a3d-15ac-3070-15c4-4cfbaab4ad78",
+  "dac65579-fbbf-c61c-82f1-f5beff6943c5": {
+    "id": "dac65579-fbbf-c61c-82f1-f5beff6943c5",
     "name": "leZaiShengHuo",
     "title": "乐仔生活",
     "author": "yuhualhh",
-    "version": "v1.1.4",
-    "desc": "❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『乐仔检测』与『乐仔清理』定时『30 18 * * *』，关于指令『乐仔一键运行』定时『0 4,16 * * *』<img src=\"https://gcore.jsdelivr.net/gh/lhz03/img@bd8210bc5df21199ccd7228aa6246390ff0ebe5a/2026/01/30/72f1808271bcf657c196256a7e2c3fb1.png\">",
+    "version": "v2.0.0",
+    "desc": "乐仔生活凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@e9cd9a11a480cadebc2fd54b8302d737d580595d/2026/01/30/81fd4cd42a523da597582e5727913a23.png",
     "class": "任务",
     "rule": "^(乐仔)(登录|查询|管理|清理|检测|运行|一键运行)$",
     "public": true,
     "admin": false,
-    "path": "plugins/leZaiShengHuo.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/leZaiShengHuo.py",
-    "dependencies": [
-      "beautifulsoup4",
-      "cryptography",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/leZaiShengHuo.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/leZaiShengHuo.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.864Z"
   },
-  "9e14dcee-7f99-d677-dd68-903cb7206778": {
-    "id": "9e14dcee-7f99-d677-dd68-903cb7206778",
+  "ae852c55-0f54-845d-e6ab-85aa2a69c175": {
+    "id": "ae852c55-0f54-845d-e6ab-85aa2a69c175",
     "name": "lianTong",
     "title": "联通",
     "author": "sky2022",
-    "version": "v1.1.2",
-    "desc": "联通插件，使用Online_token登录；V1.7:统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置丨",
+    "version": "v2.0.0",
+    "desc": "联通凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://uapis.cn/static/uploads/9b25f4d581_5gbszuxm7Mt8.webp",
     "class": "任务",
     "rule": "^联通(登录|登陆|查询|管理|后台|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/lianTong.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTong.py",
-    "dependencies": [
-      "httpx",
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/lianTong.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTong.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.864Z"
   },
-  "902b0f20-8b69-6a20-69e5-066d98923b0c": {
-    "id": "902b0f20-8b69-6a20-69e5-066d98923b0c",
+  "72ae3485-cfaf-98d1-99bf-472e4d206abf": {
+    "id": "72ae3485-cfaf-98d1-99bf-472e4d206abf",
     "name": "lianTongYunPan",
     "title": "联通云盘",
     "author": "sky2022",
-    "version": "v1.5.2",
-    "desc": "联通云盘验证码/账密/Token登录、资产查询、Token刷新与面板同步",
+    "version": "v2.0.0",
+    "desc": "联通云盘凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://uapis.cn/static/uploads/9b25f4d581_5gbszuxm7Mt8.webp",
     "class": "任务",
     "rule": "^联通云盘(登录|登陆|管理|查询|同步|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/lianTongYunPan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTongYunPan.py",
-    "dependencies": [
-      "cryptography",
-      "httpx",
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/lianTongYunPan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTongYunPan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.080Z"
   },
-  "3cc2e4cd-ebb6-25a9-a945-1bc41dce1a87": {
-    "id": "3cc2e4cd-ebb6-25a9-a945-1bc41dce1a87",
+  "64109f03-3b34-4f54-4592-089f94b57e5c": {
+    "id": "64109f03-3b34-4f54-4592-089f94b57e5c",
     "name": "linShiYouXiang",
     "title": "临时邮箱",
-    "author": "yss",
-    "version": "v1.0.1",
-    "desc": "需要填写邮箱时候，不想使用您的真实邮箱？那就使用我吧，指令：临时邮箱",
-    "icon": "https://p0.meituan.net/csc/83ea3bbe1fa311e4bda05eeb3ebf6d3c7230.jpg",
+    "author": "sillyGirl",
+    "version": "v1.0.3",
+    "desc": "创建 Mail.tm 临时邮箱并等待第一封来信",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^临时邮箱$",
     "public": true,
     "admin": false,
-    "path": "plugins/linShiYouXiang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/linShiYouXiang.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/linShiYouXiang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/linShiYouXiang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:14:48.863Z"
   },
-  "630c80a2-9233-bb13-db76-ccdaa07ea33d": {
-    "id": "630c80a2-9233-bb13-db76-ccdaa07ea33d",
+  "63854e40-975e-4bd6-f487-81e7a95a2ef7": {
+    "id": "63854e40-975e-4bd6-f487-81e7a95a2ef7",
     "name": "liYuan",
     "title": "梨园",
     "author": "huawei",
-    "version": "v1.2.4",
-    "desc": "梨园行戏曲-金币任务自动化；指令：梨园扫码、梨园查询、梨园任务",
+    "version": "v2.0.0",
+    "desc": "从当前用户授权的 SmallCat 微信账号获取 wx.login CODE，并可提交业务接口和同步青龙",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(梨园|ly)(扫码|登录|登陆|查询|任务)$",
     "public": true,
     "admin": false,
-    "path": "plugins/liYuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/liYuan.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/liYuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/liYuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:41:13.039Z"
   },
-  "18bb764e-6319-7cf0-f94a-ed217eeaa59f": {
-    "id": "18bb764e-6319-7cf0-f94a-ed217eeaa59f",
+  "7f76a49d-75e3-ff02-4785-08bd3029f83d": {
+    "id": "7f76a49d-75e3-ff02-4785-08bd3029f83d",
     "name": "m001HuiShouYuan",
     "title": "m001_回收猿",
     "author": "mrconli",
-    "version": "v1.4.2",
-    "desc": "”；1.4.0更新：修复环境变量提交青龙bug；1.3.0更新：插件重构，去除手机号敏感信息，ck需要重新提交，非必要勿更新；1.0.0初版：支持批量登录",
+    "version": "v2.0.0",
+    "desc": "m001_回收猿凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^回收猿(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/m001HuiShouYuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m001HuiShouYuan.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m001HuiShouYuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m001HuiShouYuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.864Z"
   },
-  "c87d4eb4-4e7c-af10-2cda-aad6c65a3299": {
-    "id": "c87d4eb4-4e7c-af10-2cda-aad6c65a3299",
+  "c1487f4f-1206-2066-5737-4ecb479749ff": {
+    "id": "c1487f4f-1206-2066-5737-4ecb479749ff",
     "name": "m034JiuYiXiaoEr",
     "title": "m034_旧衣小二",
     "author": "mrconli",
-    "version": "v1.0.2",
-    "desc": "小程序_旧衣小二，内置签到，签到得现金；1.0.0初版：支持代理及批量登录",
+    "version": "v2.0.0",
+    "desc": "m034_旧衣小二凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^小二(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/m034JiuYiXiaoEr.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m034JiuYiXiaoEr.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m034JiuYiXiaoEr.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m034JiuYiXiaoEr.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.865Z"
   },
-  "091cf996-6438-9406-be68-deeb939fcc54": {
-    "id": "091cf996-6438-9406-be68-deeb939fcc54",
+  "9d775bb5-63de-5971-25df-cee8961c5780": {
+    "id": "9d775bb5-63de-5971-25df-cee8961c5780",
     "name": "m096TaiPingYangQiChe",
     "title": "m096_太平洋汽车",
-    "author": "mrconli",
-    "version": "v1.5.2",
-    "desc": "适配作者：YSJohnson的太平洋汽车脚本；ck提交青龙；格式“账号#密码#openid”；1.4.0更新：修复查询显示问题；1.3.0更新：优化查询显示；1.0.0初版：支持批量ck登录，支持代理",
-    "icon": "https://pp.myapp.com/ma_icon/0/icon_4848_1772677983/256",
+    "author": "sillyGirl",
+    "version": "v1.5.0",
+    "desc": "接收账号#密码#openid并同步到青龙环境变量",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^太平洋(.*)|(.*)洋汽车$",
     "public": true,
     "admin": false,
-    "path": "plugins/m096TaiPingYangQiChe.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m096TaiPingYangQiChe.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m096TaiPingYangQiChe.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m096TaiPingYangQiChe.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:19:39.053Z"
   },
-  "8dd301d9-e346-fdf9-9d0d-614060900081": {
-    "id": "8dd301d9-e346-fdf9-9d0d-614060900081",
+  "e52c615a-a532-44d6-c94e-67f6123aa416": {
+    "id": "e52c615a-a532-44d6-c94e-67f6123aa416",
     "name": "m099YiChengTong",
     "title": "m099_衣城通",
     "author": "mrconli",
-    "version": "v1.0.2",
-    "desc": "支持短信登录，ck提交青龙；格式“token”；1.0.0初版：支持批量ck登录，支持代理",
+    "version": "v2.0.0",
+    "desc": "m099_衣城通凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^衣城通(.*)|(.*)衣城通$",
     "public": true,
     "admin": false,
-    "path": "plugins/m099YiChengTong.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m099YiChengTong.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m099YiChengTong.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m099YiChengTong.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.865Z"
   },
-  "f70fc832-ece8-1e12-75c7-1dfda8c84199": {
-    "id": "f70fc832-ece8-1e12-75c7-1dfda8c84199",
+  "e7960c71-76fc-402e-9740-12906bd6285b": {
+    "id": "e7960c71-76fc-402e-9740-12906bd6285b",
     "name": "m108XiaoSaTongLu",
     "title": "m108_潇洒桐庐",
     "author": "mrconli",
-    "version": "v1.2.2",
-    "desc": "无脚本提供；ck提交青龙，格式：账号#密码；仅环境变量提交青龙",
+    "version": "v2.0.0",
+    "desc": "m108_潇洒桐庐凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^潇洒(.*)|(.*)潇洒$",
     "public": true,
     "admin": false,
-    "path": "plugins/m108XiaoSaTongLu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m108XiaoSaTongLu.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m108XiaoSaTongLu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m108XiaoSaTongLu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.866Z"
   },
-  "97006ee3-2e6f-79ad-0dc8-2c6709d152f6": {
-    "id": "97006ee3-2e6f-79ad-0dc8-2c6709d152f6",
+  "02f6a937-c5ae-a419-e613-20dc0bd47529": {
+    "id": "02f6a937-c5ae-a419-e613-20dc0bd47529",
     "name": "m116JinShiPin",
     "title": "m116_今视频",
     "author": "mrconli",
-    "version": "v1.0.2",
-    "desc": "无脚本提供；支持扫码登录和抓包批量登录，ck提交青龙，格式：token",
+    "version": "v2.0.0",
+    "desc": "m116_今视频凭证绑定、青龙同步、账号查询与清理",
     "icon": "http://img.jxdown.com/upload/2026-4/2026429923454752.jpg",
     "class": "任务",
     "rule": "^今视频(.*)|(.*)今视频$",
     "public": true,
     "admin": false,
-    "path": "plugins/m116JinShiPin.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m116JinShiPin.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/m116JinShiPin.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m116JinShiPin.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.866Z"
   },
-  "2478aad5-27ad-110c-22a6-3c6e44f094f5": {
-    "id": "2478aad5-27ad-110c-22a6-3c6e44f094f5",
+  "918d4ed5-b5b3-5157-4284-451f78554329": {
+    "id": "918d4ed5-b5b3-5157-4284-451f78554329",
     "name": "meiTuanCodeDengLu",
     "title": "美团Code登录",
     "author": "sillyGirl",
-    "version": "v1.1.4",
-    "desc": "从 SmallCat 读取微信账号和 wx.login CODE，本地生成 mtgsig/siua/dfpid，换取美团 MT_TOKEN；可选同步青龙/呆呆",
+    "version": "v2.0.0",
+    "desc": "从当前用户授权的 SmallCat 微信账号获取 wx.login CODE，并可提交业务接口和同步青龙",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "工具",
     "rule": "raw ^\\s*(美团|[Mm][Ee][Ii][Tt][Uu][Aa][Nn])\\s*(登录|取[Tt]oken)?\\s*([^\\s]+)?\\s*$",
     "public": true,
     "admin": true,
-    "path": "plugins/meiTuanCodeDengLu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanCodeDengLu.py",
-    "dependencies": [
-      "cryptography",
-      "httpx",
-      "pycryptodome"
-    ],
-    "type": "python",
+    "path": "plugins/meiTuanCodeDengLu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanCodeDengLu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:41:13.040Z"
   },
-  "60a8ae84-befd-a184-9955-bb483b59937b": {
-    "id": "60a8ae84-befd-a184-9955-bb483b59937b",
+  "f106c265-652b-2548-1f47-4688b7ad0db9": {
+    "id": "f106c265-652b-2548-1f47-4688b7ad0db9",
     "name": "meiTuanLingQuanPlus",
     "title": "美团领券PLUS",
     "author": "yuhualhh",
-    "version": "v1.2.0",
-    "desc": "❷扫码可查看各项目对应领券详情<img src=\"https://gcore.jsdelivr.net/gh/lhz03/img@21067eaf2abbb6e545cd04507cbcaba81aa51f66/2025/07/05/a55d418210371f7896545baa970b340a.png\">",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@628ca207fcc92493bfdc7b376802df13d290a228/2025/04/18/0227ee80f756be5352c84c94d7f9cdf6.png",
     "class": "任务",
     "rule": "^(美团领券|美团领劵|美团领卷|美团领卷余额查询|美团刷白|美团充分|美团查分|美团加分|美团减分|释放锁)$",
     "public": true,
     "admin": false,
-    "path": "plugins/meiTuanLingQuanPlus.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanLingQuanPlus.py",
-    "dependencies": [
-      "beautifulsoup4",
-      "cryptography",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/meiTuanLingQuanPlus.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanLingQuanPlus.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "d073dae5-9c46-1963-e361-48ba01b302a2": {
-    "id": "d073dae5-9c46-1963-e361-48ba01b302a2",
+  "e4b8e0b4-c91d-8906-6604-3a5879c5d321": {
+    "id": "e4b8e0b4-c91d-8906-6604-3a5879c5d321",
     "name": "moHuanShouJiYuLu",
     "title": "魔幻手机语录",
     "author": "sillyGirl",
-    "version": "v1.0.2",
+    "version": "v1.0.3",
     "desc": "随机回复傻妞和陆小千相关短句",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "娱乐",
     "rule": "raw ^\\s*(傻妞语录|傻妞台词|陆小千语录|小千语录|小千台词|魔幻手机语录|魔幻手机台词)\\s*$",
     "public": true,
     "admin": false,
-    "path": "plugins/moHuanShouJiYuLu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/moHuanShouJiYuLu.py",
+    "path": "plugins/moHuanShouJiYuLu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/moHuanShouJiYuLu.js",
     "dependencies": [],
-    "type": "python",
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:11:35.419Z"
   },
-  "6904b734-cde1-c9e6-470f-a9acbb94c851": {
-    "id": "6904b734-cde1-c9e6-470f-a9acbb94c851",
+  "4fc78fa6-c2f0-3a01-d3b8-ec42f59cf904": {
+    "id": "4fc78fa6-c2f0-3a01-d3b8-ec42f59cf904",
     "name": "mouShouJiSuBanGuanLi",
     "title": "某手极速版管理",
     "author": "8165799",
-    "version": "v1.5.1",
-    "desc": "某手极速版账号登录、查询、面板同步与管理",
+    "version": "v2.0.0",
+    "desc": "某手极速版管理凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^某手极速版(登录|登陆|查询|管理|教程)?$|^登(录|陆)某手极速版$|^(查询|管理)某手极速版$|^ks(login|query|manage)$",
     "public": true,
     "admin": true,
-    "path": "plugins/mouShouJiSuBanGuanLi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mouShouJiSuBanGuanLi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/mouShouJiSuBanGuanLi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mouShouJiSuBanGuanLi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.275Z"
   },
-  "85ff888f-4b58-6c50-12be-52492b858c19": {
-    "id": "85ff888f-4b58-6c50-12be-52492b858c19",
+  "00483a08-0670-3725-970c-5b1f80bc860e": {
+    "id": "00483a08-0670-3725-970c-5b1f80bc860e",
     "name": "niuKaFuHuoZhuZhuShou",
     "title": "牛卡福货主助手",
     "author": "8165799",
-    "version": "v1.2.2",
-    "desc": "牛卡福货主全能版；1. 支持【本地运行】或【系统对接】双模式切换，已内置任务，增加失效告警、定时汇总推送、修复通知Bug；2. 采用【手机号#Token】登录，防重复防丢数据；3. 内置定时任务，脱离后台也能跑；📞",
+    "version": "v2.0.0",
+    "desc": "牛卡福货主助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(牛卡福货主)(登录|登陆)$|^登(录|陆)(牛卡福货主)$|^(牛卡福货主)(查询|管理)$|^(查询|管理)(牛卡福货主)$|^牛卡福货主清理$|^牛卡福货主$|^牛卡福货主教程$|^牛卡福货主通知 ?(.*)$|^清理牛卡福货主$|^牛卡福货主一键运行$",
     "public": true,
     "admin": false,
-    "path": "plugins/niuKaFuHuoZhuZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuHuoZhuZhuShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/niuKaFuHuoZhuZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuHuoZhuZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.867Z"
   },
-  "78b2e696-a982-229e-08c4-03ba7c005412": {
-    "id": "78b2e696-a982-229e-08c4-03ba7c005412",
+  "4b62d94a-501a-a8fe-fee2-142042c0eff7": {
+    "id": "4b62d94a-501a-a8fe-fee2-142042c0eff7",
     "name": "niuKaFuSiJi",
     "title": "牛卡福司机",
     "author": "rujingxianghai",
-    "version": "v1.5.2",
-    "desc": "牛卡福插件v3；兼容青龙与呆呆面板；短信验证码登录 + 滑块识别",
+    "version": "v2.0.0",
+    "desc": "牛卡福司机凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(牛卡福|nkf)(登录|登陆)$|^登(录|陆)(牛卡福|nkf)$|^(牛卡福|nkf)(查询|管理|检测|教程|一键更新)$",
     "public": true,
     "admin": false,
-    "path": "plugins/niuKaFuSiJi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuSiJi.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/niuKaFuSiJi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuSiJi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.867Z"
   },
-  "224ad79f-8333-19c0-9e06-9bea6eb8d20b": {
-    "id": "224ad79f-8333-19c0-9e06-9bea6eb8d20b",
+  "7727febd-16a0-dbdd-bf6c-9ec18db84293": {
+    "id": "7727febd-16a0-dbdd-bf6c-9ec18db84293",
     "name": "niuNiuDuanJu",
     "title": "牛牛短剧",
     "author": "huawei",
-    "version": "v1.1.2",
-    "desc": "指令：；牛牛登录：绑定或更新 token（支持多号换行，格式：备注#token）；牛牛教程：查看 token 提交说明；牛牛上传青龙：强制上传到青龙；牛牛上传呆呆：强制上传到呆呆面板；牛牛清理：清理失效或过期账号；更新：1.1 查询结果新增余额显示；脚本地址",
+    "version": "v2.0.0",
+    "desc": "牛牛短剧凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://tg.96218.xyz/file/BQACAgUAAxkDAAIHFmnWkfnJZmy8WvxGVwUfxeodeYpbAAKrHwACEl6xVmklajBDFl5AOwQ.png",
     "class": "任务",
     "rule": "^牛牛(登录|登陆|查询|管理|清理|教程|上传|上传青龙|上传呆呆)$",
     "public": true,
     "admin": false,
-    "path": "plugins/niuNiuDuanJu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/niuNiuDuanJu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.867Z"
   },
-  "12b6e84e-4454-19e7-ab75-6379ebbee2f4": {
-    "id": "12b6e84e-4454-19e7-ab75-6379ebbee2f4",
+  "992b0696-395f-755e-2267-87c2960d0bb4": {
+    "id": "992b0696-395f-755e-2267-87c2960d0bb4",
     "name": "niuNiuDuanJuXiaoChengXuBan",
     "title": "牛牛短剧小程序版",
     "author": "8165799",
-    "version": "v1.4.2",
-    "desc": "小牛牛提交计费版；2. 支持批量登录，仅需token即可登录；3.",
+    "version": "v2.0.0",
+    "desc": "牛牛短剧小程序版凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(小牛牛)(登录|登陆)$|^登(录|陆)(小牛牛)$|^(小牛牛)(查询|管理)$|^(查询|管理)(小牛牛)$|^小牛牛清理$|^小牛牛$|^小牛牛教程$|^小牛牛通知 ?(.*)$|^清理小牛牛$|^小牛牛广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/niuNiuDuanJuXiaoChengXuBan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJuXiaoChengXuBan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/niuNiuDuanJuXiaoChengXuBan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJuXiaoChengXuBan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.868Z"
   },
-  "a7e9deb4-d38d-79ac-1b8e-a85f46ffa5f8": {
-    "id": "a7e9deb4-d38d-79ac-1b8e-a85f46ffa5f8",
+  "8eb7395c-22b2-15f8-daed-53d54c6f38ce": {
+    "id": "8eb7395c-22b2-15f8-daed-53d54c6f38ce",
     "name": "nongFuShanQuan",
     "title": "农夫山泉",
     "author": "sky2022",
-    "version": "v1.4.1",
-    "desc": "介绍：农夫山泉插件 插件自带任务!；更新：V7.0适配新版API接口；更新：支持中奖实时通知；更新：支持并发运行任务",
+    "version": "v2.0.0",
+    "desc": "农夫山泉凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://uapis.cn/static/uploads/9b1643baac_q1mBS7qtm3iX.webp",
     "class": "任务",
     "rule": "^农夫(批量|管理|查询|运行|配置|版本|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/nongFuShanQuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/nongFuShanQuan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/nongFuShanQuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/nongFuShanQuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.868Z"
   },
-  "72b8a84f-27b9-64ce-6303-78e17d4305f1": {
-    "id": "72b8a84f-27b9-64ce-6303-78e17d4305f1",
+  "1236566a-54e2-c0b9-5002-a1861f5918fb": {
+    "id": "1236566a-54e2-c0b9-5002-a1861f5918fb",
     "name": "oppoShangChengZhuShou",
     "title": "OPPO商城助手",
     "author": "8165799",
-    "version": "v1.8.2",
-    "desc": "OPPO商城提交计费版；2. 支持青龙呆呆面板；4.",
+    "version": "v2.0.0",
+    "desc": "OPPO商城助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(OPPO|oppo)商城(登录|登陆|管理|查询|清理|授权|教程)$|^(登录|登陆|管理|查询|清理)(OPPO|oppo)商城$",
     "public": true,
     "admin": false,
-    "path": "plugins/oppoShangChengZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/oppoShangChengZhuShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/oppoShangChengZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/oppoShangChengZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.869Z"
   },
   "77265ab7-505f-9caa-ec99-19bb7ea8f2ec": {
     "id": "77265ab7-505f-9caa-ec99-19bb7ea8f2ec",
@@ -1509,137 +1348,121 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "36047d3b-888b-5930-48a2-835a068d4f50": {
-    "id": "36047d3b-888b-5930-48a2-835a068d4f50",
+  "c249ba17-2941-6765-6b1b-0b4d489b8ca8": {
+    "id": "c249ba17-2941-6765-6b1b-0b4d489b8ca8",
     "name": "pangGuaiShengHuo",
     "title": "胖乖生活",
     "author": "sky2022",
-    "version": "v1.4.2",
-    "desc": "2.0全新UI；指令：胖乖登录、胖乖管理、胖乖查询、胖乖清理；4.3更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置",
+    "version": "v2.0.0",
+    "desc": "胖乖生活凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://y.gtimg.cn/music/photo_new/T053M000002Qqrye0oyZSp.jpg",
     "class": "任务",
     "rule": "^胖乖管理$|^管理胖乖$|^胖乖查询$|^查询胖乖$|^胖乖登录$|^登录胖乖$|^登陆胖乖$|^胖乖登陆$|^胖乖$|^胖乖清理$|^清理胖乖$",
     "public": true,
     "admin": false,
-    "path": "plugins/pangGuaiShengHuo.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pangGuaiShengHuo.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/pangGuaiShengHuo.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pangGuaiShengHuo.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.084Z"
   },
-  "46b4b7e5-30b4-a1f2-afce-039a65bae961": {
-    "id": "46b4b7e5-30b4-a1f2-afce-039a65bae961",
+  "edad3163-4af2-c6d3-d8a0-5e4c52a0c0e8": {
+    "id": "edad3163-4af2-c6d3-d8a0-5e4c52a0c0e8",
     "name": "pinZan",
     "title": "品赞",
     "author": "sky2022",
-    "version": "v1.4.3",
-    "desc": "介绍：品赞代理自动签到插件；支持自动签到、用户ID查询、账号管理；登录格式：手机号#密码#备注；每周一自动执行签到任务，无需手动操作；📝 更新日志；v1.4：整体重构代码结构，提升可维护性",
+    "version": "v2.0.0",
+    "desc": "品赞凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(品赞|pz)(登录|登陆)$|^登(录|陆)(品赞|pz)$|^(品赞|pz)(查询|管理)$|^(查询|管理)(品赞|pz)$|^品赞清理$|^品赞$|^品赞教程$|^品赞任务运行$|^品赞$|^品赞删除$|^品赞自动$",
     "public": true,
     "admin": false,
-    "path": "plugins/pinZan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pinZan.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/pinZan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pinZan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.869Z"
   },
-  "eb27e4ff-2f83-16d4-f1ac-99344f9ea236": {
-    "id": "eb27e4ff-2f83-16d4-f1ac-99344f9ea236",
+  "5a6a53e2-3687-a482-c986-a8664fc1482f": {
+    "id": "5a6a53e2-3687-a482-c986-a8664fc1482f",
     "name": "puPuChaoShi",
     "title": "朴朴超市",
     "author": "sky2022",
-    "version": "v1.0.1",
-    "desc": "2.0全新UI 支持扫码登录和手动抓包登录；指令：朴朴登录、朴朴管理、朴朴查询、朴朴刷新；脚本请进",
+    "version": "v2.0.0",
+    "desc": "朴朴超市凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://static.foodtalks.cn/company/images/214/35logo.jpg",
     "class": "任务",
     "rule": "^朴朴登陆$|^朴朴登录$|^登录朴朴$|^登陆朴朴$|^朴朴查询$|^查询朴朴$|^朴朴管理$|^管理朴朴$|^朴朴刷新$|^刷新朴朴$",
     "public": true,
     "admin": false,
-    "path": "plugins/puPuChaoShi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/puPuChaoShi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/puPuChaoShi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/puPuChaoShi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.869Z"
   },
-  "d5827303-8293-bef0-ea22-4e663ccaf9ad": {
-    "id": "d5827303-8293-bef0-ea22-4e663ccaf9ad",
+  "effb3a18-3ca4-5fe7-c841-aa1b45b59526": {
+    "id": "effb3a18-3ca4-5fe7-c841-aa1b45b59526",
     "name": "qingLongGaiDingShi",
     "title": "青龙改定时",
     "author": "sn_jmh",
-    "version": "v1.0.9",
-    "desc": "批量调整青龙脚本定时表达式。",
+    "version": "v1.0.11",
+    "desc": "使用傻妞青龙内联客户端批量调整青龙任务的分钟字段",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^改$",
     "public": true,
     "admin": true,
-    "path": "plugins/qingLongGaiDingShi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/qingLongGaiDingShi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/qingLongGaiDingShi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/qingLongGaiDingShi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:05:08.320Z"
   },
-  "9c75f4b5-a2c1-c6c7-5090-a7698a4d9845": {
-    "id": "9c75f4b5-a2c1-c6c7-5090-a7698a4d9845",
+  "09edb956-a1c6-f1e2-d474-c00a5ac02035": {
+    "id": "09edb956-a1c6-f1e2-d474-c00a5ac02035",
     "name": "ruiXingKaFeiChouJiang",
     "title": "瑞幸咖啡抽奖",
     "author": "sillyGirl",
-    "version": "v1.1.4",
-    "desc": "从 SmallCat 读取微信账号，完成瑞幸小程序登录、活动校验、抽奖和中奖记录查询",
+    "version": "v2.0.0",
+    "desc": "从当前用户授权的 SmallCat 微信账号获取 wx.login CODE，并可提交业务接口和同步青龙",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "工具",
     "rule": "raw ^\\s*(瑞幸|瑞幸咖啡|[Ll][Uu][Cc][Kk][Ii][Nn])\\s*(查询|抽奖)?\\s*$",
     "public": true,
     "admin": false,
-    "path": "plugins/ruiXingKaFeiChouJiang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ruiXingKaFeiChouJiang.py",
-    "dependencies": [
-      "cryptography",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/ruiXingKaFeiChouJiang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ruiXingKaFeiChouJiang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:41:13.040Z"
   },
-  "990879a5-1e8b-7ae6-4b6a-ddea52ec3a16": {
-    "id": "990879a5-1e8b-7ae6-4b6a-ddea52ec3a16",
+  "72e2095a-9c82-0df5-925e-47a2e7cce6ca": {
+    "id": "72e2095a-9c82-0df5-925e-47a2e7cce6ca",
     "name": "shangGuanXinWen",
     "title": "上观新闻",
     "author": "rujingxianghai",
-    "version": "v1.1.3",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "上观新闻凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://y.gtimg.cn/music/photo_new/T053M000001NYort1rZecQ.png",
     "class": "任务",
     "rule": "^(上观|sgxw)(登录|登陆)$|^登(录|陆)(上观|sgxw)$|^(上观|sgxw)(查询|管理)$|^(查询|管理)(上观|sgxw)$|^清理上观$|^上观$|^上观教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/shangGuanXinWen.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shangGuanXinWen.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/shangGuanXinWen.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shangGuanXinWen.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.870Z"
   },
   "e54b8b84-16a6-c0dd-7e71-39236f4b1856": {
     "id": "e54b8b84-16a6-c0dd-7e71-39236f4b1856",
@@ -1658,137 +1481,121 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "37cdbf39-408c-aa61-ea93-337019dbeb37": {
-    "id": "37cdbf39-408c-aa61-ea93-337019dbeb37",
+  "622cc28e-0096-2f73-9822-0830cd31d96c": {
+    "id": "622cc28e-0096-2f73-9822-0830cd31d96c",
     "name": "shuiFeiYi",
     "title": "水费易",
     "author": "mrconli",
-    "version": "v1.0.2",
-    "desc": "青龙环境变量格式为“会员ID”；1.0.0初版：支持批量登录",
+    "version": "v2.0.0",
+    "desc": "水费易凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^水费易(.*)|(.*)水费易$",
     "public": true,
     "admin": false,
-    "path": "plugins/shuiFeiYi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/shuiFeiYi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.871Z"
   },
-  "9719a847-a647-2f7c-688f-09799f0737bf": {
-    "id": "9719a847-a647-2f7c-688f-09799f0737bf",
+  "eae902d2-5a2c-302f-26f4-d5e645b80aff": {
+    "id": "eae902d2-5a2c-302f-26f4-d5e645b80aff",
     "name": "shunFengFeng",
     "title": "顺丰丰",
     "author": "Lxg-021002",
-    "version": "v1.0.6",
-    "desc": "顺丰账号登录、查询和任务管理。",
+    "version": "v2.0.0",
+    "desc": "顺丰丰凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://img.icons8.com/fluency/96/plugin.png",
     "class": "任务",
     "rule": "^顺风登录$|^顺风登陆$|^登陆顺风$|^登录顺风$|^顺风查询$|^查询顺风$|^顺风管理$|^管理顺风$|^顺丰登录$|^顺丰登陆$|^登陆顺丰$|^登录顺丰$|^顺丰查询$|^查询顺丰$|^顺丰管理$|^管理顺丰$",
     "public": true,
     "admin": false,
-    "path": "plugins/shunFengFeng.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengFeng.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/shunFengFeng.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengFeng.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.276Z"
   },
-  "300440ba-34dc-c186-b914-f22b507364cd": {
-    "id": "300440ba-34dc-c186-b914-f22b507364cd",
+  "0119af8a-1eb6-1347-f766-904febd501a9": {
+    "id": "0119af8a-1eb6-1347-f766-904febd501a9",
     "name": "shunFengQiangDui",
     "title": "顺丰抢兑",
     "author": "1934103887",
-    "version": "v1.9.1",
-    "desc": "✨顺丰抢兑助手✨；插件内置抢兑无需抓包，完美适配呆呆、幼稚园、chuan、yuhua的顺丰；用户发送”顺丰抢兑”提交账号；管理员请去计划任务定时”运行抢兑”自处理命令，详细配置请看配参内说明；现已支持自定义抢兑，仅限顺丰代挂用户使用；抢兑的账号会储存在Joh_sf建议抢兑完后发送”清理抢兑”清理定时；🌸5.20更新：增加代理池和API代理功能选项；🌸7.26更新：增加会员日抢免单券功能；🌸11.27更新：增加”顺丰取消抢兑”命令；🌸01.21更新：增加超寄星期三 6 折寄件券抢券逻辑",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://www.sf-express.com/chn/_next/static/media/ic-white-logo.abea573f.png",
     "class": "任务",
     "rule": "^顺丰抢兑$|^运行抢兑$|^清理抢兑$|^顺丰取消抢兑$",
     "public": true,
     "admin": false,
-    "path": "plugins/shunFengQiangDui.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengQiangDui.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/shunFengQiangDui.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengQiangDui.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "12540c9f-bade-cd82-f5d4-cb9455d97ff4": {
-    "id": "12540c9f-bade-cd82-f5d4-cb9455d97ff4",
+  "2b151020-7e5b-25d1-8c5a-2c2df7c1dbf7": {
+    "id": "2b151020-7e5b-25d1-8c5a-2c2df7c1dbf7",
     "name": "shunFengSuYun",
     "title": "顺丰速运",
     "author": "sky2022",
-    "version": "v1.7.2",
-    "desc": "顺丰登录、查询、物流、账号管理、Token刷新与面板同步",
+    "version": "v2.0.0",
+    "desc": "顺丰速运凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^顺丰(登录|登陆|查询|管理|教程|Token刷新|刷新|快递查询|同步)$|^登(录|陆)顺丰$|^(查询|管理)顺丰$",
     "public": true,
     "admin": false,
-    "path": "plugins/shunFengSuYun.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengSuYun.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/shunFengSuYun.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengSuYun.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.080Z"
   },
-  "bcdf7b8e-126a-64c1-c7bd-4c160a3926a7": {
-    "id": "bcdf7b8e-126a-64c1-c7bd-4c160a3926a7",
+  "6970cbfd-38fd-df57-222c-1daf1424f72a": {
+    "id": "6970cbfd-38fd-df57-222c-1daf1424f72a",
     "name": "shunYiChongXin",
     "title": "顺易充（新）",
     "author": "huawei",
-    "version": "v1.1.8",
-    "desc": "顺易充账号登录、积分查询、Token 刷新与任务运行",
+    "version": "v2.0.0",
+    "desc": "顺易充（新）凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg",
     "class": "任务",
     "rule": "^(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|刷新|一键刷新)$",
     "public": true,
     "admin": false,
-    "path": "plugins/shunYiChongXin.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunYiChongXin.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/shunYiChongXin.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunYiChongXin.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.871Z"
   },
-  "5e0b28f8-4df5-f1bb-5a5b-a9af2b3d0685": {
-    "id": "5e0b28f8-4df5-f1bb-5a5b-a9af2b3d0685",
+  "81967b15-6eb5-883b-05f3-56eee14887be": {
+    "id": "81967b15-6eb5-883b-05f3-56eee14887be",
     "name": "siGePengYou",
     "title": "四个朋友",
     "author": "huawei",
-    "version": "v1.0.3",
-    "desc": "指令：；四个朋友登录：绑定或更新 user_id（支持多号换行，格式：备注#user_id）；四个朋友教程：查看 user_id 提交说明；四个朋友上传青龙：强制上传到青龙；四个朋友上传呆呆：强制上传到呆呆面板；四个朋友清理：清理失效或过期账号；更新：1.0.0 首版适配 G_SGPY_UID；脚本地址",
+    "version": "v2.0.0",
+    "desc": "四个朋友凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://tg.96218.xyz/file/BQACAgUAAxkDAAIHH2ndrLaGBqLSp_CBtVTMX_APbIu_AAJVIAAC-STxVqpdpxV5PVduOwQ.png",
     "class": "任务",
     "rule": "^(四个朋友|四友)(登录|登陆|查询|管理|清理|教程|上传|上传青龙|上传呆呆)$",
     "public": true,
     "admin": false,
-    "path": "plugins/siGePengYou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/siGePengYou.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/siGePengYou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/siGePengYou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.872Z"
   },
   "f5722f18-f02e-9aed-0a6e-70c06c4b41b7": {
     "id": "f5722f18-f02e-9aed-0a6e-70c06c4b41b7",
@@ -1807,227 +1614,197 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
-  "0ad9b540-04b2-4d5f-b266-fc107897bd56": {
-    "id": "0ad9b540-04b2-4d5f-b266-fc107897bd56",
+  "941cbd0b-26b6-6ee2-93fb-64999f0ab0b6": {
+    "id": "941cbd0b-26b6-6ee2-93fb-64999f0ab0b6",
     "name": "suKanXiaoShuoDaiDuanXin",
     "title": "速看小说带短信",
     "author": "8165799",
-    "version": "v1.6.1",
-    "desc": "速看小说账号登录、查询、备注与青龙变量同步",
+    "version": "v2.0.0",
+    "desc": "速看小说带短信凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^速看(登录|登陆|查询|管理|教程)$|^登(录|陆)速看$|^(查询|管理)速看$",
     "public": true,
     "admin": false,
-    "path": "plugins/suKanXiaoShuoDaiDuanXin.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/suKanXiaoShuoDaiDuanXin.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/suKanXiaoShuoDaiDuanXin.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/suKanXiaoShuoDaiDuanXin.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.275Z"
   },
-  "08a4a2b5-9e33-2358-4edb-cea165954b0d": {
-    "id": "08a4a2b5-9e33-2358-4edb-cea165954b0d",
+  "e460d311-67d1-f979-dbd7-2f7645b5bf37": {
+    "id": "e460d311-67d1-f979-dbd7-2f7645b5bf37",
     "name": "taiKangGuanLi",
     "title": "泰康管理",
     "author": "rujingxianghai",
-    "version": "v1.0.2",
-    "desc": "泰康青龙变量管理插件",
+    "version": "v2.0.0",
+    "desc": "泰康管理凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://y.gtimg.cn/music/photo_new/T053M000002Qqrye0oyZSp.jpg",
     "class": "任务",
     "rule": "^(泰康|tk)(登录|登陆)$|^登(录|陆)(泰康|tk)$|^(泰康|tk)(查询|管理|检测|教程)$",
     "public": true,
     "admin": true,
-    "path": "plugins/taiKangGuanLi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangGuanLi.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/taiKangGuanLi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangGuanLi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.872Z"
   },
-  "07fe7b5f-c1d1-cdf3-444f-0ca3fdf33db2": {
-    "id": "07fe7b5f-c1d1-cdf3-444f-0ca3fdf33db2",
+  "02ca4a8f-c8bc-d98a-6297-8473a49a629c": {
+    "id": "02ca4a8f-c8bc-d98a-6297-8473a49a629c",
     "name": "taiKangZaiXian",
     "title": "泰康在线",
     "author": "mrconli",
-    "version": "v1.5.2",
-    "desc": "AI练手，自用；仅提交青龙”；<1.5.0更新(20250515)：优化查询显示，优化青龙提交；>；1.4.0更新(20250430)：增加红包记录查询",
+    "version": "v2.0.0",
+    "desc": "泰康在线凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://pp.myapp.com/ma_icon/0/icon_42327729_1745494497/256",
     "class": "任务",
     "rule": "^泰康(.*)|(.*)泰康$",
     "public": true,
     "admin": false,
-    "path": "plugins/taiKangZaiXian.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.py",
-    "dependencies": [
-      "httpx",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/taiKangZaiXian.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.873Z"
   },
-  "7ed2c32e-8933-64d8-9507-72e3408a4071": {
-    "id": "7ed2c32e-8933-64d8-9507-72e3408a4071",
+  "0f2e882e-f88a-db98-a54d-86532b75eedd": {
+    "id": "0f2e882e-f88a-db98-a54d-86532b75eedd",
     "name": "taiLing",
     "title": "台铃",
     "author": "huawei",
-    "version": "v1.2.2",
-    "desc": "vx小程序【台铃】签到插件；指令：；台铃查询：查询签到状态与任务进度；台铃上传青龙：强制上传到青龙；台铃上传呆呆：强制上传到呆呆面板；台铃清理：清理失效或过期账号；脚本地址",
+    "version": "v2.0.0",
+    "desc": "台铃凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^台铃(登录|登陆|查询|管理|清理|教程|上传|上传青龙|上传呆呆|运行|菜单)$",
     "public": true,
     "admin": false,
-    "path": "plugins/taiLing.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiLing.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/taiLing.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiLing.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.873Z"
   },
-  "3404e3af-247a-7f16-df95-1a77204c2c7e": {
-    "id": "3404e3af-247a-7f16-df95-1a77204c2c7e",
+  "1a4fe2ff-c864-c7d4-a28f-d1610cc9347d": {
+    "id": "1a4fe2ff-c864-c7d4-a28f-d1610cc9347d",
     "name": "taiPingTong",
     "title": "太平通",
     "author": "linzixuan",
-    "version": "v1.0.1",
-    "desc": "太平通账号登录、查询与任务运行",
+    "version": "v2.0.0",
+    "desc": "太平通凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://img1.baidu.com/it/u=35209519,2603388558&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500",
     "class": "任务",
     "rule": "^太平(上车|管理|查询|运行|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/taiPingTong.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiPingTong.py",
-    "dependencies": [
-      "curl-cffi",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/taiPingTong.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiPingTong.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.874Z"
   },
-  "b5d9991c-4080-0d00-a99c-445f615585af": {
-    "id": "b5d9991c-4080-0d00-a99c-445f615585af",
+  "ac67fade-bf71-c540-fef7-d4c4ef80f670": {
+    "id": "ac67fade-bf71-c540-fef7-d4c4ef80f670",
     "name": "taoSeVip",
     "title": "桃色VIP",
     "author": "rujingxianghai",
-    "version": "v1.4.2",
-    "desc": "更新日志：；1.0.0：初版，计划任务自行定时\"桃色一键运行\"(先刷新SSID，再运行任务)",
+    "version": "v2.0.0",
+    "desc": "桃色VIP凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://y.gtimg.cn/music/photo_new/T053M0000011Juce2IQQ8j.jpg",
     "class": "任务",
     "rule": "^桃色登录$|^登录桃色$|^桃色查询$|^桃色管理$|^桃色运行$|^桃色一键运行$|^桃色刷新$|^刷新桃色$|^桃色$|^桃色检测$|^桃色教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/taoSeVip.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taoSeVip.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/taoSeVip.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taoSeVip.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.874Z"
   },
-  "c6980d10-ff1f-9ad5-91f6-3093338e3406": {
-    "id": "c6980d10-ff1f-9ad5-91f6-3093338e3406",
+  "bd587eec-d936-7b9e-f743-532e7b60b47b": {
+    "id": "bd587eec-d936-7b9e-f743-532e7b60b47b",
     "name": "tengXunDiTu",
     "title": "腾讯地图",
     "author": "huawei",
-    "version": "v1.0.2",
-    "desc": "腾讯地图现金毛，日0.1",
+    "version": "v2.0.0",
+    "desc": "腾讯地图凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://free.picui.cn/free/2025/11/14/6916bb4577d7a.png",
     "class": "任务",
     "rule": "^(地图)(登录|登陆)$|^登(录|陆)(地图)$|^(地图)(查询|管理)$|^(查询|管理)(地图)$|^清理地图$|^地图$|^地图教程$|^地图检测$|^地图一键运行$",
     "public": true,
     "admin": false,
-    "path": "plugins/tengXunDiTu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tengXunDiTu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/tengXunDiTu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tengXunDiTu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.875Z"
   },
-  "5d573317-0c9c-b30d-be2f-77e7c01c37a4": {
-    "id": "5d573317-0c9c-b30d-be2f-77e7c01c37a4",
+  "2a65e604-b408-4249-c2fd-068d3c3ae9f9": {
+    "id": "2a65e604-b408-4249-c2fd-068d3c3ae9f9",
     "name": "tianNiuHuiShou",
     "title": "天牛回收",
     "author": "8165799",
-    "version": "v1.1.2",
-    "desc": "天牛代挂提交；2. 用户提交 token 自动识别手机号；4.",
+    "version": "v2.0.0",
+    "desc": "天牛回收凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(天牛)(登录|登陆)$|^登(录|陆)(天牛)$|^(天牛)(查询|管理)$|^(查询|管理)(天牛)$|^天牛清理$|^天牛$|^天牛教程$|^天牛通知 ?(.*)$|^清理天牛$|^天牛广播 ?(.*)$",
     "public": true,
     "admin": false,
-    "path": "plugins/tianNiuHuiShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianNiuHuiShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/tianNiuHuiShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianNiuHuiShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.875Z"
   },
-  "5f5e14fb-d058-3ff3-1672-40df8cb1dba1": {
-    "id": "5f5e14fb-d058-3ff3-1672-40df8cb1dba1",
+  "0eedf7ab-156e-8395-ec44-3de00675eff2": {
+    "id": "0eedf7ab-156e-8395-ec44-3de00675eff2",
     "name": "tianYiYunPanQianDao",
     "title": "天翼云盘签到",
     "author": "hdbjlizhe",
-    "version": "v1.0.2",
-    "desc": "天翼云盘签到，配参中设置天翼云盘的用户名和密码",
+    "version": "v2.0.0",
+    "desc": "使用 SillyGirl 青龙内联客户端查找并运行对应业务任务",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^天翼云盘签到$",
     "public": true,
     "admin": true,
-    "path": "plugins/tianYiYunPanQianDao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianYiYunPanQianDao.py",
-    "dependencies": [
-      "requests",
-      "rsa"
-    ],
-    "type": "python",
+    "path": "plugins/tianYiYunPanQianDao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianYiYunPanQianDao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:36:44.532Z"
   },
-  "92394e2c-c254-5e8a-4675-ac17762fbb02": {
-    "id": "92394e2c-c254-5e8a-4675-ac17762fbb02",
+  "806d9f0f-5f8f-1621-9d85-66e605de35f4": {
+    "id": "806d9f0f-5f8f-1621-9d85-66e605de35f4",
     "name": "tongYiJiaHuang",
     "title": "统一茄皇",
     "author": "rujingxianghai",
-    "version": "v1.4.2",
-    "desc": "统一梦时代茄皇的家，每日签到浇水领奖励；1.0.5：适配新版；1.0.4：适配新版活动",
+    "version": "v2.0.0",
+    "desc": "统一茄皇凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(茄皇|qh)(登录|登陆)$|^登(录|陆)(茄皇|qh)$|^(茄皇|qh)(查询|管理|教程)$|^(查询|管理)(茄皇|qh)$|^茄皇$|^茄皇检测$",
     "public": true,
     "admin": false,
-    "path": "plugins/tongYiJiaHuang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tongYiJiaHuang.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/tongYiJiaHuang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tongYiJiaHuang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.875Z"
   },
   "30bfe66b-4e34-fe98-24de-83a412b27039": {
     "id": "30bfe66b-4e34-fe98-24de-83a412b27039",
@@ -2046,30 +1823,26 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-07-26T05:03:29.000Z"
   },
-  "08606f4e-ca42-baee-6fa1-9abc312ce54d": {
-    "id": "08606f4e-ca42-baee-6fa1-9abc312ce54d",
+  "dce9e2e7-1c2b-62f2-ff0e-badc2b7ac579": {
+    "id": "dce9e2e7-1c2b-62f2-ff0e-badc2b7ac579",
     "name": "wangChao",
     "title": "望潮",
     "author": "sky2022",
-    "version": "v1.4.2",
-    "desc": "望潮插件；1.1更新了WXPUSH通知，现在可以把每个人登录的账户收益通知全部单独发给用户；1.6更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置",
+    "version": "v2.0.0",
+    "desc": "望潮凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://pp.myapp.com/ma_icon/0/icon_42259219_1711261436/256",
     "class": "任务",
     "rule": "^(望潮管理|管理望潮|望潮查询|查询望潮|望潮登录|望潮登陆|登录望潮|登陆望潮|望潮教程|望潮删除|删除望潮|望潮更新青龙|望潮同步|同步望潮)$",
     "public": true,
     "admin": false,
-    "path": "plugins/wangChao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChao.py",
-    "dependencies": [
-      "cryptography",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/wangChao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.085Z"
   },
   "5f92b4fd-9e37-f9ea-34e4-02c10eab3407": {
     "id": "5f92b4fd-9e37-f9ea-34e4-02c10eab3407",
@@ -2088,30 +1861,26 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "ea1df1b8-6d76-30ee-34dd-4a6012e54b45": {
-    "id": "ea1df1b8-6d76-30ee-34dd-4a6012e54b45",
+  "4e2eec35-f253-9de7-c77e-f4341f9ecb70": {
+    "id": "4e2eec35-f253-9de7-c77e-f4341f9ecb70",
     "name": "wangZheZhanLiChaXun",
     "title": "王者战力查询",
-    "author": "yuhualhh",
-    "version": "v1.1.1",
-    "desc": "王者战力查询精美图片版，触发指令战力查询",
-    "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@8b8c57f2b4173a6ec2b5c7e58db07be1158e0e16/2025/02/20/f63f99f95da0cf1fb83949c22061cbfb.png",
-    "class": "任务",
+    "author": "sillyGirl",
+    "version": "v2.0.0",
+    "desc": "查询王者荣耀英雄最低战力地区",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
+    "class": "娱乐",
     "rule": "^战力查询$",
     "public": true,
     "admin": false,
-    "path": "plugins/wangZheZhanLiChaXun.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangZheZhanLiChaXun.py",
-    "dependencies": [
-      "beautifulsoup4",
-      "cryptography",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/wangZheZhanLiChaXun.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangZheZhanLiChaXun.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:39:58.020Z"
   },
   "08949c02-15cf-892c-d1ab-08382537db72": {
     "id": "08949c02-15cf-892c-d1ab-08382537db72",
@@ -2130,461 +1899,406 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "bb17fce4-22e8-5beb-997e-36c6ee09789b": {
-    "id": "bb17fce4-22e8-5beb-997e-36c6ee09789b",
+  "e54640ef-c4a6-365b-0259-2b7d5bdd6768": {
+    "id": "e54640ef-c4a6-365b-0259-2b7d5bdd6768",
     "name": "wuYuTingShu",
     "title": "唔语听书",
     "author": "97610325",
-    "version": "v1.3.2",
-    "desc": "唔语听书插件；指令：唔语登录、唔语管理、唔语查询、唔语清理；功能：自动领红花、每日抽奖、自动看广告，完美对接青龙面板,适配呆呆系统系统",
+    "version": "v2.0.0",
+    "desc": "唔语听书凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://nos.netease.com/ysf/d4f8b7f99ae2b9ffb33ebfdedcf0776c.jpg",
     "class": "任务",
     "rule": "^唔语管理$|^管理唔语$|^唔语查询$|^查询唔语$|^唔语登录$|^登录唔语$|^登陆唔语$|^唔语登陆$|^唔语$|^唔语清理$|^清理唔语$",
     "public": true,
     "admin": false,
-    "path": "plugins/wuYuTingShu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wuYuTingShu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/wuYuTingShu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wuYuTingShu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.876Z"
   },
-  "56ce9a14-d0c9-2083-8185-00d573c41ae8": {
-    "id": "56ce9a14-d0c9-2083-8185-00d573c41ae8",
+  "c13cdaba-b2ba-3de9-94aa-fc8c6d54dac7": {
+    "id": "c13cdaba-b2ba-3de9-94aa-fc8c6d54dac7",
     "name": "xianBaoHou",
     "title": "线报猴",
-    "author": "authook",
-    "version": "v1.0.3",
-    "desc": "线报推送 xbh",
-    "icon": "https://iehou.com/view/img/favicon.ico",
+    "author": "sillyGirl",
+    "version": "v2.0.0",
+    "desc": "从线报酷开放接口读取最新线报",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^线报猴$",
     "public": true,
-    "admin": true,
-    "path": "plugins/xianBaoHou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xianBaoHou.py",
-    "dependencies": [
-      "beautifulsoup4",
-      "colorlog",
-      "requests"
-    ],
-    "type": "python",
+    "admin": false,
+    "path": "plugins/xianBaoHou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xianBaoHou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:39:58.021Z"
   },
-  "8b6406f7-9289-c83e-ad2b-f56c41b26891": {
-    "id": "8b6406f7-9289-c83e-ad2b-f56c41b26891",
+  "039f05fe-7f9a-17c8-7582-28a89e5226e1": {
+    "id": "039f05fe-7f9a-17c8-7582-28a89e5226e1",
     "name": "xiaoCanBaWangCan",
     "title": "小蚕霸王餐",
     "author": "yuhualhh",
-    "version": "v1.2.4",
-    "desc": "❷部分功能的实现需自行添加计划任务伪装管理员定时，了解如何添加计划任务请看移动云盘插件介绍，关于指令『小蚕检测』与『小蚕清理』定时『30 18 * * *』，关于指令『小蚕一键监控』定时『0 10 * * * *』，关于指令『小蚕一键红包雨』建议定时『0 59 7,9,11,13,15,18 * * *』，关于指令『小蚕一键运行』定时『0 8,20 * * *』<img src=\"https://gcore.jsdelivr.net/gh/lhz03/img@f054476821a50f66328fa8271886fab6f8b50964/2025/05/01/9ac4e3c4f46248746e9d0c7a353f38f9.png\">",
+    "version": "v2.0.0",
+    "desc": "小蚕霸王餐凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@368cbd87cbbdfd3bff1534d4c7a7957ca76f1c54/2025/02/18/4003bcfc1f8d46cd6f9de1b656bbddab.png",
     "class": "任务",
     "rule": "^(小蚕)(登录|查询|提宝|提微|查单|运行|管理|检测|清理|解限|一键运行|一键监控|一键红包雨)$",
     "public": true,
     "admin": false,
-    "path": "plugins/xiaoCanBaWangCan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoCanBaWangCan.py",
-    "dependencies": [
-      "beautifulsoup4",
-      "cryptography",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xiaoCanBaWangCan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoCanBaWangCan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.876Z"
   },
-  "3e6cfd64-32c8-f278-3a34-9a2d80d3ce9b": {
-    "id": "3e6cfd64-32c8-f278-3a34-9a2d80d3ce9b",
+  "ba86346b-445e-e08f-b106-24ffb91bbf8e": {
+    "id": "ba86346b-445e-e08f-b106-24ffb91bbf8e",
     "name": "xiaoKuaiShou",
     "title": "小快手",
     "author": "linzixuan",
-    "version": "v1.2.6",
-    "desc": "快手极速版与普通版账号登录、查询、面板同步及管理",
+    "version": "v2.0.0",
+    "desc": "小快手凭证绑定、青龙同步、账号查询与清理",
     "icon": "http://5b0988e595225.cdn.sohucs.com/images/20190724/f8f8ace898584a2dbd3f20c2d2822c96.jpeg",
     "class": "任务",
     "rule": "^快手(登录|登陆|查询|管理|教程)?$",
     "public": true,
     "admin": false,
-    "path": "plugins/xiaoKuaiShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuaiShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xiaoKuaiShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuaiShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.275Z"
   },
-  "0237a054-b242-3110-4da2-41cd9e2eaf12": {
-    "id": "0237a054-b242-3110-4da2-41cd9e2eaf12",
+  "2e39cdbe-9ffa-c2a1-f775-1f225c0cc170": {
+    "id": "2e39cdbe-9ffa-c2a1-f775-1f225c0cc170",
     "name": "xiaoKuGou",
     "title": "小酷狗",
     "author": "sky2022",
-    "version": "v1.0.2",
-    "desc": "介绍：酷狗音乐代挂插件；插件支持手机号登录，无需抓包！！！！；1.7更新：统一面板配置为面板类型+对接面板配置，并新增呆呆面板分组配置",
+    "version": "v2.0.0",
+    "desc": "小酷狗凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://img.3dmgame.com/uploads/images/thumbnews/20220914/1663143036_387843.jpg",
     "class": "任务",
     "rule": "^(酷狗)(登录|登陆)$|^(酷狗)(查询)$|^(酷狗)(管理)$|^酷狗$|^酷狗清理$|^酷狗教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/xiaoKuGou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuGou.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xiaoKuGou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuGou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.083Z"
   },
-  "a7ddd923-4237-3106-8572-79a0661fe3d6": {
-    "id": "a7ddd923-4237-3106-8572-79a0661fe3d6",
+  "64b5ebee-d99d-0468-649d-78889d983dcf": {
+    "id": "64b5ebee-d99d-0468-649d-78889d983dcf",
     "name": "xiaoMiQianBao",
     "title": "小米社区钱包",
     "author": "linzixuan",
-    "version": "v1.8.1",
-    "desc": "小米社区钱包扫码登录、签到、账号管理和视频会员兑换。",
+    "version": "v2.0.0",
+    "desc": "小米社区钱包凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^小米登录$|^登录小米$|^小米查询$|^小米管理$|^小米清理$|^小米一键更新$|^小米$|^小米兑换$|^小米教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/xiaoMiQianBao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiQianBao.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/xiaoMiQianBao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiQianBao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.877Z"
   },
-  "9f9cd013-bbb8-b29e-f5fc-e5b49ebc3c59": {
-    "id": "9f9cd013-bbb8-b29e-f5fc-e5b49ebc3c59",
+  "c37f92e7-f4be-2afe-b5e9-ccb53403a438": {
+    "id": "c37f92e7-f4be-2afe-b5e9-ccb53403a438",
     "name": "xiaoMiShuaBuZhuShou",
     "title": "小米刷步助手",
     "author": "1934103887",
-    "version": "v1.0.1",
-    "desc": "✨功能介绍✨；❶：发送“刷步登录”进行绑定，发送“刷步”输入需要的步数即可；❷：支持单人登录or解绑操作多个账号，解绑命令为“刷步解绑”；❸：定时刷步or取消定时(发送“定时刷步”提交账号，管理员计划任务定时“一键刷步”)；🌸6.25更新：自定义代理防止使用人数过多导致刷步失败；🌸10.20更新：修复接口；<img src=\"https://surl.fan/FvLFgs\">",
+    "version": "v2.0.0",
+    "desc": "小米刷步助手凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://s1.aigei.com/src/img/gif/6a/6a49e68067f449838e0cd4c842d06b51.gif?e=2051020800&token=",
     "class": "任务",
     "rule": "^刷步$|^刷步登录$|^定时刷步$|^一键刷步$|^刷步定时$|^取消定时$|^登录刷步$|^登陆刷步$|^刷步登陆$|^刷步解绑$",
     "public": true,
     "admin": false,
-    "path": "plugins/xiaoMiShuaBuZhuShou.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiShuaBuZhuShou.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xiaoMiShuaBuZhuShou.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiShuaBuZhuShou.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:42:02.081Z"
   },
-  "40d7a341-2f6a-be62-88ca-3cf6b5a8e3b1": {
-    "id": "40d7a341-2f6a-be62-88ca-3cf6b5a8e3b1",
+  "e1873a71-3275-7510-0a59-bff91e725422": {
+    "id": "e1873a71-3275-7510-0a59-bff91e725422",
     "name": "xieQuDaiLi",
     "title": "携趣代理",
-    "author": "funyhook",
-    "version": "v1.0.2",
-    "desc": "。",
-    "icon": "https://www.xiequ.cn/Home/img/logo.png",
-    "class": "任务",
+    "author": "sillyGirl",
+    "version": "v2.0.0",
+    "desc": "调用携趣控制台生成的提取、余量和删白 API",
+    "icon": "https://api.iconify.design/lucide:bot.svg",
+    "class": "工具",
     "rule": "^携趣$|^携趣删白$|^携趣余量$|^携趣管理$|^携趣配置$|^xqfk$",
     "public": true,
     "admin": true,
-    "path": "plugins/xieQuDaiLi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xieQuDaiLi.py",
-    "dependencies": [
-      "colorlog",
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/xieQuDaiLi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xieQuDaiLi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:42:21.185Z"
   },
-  "65187778-b9f5-3e9b-4e41-baba69d6fe60": {
-    "id": "65187778-b9f5-3e9b-4e41-baba69d6fe60",
+  "e382b88c-1d44-ed51-8fb1-8ce49c3ad74e": {
+    "id": "e382b88c-1d44-ed51-8fb1-8ce49c3ad74e",
     "name": "xingMaHui",
     "title": "星妈会",
     "author": "sky2022",
-    "version": "v1.0.5",
-    "desc": "此插件出自徒弟：huawei；合并版【星妈会】插件，内置飞鹤项目与星妈会项目，插件内置运行；指令：星妈会登录、星妈会查询、星妈会管理、星妈会一键运行、星妈会后台、星妈会教程",
+    "version": "v2.0.0",
+    "desc": "星妈会凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://tg.96218.xyz/file/BQACAgUAAxkDAAIHCmm-LiuIplV2-MijHZDPMGWzMIqcAAIzHAACNG7wVX3FrlyGxlWhOgQ.png",
     "class": "任务",
     "rule": "^星妈会(登录|登陆|查询|管理|一键运行|后台|教程)$|^(登录|登陆|查询|管理)星妈会$",
     "public": true,
     "admin": false,
-    "path": "plugins/xingMaHui.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaHui.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/xingMaHui.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaHui.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.877Z"
   },
-  "2aade62f-5788-228d-ed9a-7bf6c350a4f6": {
-    "id": "2aade62f-5788-228d-ed9a-7bf6c350a4f6",
+  "445d6273-211a-8368-611f-a566fe6e356e": {
+    "id": "445d6273-211a-8368-611f-a566fe6e356e",
     "name": "xingMaYouXuan",
     "title": "星妈优选",
     "author": "huawei",
-    "version": "v1.3.2",
-    "desc": "📱 <b>功能特色：</b>；• 多账号批量管理，支持无限绑定；• 自动签到 + 自动完成每日任务；• 智能token刷新，无需手动维护；💡 <b>核心指令：</b>；🔐 星妈登录 - 快速绑定账号；🚀 星妈一键运行 - 批量执行任务；🔄 版本1.0.0 稳定版，持续更新优化中",
+    "version": "v2.0.0",
+    "desc": "星妈优选凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://i.mji.rip/2025/07/11/2350538ac014afbea48b64409bd5931c.png",
     "class": "任务",
     "rule": "^(星妈|xing ma)(登录|登陆)$|^登(录|陆)(星妈|xingma)$|^(星妈|xingma)(查询|管理)$|^(查询|管理)(星妈|xingma)$|^清理星妈$|^星妈一键运行$|^星妈$|^星妈清理$",
     "public": true,
     "admin": false,
-    "path": "plugins/xingMaYouXuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaYouXuan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xingMaYouXuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaYouXuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.878Z"
   },
-  "5cf9e399-380e-1e02-fb60-db249ba651d8": {
-    "id": "5cf9e399-380e-1e02-fb60-db249ba651d8",
+  "d4c16065-89e4-4ce0-a353-bf9cc74bf05b": {
+    "id": "d4c16065-89e4-4ce0-a353-bf9cc74bf05b",
     "name": "xingYaMianFeiDuanJu",
     "title": "星芽免费短剧",
     "author": "Jiang0529",
-    "version": "v1.3.2",
-    "desc": "星芽免费短剧插件；2.2版本更新日志：按面板对接模板增加呆呆面板支持，统一完善青龙/呆呆面板变量查询、新增、更新、删除、失败补交逻辑，兼容旧版青龙配置",
+    "version": "v2.0.0",
+    "desc": "星芽免费短剧凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://pp.myapp.com/ma_icon/0/icon_54326748_1755482552/256",
     "class": "任务",
     "rule": "^星芽教程$|^星芽登录$|^星芽登陆$|^星芽查询$|^星芽ck提交$|^星芽CK提交$|^星芽管理$|^星芽$|^星芽刷时长$",
     "public": true,
     "admin": false,
-    "path": "plugins/xingYaMianFeiDuanJu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYaMianFeiDuanJu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xingYaMianFeiDuanJu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYaMianFeiDuanJu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.085Z"
   },
-  "1d6eeb0d-f364-11a5-49dc-db8954474c21": {
-    "id": "1d6eeb0d-f364-11a5-49dc-db8954474c21",
+  "8f72f1b9-8fb1-845b-2d5d-fd4f4bbc57cb": {
+    "id": "8f72f1b9-8fb1-845b-2d5d-fd4f4bbc57cb",
     "name": "xingYunYouXuan",
     "title": "星韵优选",
     "author": "rujingxianghai",
-    "version": "v1.2.2",
-    "desc": "星韵优选小程序(日0.1)；活动入口：#小程序://星韵优选/kt8xm5WOSI0Z6ri；功能：打卡签到、视频任务",
+    "version": "v2.0.0",
+    "desc": "星韵优选凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(星韵|xingyun|xyyx)(登录|登陆)$|^登(录|陆)(星韵|xingyun|xyyx)$|^(星韵|xingyun|xyyx)(查询|管理|检测|教程|清理|上传)$|^(查询|管理)(星韵|xingyun|xyyx)$",
     "public": true,
     "admin": false,
-    "path": "plugins/xingYunYouXuan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYunYouXuan.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xingYunYouXuan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYunYouXuan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.086Z"
   },
-  "560063b6-f322-2b13-f0a9-77c8066df54e": {
-    "id": "560063b6-f322-2b13-f0a9-77c8066df54e",
+  "662e19f4-7d9e-4630-ffbf-b288c08456a6": {
+    "id": "662e19f4-7d9e-4630-ffbf-b288c08456a6",
     "name": "xinJiangBei",
     "title": "新江北",
     "author": "rujingxianghai",
-    "version": "v1.1.4",
-    "desc": "1.0.0：基础版本",
+    "version": "v2.0.0",
+    "desc": "新江北凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(新江北|xjb)(登录|登陆)$|^登(录|陆)(新江北|xjb)$|^(新江北|xjb)(查询|管理)$|^(查询|管理)(新江北|xjb)$|^新江北清理$|^新江北检测$|^新江北$|^新江北教程$",
     "public": true,
     "admin": false,
-    "path": "plugins/xinJiangBei.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xinJiangBei.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/xinJiangBei.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xinJiangBei.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.878Z"
   },
-  "dbedfd9c-d128-d605-96ab-adbedbb7bc1a": {
-    "id": "dbedfd9c-d128-d605-96ab-adbedbb7bc1a",
+  "db3352d6-cc2f-a2d6-6f63-50fa239bf534": {
+    "id": "db3352d6-cc2f-a2d6-6f63-50fa239bf534",
     "name": "yiDongYunPan",
     "title": "移动云盘",
     "author": "yuhualhh",
-    "version": "v1.4.5",
-    "desc": "移动云盘登录、Token刷新、云朵查询、兑换与账号管理",
+    "version": "v2.0.0",
+    "desc": "移动云盘凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@391e5db5571432ac74c20afa8e958ac83e32e7a3/2025/02/13/437a3d841eaea843d11f97941c33accb.png",
     "class": "任务",
     "rule": "^云盘(登录|查询|管理|兑换|一键抢兑|停止抢兑)$",
     "public": true,
     "admin": false,
-    "path": "plugins/yiDongYunPan.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiDongYunPan.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/yiDongYunPan.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiDongYunPan.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.081Z"
   },
-  "afd4f33d-3731-9913-f4ec-514575f323ea": {
-    "id": "afd4f33d-3731-9913-f4ec-514575f323ea",
+  "a550550d-541f-21aa-3a49-d5c5981fe327": {
+    "id": "a550550d-541f-21aa-3a49-d5c5981fe327",
     "name": "yiLiQqXing",
     "title": "伊利QQ星",
     "author": "8165799",
-    "version": "v1.2.1",
-    "desc": "伊利QQ星账号登录、会员积分查询、管理与面板同步",
+    "version": "v2.0.0",
+    "desc": "伊利QQ星凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(伊利|伊利QQ星)(登录|登陆|管理|查询|教程)$|^(登录|登陆|管理|查询)(伊利|伊利QQ星)$",
     "public": true,
     "admin": false,
-    "path": "plugins/yiLiQqXing.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiLiQqXing.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/yiLiQqXing.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiLiQqXing.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.275Z"
   },
-  "1979fa54-52cf-a90c-9428-23eff7182793": {
-    "id": "1979fa54-52cf-a90c-9428-23eff7182793",
+  "d9ead93b-4621-1521-0ad0-a349292038d5": {
+    "id": "d9ead93b-4621-1521-0ad0-a349292038d5",
     "name": "yiPinCang",
     "title": "壹品仓",
     "author": "huawei",
-    "version": "v1.2.3",
-    "desc": "APP【壹品仓】插件",
+    "version": "v2.0.0",
+    "desc": "壹品仓凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://tg.96218.xyz/file/BQACAgUAAxkDAAIG_mmxCTjoSpkpvhpHLZ64nnYxoloeAAIVHgACZNKIVVmXCAF9vuQQOgQ.png",
     "class": "任务",
     "rule": "^(壹品仓|ypc)(登录|登陆)$|^登(录|陆)(壹品仓|ypc)$|^(壹品仓|ypc)(查询|管理)$|^(查询|管理)(壹品仓|ypc)$|^壹品仓$|^壹品仓教程$|^壹品仓一键运行$|^壹品仓签到$|^壹品仓清理$",
     "public": true,
     "admin": false,
-    "path": "plugins/yiPinCang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiPinCang.py",
-    "dependencies": [
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/yiPinCang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiPinCang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.878Z"
   },
-  "45072352-907b-11f9-0824-21064de9c04c": {
-    "id": "45072352-907b-11f9-0824-21064de9c04c",
+  "fe773be4-1f7a-6497-9942-27117bcf0441": {
+    "id": "fe773be4-1f7a-6497-9942-27117bcf0441",
     "name": "yongPai",
     "title": "甬派",
     "author": "sky2022",
-    "version": "v1.5.1",
-    "desc": "甬派账号登录、中奖查询、账号管理与面板同步",
+    "version": "v2.0.0",
+    "desc": "甬派凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(甬派|yy)(登录|登陆)$|^登(录|陆)(甬派|yy)$|^甬派(查询|管理|教程)$",
     "public": true,
     "admin": false,
-    "path": "plugins/yongPai.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yongPai.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/yongPai.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yongPai.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:27:59.276Z"
   },
-  "2c86945a-3839-68dd-660b-86a0a21e7b89": {
-    "id": "2c86945a-3839-68dd-660b-86a0a21e7b89",
+  "0bb90297-e796-b8a1-7d42-7bedbcdbe0ae": {
+    "id": "0bb90297-e796-b8a1-7d42-7bedbcdbe0ae",
     "name": "youXiaWang",
     "title": "游侠网",
     "author": "mrconli",
-    "version": "v1.3.2",
-    "desc": "AI练手，账密登录（支持批量）；查询调用缓存token,暂不知多久过期，后续有反馈再添加刷新token；1.3.0更新：查询报错请更新sillygirl的go环境；1.2.0更新：修复查询ssl报错；1.0.0初版：支持批量登录",
+    "version": "v2.0.0",
+    "desc": "游侠网凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^游侠(.*)|(.*)游侠$",
     "public": true,
     "admin": false,
-    "path": "plugins/youXiaWang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/youXiaWang.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/youXiaWang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/youXiaWang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.879Z"
   },
-  "3719018f-9a65-2bb4-ffee-223d547cd77e": {
-    "id": "3719018f-9a65-2bb4-ffee-223d547cd77e",
+  "86fc3902-f610-6f2c-cec5-2053620b9ca5": {
+    "id": "86fc3902-f610-6f2c-cec5-2053620b9ca5",
     "name": "yuYunQianDao",
     "title": "雨云签到",
     "author": "rujingxianghai",
-    "version": "v1.1.2",
-    "desc": "。",
+    "version": "v2.0.0",
+    "desc": "雨云签到凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(雨云|yy)(登录|登陆)$|^登(录|陆)(雨云|yy)$|^(雨云|yy)(查询|管理|检测|教程)$|^(查询|管理)(雨云|yy)$",
     "public": true,
     "admin": false,
-    "path": "plugins/yuYunQianDao.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yuYunQianDao.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/yuYunQianDao.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yuYunQianDao.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.087Z"
   },
-  "25f0701a-7a17-cb19-f630-67e4ec64849e": {
-    "id": "25f0701a-7a17-cb19-f630-67e4ec64849e",
+  "781afee8-a60a-4ecb-977b-bd7234ef0dd5": {
+    "id": "781afee8-a60a-4ecb-977b-bd7234ef0dd5",
     "name": "zaoXianShengHuo",
     "title": "早纤生活",
     "author": "rujingxianghai",
-    "version": "v1.3.2",
-    "desc": "早纤生活插件；必须走邀请才有活动界面：https://img-upload.example.invalid/9ea8306e7362734cccd4151c38947333.jpeg",
+    "version": "v2.0.0",
+    "desc": "早纤生活凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:apple.svg",
     "class": "任务",
     "rule": "^(早纤|早纤生活)(登录|登陆)$|^登(录|陆)(早纤|早纤生活)$|^(早纤|早纤生活)(查询|管理|检测|提醒|教程)$|^(查询|管理|检测|提醒|教程)(早纤|早纤生活)$",
     "public": true,
     "admin": false,
-    "path": "plugins/zaoXianShengHuo.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zaoXianShengHuo.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/zaoXianShengHuo.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zaoXianShengHuo.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.879Z"
   },
-  "08d09105-ef73-7c56-d265-2e865e64ecaf": {
-    "id": "08d09105-ef73-7c56-d265-2e865e64ecaf",
+  "67333842-0206-bb77-c30e-98dc515c7c84": {
+    "id": "67333842-0206-bb77-c30e-98dc515c7c84",
     "name": "zhanMaNengLiangXingQiu",
     "title": "战马能量星球",
     "author": "8165799",
-    "version": "v1.5.2",
-    "desc": "战马能量星球代挂提交插件，支持Safe参数登录；支持批量登录；v1.4修复登录过期，查询过期；",
+    "version": "v2.0.0",
+    "desc": "战马能量星球凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(战马)(登录|登陆)$|^登(录|陆)(战马)$|^(战马)(查询|管理)$|^(查询|管理)(战马)$|^战马清理$|^战马$|^战马教程$|^战马通知 ?(.*)$|^战马广播 ?(.*)$|^清理战马$",
     "public": true,
     "admin": false,
-    "path": "plugins/zhanMaNengLiangXingQiu.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhanMaNengLiangXingQiu.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/zhanMaNengLiangXingQiu.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhanMaNengLiangXingQiu.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.880Z"
   },
   "73ea4c5f-b854-476c-8ec2-c97dba4fc07c": {
     "id": "73ea4c5f-b854-476c-8ec2-c97dba4fc07c",
@@ -2603,72 +2317,63 @@
     "dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-05T11:02:34.000Z"
   },
-  "6c8f8472-1af6-865d-f9ef-3577ae538123": {
-    "id": "6c8f8472-1af6-865d-f9ef-3577ae538123",
+  "4e163016-3536-10ee-8cdc-88c3072674c6": {
+    "id": "4e163016-3536-10ee-8cdc-88c3072674c6",
     "name": "zhongAnJianKang",
     "title": "众安健康",
     "author": "97610325",
-    "version": "v1.6.2",
-    "desc": "众安健康插件；指令：众安登录、众安管理、众安查询、众安清理；5.9更新：修复众安查询问题；5.16更新：Token真实有效新检测",
+    "version": "v1.7.0",
+    "desc": "众安健康 Token 绑定、青龙同步、账号查询与清理",
     "icon": "https://nos.netease.com/ysf/82b362badc596b99e5c3ad437973a560.jpg",
     "class": "任务",
     "rule": "^众安管理$|^管理众安$|^众安查询$|^查询众安$|^众安登录$|^登录众安$|^众安$|^众安清理$|^清理众安$",
     "public": true,
     "admin": false,
-    "path": "plugins/zhongAnJianKang.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongAnJianKang.py",
-    "dependencies": [
-      "requests",
-      "urllib3"
-    ],
-    "type": "python",
+    "path": "plugins/zhongAnJianKang.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongAnJianKang.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:24:48.621Z"
   },
-  "fc776e56-8459-770a-912f-637975b3fc4e": {
-    "id": "fc776e56-8459-770a-912f-637975b3fc4e",
+  "3dbc9512-02da-c94e-cc95-61d0c8cabf3b": {
+    "id": "3dbc9512-02da-c94e-cc95-61d0c8cabf3b",
     "name": "zhongGuoLianTong",
     "title": "中国联通",
     "author": "yuhualhh",
-    "version": "v1.1.1",
-    "desc": "中国联通Token/密码/短信登录、积分权益查询与账号管理",
+    "version": "v2.0.0",
+    "desc": "中国联通凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://gcore.jsdelivr.net/gh/lhz03/img@7c2616699a9cf7a628d4a087eb458bb013913a85/2025/12/26/e1b072befcce7bbe3a55685176de670f.png",
     "class": "任务",
     "rule": "^联通(登录|查询|管理)$",
     "public": true,
     "admin": false,
-    "path": "plugins/zhongGuoLianTong.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongGuoLianTong.py",
-    "dependencies": [
-      "cryptography",
-      "pycryptodome",
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/zhongGuoLianTong.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongGuoLianTong.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:31:12.082Z"
   },
-  "fe669fc5-ce07-52f1-42cb-aefbae5cf8a8": {
-    "id": "fe669fc5-ce07-52f1-42cb-aefbae5cf8a8",
+  "ce6d953d-d689-6c7d-3c6e-e3dafcf209f1": {
+    "id": "ce6d953d-d689-6c7d-3c6e-e3dafcf209f1",
     "name": "zhongShiPinGuanLi",
     "title": "中视频管理",
     "author": "8165799",
-    "version": "v1.9.2",
-    "desc": "中视频代挂提交；2. 采用数据提交；3. 支持查询接口实时获取签到金币和账号存活状态；4.",
+    "version": "v2.0.0",
+    "desc": "中视频管理凭证绑定、青龙同步、账号查询与清理",
     "icon": "https://api.iconify.design/lucide:bot.svg",
     "class": "任务",
     "rule": "^(中视频)(登录|登陆)$|^登(录|陆)(中视频)$|^(中视频)(查询|管理)$|^(查询|管理)(中视频)$|^中视频清理$|^中视频$|^中视频教程$|^中视频通知 ?(.*)$|^清理中视频$|^中视频广播 ?(.*)$",
     "public": true,
     "admin": true,
-    "path": "plugins/zhongShiPinGuanLi.py",
-    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongShiPinGuanLi.py",
-    "dependencies": [
-      "requests"
-    ],
-    "type": "python",
+    "path": "plugins/zhongShiPinGuanLi.js",
+    "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongShiPinGuanLi.js",
+    "dependencies": [],
+    "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-06T06:03:13.000Z"
+    "create_at": "2026-08-07T07:34:04.880Z"
   }
 }

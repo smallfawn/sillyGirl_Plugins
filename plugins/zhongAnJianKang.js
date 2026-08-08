@@ -18,7 +18,6 @@ const { createHash, randomBytes } = require("crypto");
 const { Bucket, plugin, sender: s } = require("sillygirl");
 
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   auto_withdraw: plugin.Form.boolean().title("余额满 5 元自动提现").default(false),
 });
 const users = new Bucket("s_zajk_user");
@@ -30,8 +29,7 @@ const API = "https://ihealth.zhongan.com";
 async function main() {
   try {
     const cfg = await form.get();
-    if (cfg.enable === false) return s.reply("众安健康插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (!content) return runAll(cfg, false);
     if (/教程/.test(content))
       return s.reply("发送 众安登录，再提交 Access-Token#备注；查询显示积分和可提现余额，一键运行完成签到与领奖。");

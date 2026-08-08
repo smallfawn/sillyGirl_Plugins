@@ -34,7 +34,7 @@ const form = new plugin.Form({
 
 async function main() {
   const cfg = (await form.get()) || {};
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   const chatId = String((await s.getChatId()) || "private");
   if (content === "短视频图集解析") return configure(chatId);
   const match = content.match(/https?:\/\/[^\s"'<>]+/i);
@@ -65,7 +65,7 @@ async function configure(chatId) {
   );
   const child = await s.listen({ timeout: 30000 });
   if (!child) return;
-  const choice = String((await child.getContent()) || "").trim();
+  const choice = String((await child.getMsg()) || "").trim();
   if (choice === "1") {
     const next = enabled === "true" ? "false" : "true";
     await settings.set(`enabled:${chatId}`, next);

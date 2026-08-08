@@ -25,7 +25,6 @@ const binds = new Bucket("Yzyxmm_mt_bind"),
   couponAuth = new Bucket("Yzyxmm_mt_Lingquantime"),
   coinAuth = new Bucket("Yzyxmm_mt_Tbtime");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.integer().title("青龙容器编号").min(1).default(1),
   coupon_env: plugin.Form.string().title("领券变量名").default("meituanCookie"),
   coin_env: plugin.Form.string().title("团币变量名").default("meituanToken"),
@@ -64,7 +63,7 @@ async function save(userId, rows) {
 async function prompt(text, t = 120000) {
   await s.reply(text);
   const child = await s.listen({ timeout: t });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function req(url, opt = {}) {
   const c = new AbortController(),
@@ -390,8 +389,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("美团团插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     if (!c) return cron();
     if (/登录|登陆/.test(c)) return login();
     if (/查询/.test(c)) return query();

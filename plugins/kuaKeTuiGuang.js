@@ -19,7 +19,6 @@ const vorto = require("./vortoUtils"),
   PC = "https://drive-pc.quark.cn/1/clouddrive",
   DRIVE = "https://drive.quark.cn/1/clouddrive";
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   cookies: plugin.Form.string().title("夸克网盘Cookie").widget("textarea").default(""),
   save_folder: plugin.Form.string().title("保存文件夹名称").default(""),
   share_option: plugin.Form.integer().title("分享选项1-8").min(1).max(8).default(1),
@@ -192,8 +191,7 @@ async function clean(c, fid, minutes) {
 }
 async function main() {
   const cfg = (await form.get()) || {};
-  if (cfg.enable === false) return s.reply("夸克推广插件未启用");
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!cfg.cookies) throw new Error("请先在插件配置填写夸克Cookie");
   if (content === "夸克登录") {
     const root = await list(cfg.cookies, "0");

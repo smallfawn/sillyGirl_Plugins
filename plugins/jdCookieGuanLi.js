@@ -42,7 +42,7 @@ const form = new plugin.Form({
 
 async function main() {
   const cfg = normalize((await form.get()) || {});
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   try {
     if (content === "COOKIE状态" || content === "规则管理") return status(cfg);
     if (content === "导出ck") return exportCookies(cfg);

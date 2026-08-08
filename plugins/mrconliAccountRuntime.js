@@ -29,7 +29,6 @@ function createAccountRuntime(spec) {
     remarks = new Bucket(`${spec.prefix}.remark`),
     auth = new Bucket(`${spec.prefix}.auth`);
   const Config = new plugin.Form({
-    enable: plugin.Form.boolean().title("是否启用").default(true),
     panel_type: plugin.Form.string().title("面板类型(qinglong/daidai)").default("qinglong"),
     panel_config: plugin.Form.string().title("呆呆面板配置(URL丨AppKey丨Secret)").default(""),
     qinglong_id: plugin.Form.integer().title("青龙容器编号").min(1).default(1),
@@ -53,7 +52,6 @@ function createAccountRuntime(spec) {
     const pick = (key, fallback) =>
       legacy?.[key] !== undefined && legacy[key] !== "" ? legacy[key] : form[key] !== undefined ? form[key] : fallback;
     cfg = {
-      enable: form.enable !== false,
       panelType: String(pick("panel_type", "qinglong")).toLowerCase(),
       panelConfig: String(pick("panel_config", legacy.ql_config || "")),
       qinglongId: int(form.qinglong_id, 1),
@@ -87,8 +85,7 @@ function createAccountRuntime(spec) {
 
   async function main() {
     await loadConfig();
-    if (!cfg.enable) return s.reply(`${spec.title}插件未启用`);
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (!content) return cronCheck();
     if (/登录|登陆|上车|新增/.test(content)) return login();
     if (/查询/.test(content)) return query();
@@ -301,7 +298,7 @@ function createAccountRuntime(spec) {
     await s.reply(utils.image(await vorto.generateQrcodeUrl(order.pay_url)));
     for (let index = 0; index < 60; index++) {
       const child = await s.listen({ timeout: 5000 });
-      if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) return false;
+      if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) return false;
       if (await client.isPaid(orderNo)) return true;
     }
     return false;

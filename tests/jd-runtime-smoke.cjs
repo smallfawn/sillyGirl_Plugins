@@ -74,7 +74,7 @@ class QingLong {
   }
 }
 const sender = {
-  getContent: async () => content,
+  getMsg: async () => content,
   getUserId: async () => "fixture-user",
   getPlatform: async () => "qq",
   getChatId: async () => "",

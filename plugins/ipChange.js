@@ -17,7 +17,6 @@
 const { sender: s, Bucket, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   endpoint: plugin.Form.string().title("公网 IP 接口").default("https://api64.ipify.org"),
 });
 const store = new Bucket("ipChange");
@@ -37,7 +36,7 @@ async function main() {
   const changed = Boolean(oldIP && oldIP !== ip);
   if (oldIP !== ip) await store.set("last_ip", ip);
 
-  const command = String(await s.getContent().catch(() => "")).trim();
+  const command = String(await s.getMsg().catch(() => "")).trim();
   if (command) {
     await s.reply(changed ? `IP 已变动：${oldIP} -> ${ip}` : `当前 IP：${ip}`);
   } else if (changed) {

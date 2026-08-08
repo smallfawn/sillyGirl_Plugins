@@ -24,7 +24,6 @@ const accountsStore = new Bucket("Joh_Shuabu_account");
 const legacyAccountsStore = new Bucket("dd_zepp_account");
 const scheduleStore = new Bucket("Joh_Shuabu");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   proxy_mode: plugin.Form.string().title("代理模式：0关闭/1固定/2代理API").default("0"),
   proxy_url: plugin.Form.string().title("固定代理地址").default(""),
   proxy_api: plugin.Form.string().title("代理池API").default(""),
@@ -36,7 +35,7 @@ async function prompt(text, timeout = 120000) {
   await s.reply(text);
   const child = await s.listen({ timeout });
   if (!child) return null;
-  const value = String((await child.getContent()) || "").trim();
+  const value = String((await child.getMsg()) || "").trim();
   return /^q$/i.test(value) ? null : value;
 }
 
@@ -314,8 +313,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Number(cfg.timeout_ms) || 15000;
-    if (cfg.enable === false) return s.reply("小米刷步助手插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (/^(刷步登录|登录刷步|刷步登陆|登陆刷步)$/.test(content)) return loginAccount();
     if (/^(定时刷步|刷步定时)$/.test(content)) return scheduleSteps();
     if (content === "取消定时") return cancelSchedule();

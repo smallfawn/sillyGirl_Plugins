@@ -248,7 +248,7 @@ async function runOne(id, cfg) {
 
 async function main() {
   try {
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const raw = await config.get();
     const cfg = {
       ocrServer: String(raw.ocr_server || "http://ddddocr.250666.xyz"),

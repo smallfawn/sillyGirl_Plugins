@@ -27,7 +27,6 @@ const users = new Bucket("dd_KuwoTX_bind"),
   logins = new Bucket("dd_KuwoTX_login"),
   counts = new Bucket("dd_KuwoTX_UserCount");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   count_price: plugin.Form.number().title("每次提现价格").min(0).default(0),
   count_coin: plugin.Form.integer().title("每次提现积分").min(0).default(9999),
   qr_code: plugin.Form.string().title("收款码图片URL").default(""),
@@ -55,7 +54,7 @@ async function uid() {
 async function prompt(text, timeout = 60000) {
   await s.reply(text);
   const child = await s.listen({ timeout });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function proxyDispatcher() {
   if (!cfg.proxy_api || !ProxyAgent) return;
@@ -278,7 +277,7 @@ async function recharge() {
   await s.reply(utils.image(await vorto.generateQrcodeUrl(order.pay_url)));
   for (let i = 0; i < 60; i++) {
     const child = await s.listen({ timeout: 5000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || ""))) throw new Error("支付已取消");
+    if (child && /^q$/i.test(String((await child.getMsg()) || ""))) throw new Error("支付已取消");
     if (await client.isPaid(orderNo)) {
       await addCount(userId, amount);
       return s.reply(`充值${amount}次成功`);
@@ -354,8 +353,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("酷我Music提现插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (content === "酷我提现次数迁移") return migrate();
     if (content === "酷我提现次数检测" || !content) return checkCounts();
     return menu();

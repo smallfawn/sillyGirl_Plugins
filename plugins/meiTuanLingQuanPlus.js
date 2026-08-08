@@ -18,7 +18,6 @@ const { sender: s, Bucket, plugin, utils } = require("sillygirl"),
   points = new Bucket("yuhua_meituan_points"),
   locks = new Bucket("yuhua_meituan_payment_locks");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   api_key: plugin.Form.string().title("领券API秘钥").default(""),
   api_url: plugin.Form.string().title("API地址").default("http://api.oroe.cn"),
   prices: plugin.Form.string().title("三项目积分价格，用|分隔，-1关闭").default("88|88|88"),
@@ -35,7 +34,7 @@ async function uid() {
 async function prompt(text, t = 60000) {
   await s.reply(text);
   const child = await s.listen({ timeout: t });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function balance(id) {
   const n = Number(await points.get(String(id), "0"));
@@ -234,8 +233,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 35000);
-    if (cfg.enable === false) return s.reply("美团领券PLUS插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     if (/^(美团领券|美团领劵|美团领卷)$/.test(c)) return coupon();
     if (c === "美团刷白") return whitelist();
     if (c === "美团充分") return recharge();

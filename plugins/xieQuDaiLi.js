@@ -17,7 +17,6 @@
 const { plugin, sender: s } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   extract_url: plugin.Form.string().title("代理提取 URL").default(""),
   balance_url: plugin.Form.string().title("余量查询 URL").default(""),
   delete_white_url: plugin.Form.string().title("删除白名单 URL").default(""),
@@ -36,8 +35,7 @@ const proxyState = new Bucket("xieQuDaiLi.state");
 
 async function main() {
   const cfg = (await config.get()) || {};
-  if (cfg.enable === false) return s.reply("携趣代理插件未启用");
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!content) {
     const results = [];
     if (cfg.xingkong_apikey && cfg.xingkong_sign) results.push(await whitelistXingkongApi(cfg, true));

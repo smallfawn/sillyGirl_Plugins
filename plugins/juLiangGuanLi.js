@@ -17,7 +17,6 @@ const { sender: s, Bucket, plugin } = require("sillygirl"),
   crypto = require("node:crypto"),
   store = new Bucket("jl_data");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   captcha_token: plugin.Form.string().title("腾讯滑块打码Token").default(""),
   notify_channels: plugin.Form.string().title("管理员通知渠道").default(""),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(15000),
@@ -65,7 +64,7 @@ async function req(url, opt = {}) {
 async function prompt(text, timeout = 60000) {
   await s.reply(text);
   const child = await s.listen({ timeout });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function notify(text) {
   return typeof s.pushAdmin === "function" ? s.pushAdmin(text) : s.reply(text);
@@ -227,8 +226,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("巨量管理插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (content === "ip") return s.reply(`当前ip：${await currentIp()}`);
     if (content === "巨量账号管理") return manage();
     if (content === "剩余ip")

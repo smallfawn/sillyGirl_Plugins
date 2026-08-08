@@ -24,7 +24,6 @@ let userIdx = 0;
 let strSplitor = "#";
 
 const DEFAULTS = {
-  enable: true,
   cron_run: true,
   random_user: false,
   sign_date: "20260428",
@@ -33,7 +32,6 @@ const DEFAULTS = {
 };
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(DEFAULTS.enable),
   cron_run: plugin.Form.boolean()
     .title("定时自动运行")
     .description("cron 触发时自动执行粉象一键运行")
@@ -61,7 +59,6 @@ const $ = {
 
 function normalizeConfig(input) {
   const cfg = Object.assign({}, DEFAULTS, input || {});
-  cfg.enable = input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable;
   cfg.cron_run = input && input.cron_run !== undefined ? Boolean(input.cron_run) : DEFAULTS.cron_run;
   cfg.random_user = Boolean(cfg.random_user);
   cfg.sign_date = String(cfg.sign_date || DEFAULTS.sign_date).trim();
@@ -92,7 +89,7 @@ class SgSenderAdapter {
   async listen(timeout) {
     const child = await s.listen({ timeout: Number(timeout) || 60000 });
     if (!child) return "";
-    return String((await child.getContent()) || "").trim();
+    return String((await child.getMsg()) || "").trim();
   }
   async input(timeout) {
     return this.listen(timeout);
@@ -101,7 +98,7 @@ class SgSenderAdapter {
     return String((await s.getUserId()) || "");
   }
   async getMessage() {
-    return String((await s.getContent()) || "").trim();
+    return String((await s.getMsg()) || "").trim();
   }
   async getImtype() {
     return String((await s.getPlatform()) || "");
@@ -1381,13 +1378,9 @@ const Fxsh = class {
 
 async function main() {
   runtimeConfig = normalizeConfig(await pluginConfig.get());
-  if (!runtimeConfig.enable) {
-    await s.reply("粉象生活插件未启用，请先到插件配置开启");
-    return;
-  }
   await syncLegacyConfig(runtimeConfig);
 
-  const message = String((await s.getContent()) || "").trim();
+  const message = String((await s.getMsg()) || "").trim();
   const sender = new SgSenderAdapter({ forceAdmin: !message && runtimeConfig.cron_run });
   const user = await sender.getUserID();
   const fxsh = new Fxsh(user, sender);

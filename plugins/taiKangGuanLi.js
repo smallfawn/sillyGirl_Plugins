@@ -24,7 +24,6 @@ const tokenStore = new Bucket("s_tkzx_token");
 const authStore = new Bucket("s_tkzx_auth");
 const pointsStore = new Bucket("dd_sign_points");
 const Config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   osname: plugin.Form.string().title("面板变量名").default("S_TKRS"),
   qlname: plugin.Form.string()
     .title("独立面板配置")
@@ -40,7 +39,6 @@ const Config = new plugin.Form({
 });
 
 let runtime = {
-  enable: true,
   osname: "S_TKRS",
   qlname: "",
   useDumbPanel: false,
@@ -252,8 +250,7 @@ class TaikangOnline {
 
 async function main() {
   runtime = await loadConfig();
-  if (!runtime.enable) return s.reply("泰康管理插件未启用");
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!content) return authCheck(true);
   if (/登录|登陆/.test(content)) return bindAccount();
   if (/查询/.test(content) && /(泰康|tk)/i.test(content)) return queryAccounts();
@@ -274,7 +271,6 @@ async function loadConfig() {
         ? form[formKey]
         : fallback;
   const cfg = {
-    enable: form.enable !== false,
     osname: String(pick("osname", "osname", "S_TKRS")),
     qlname: String(pick("qlname", "qlname", "")),
     useDumbPanel: boolValue(pick("use_daipanel", "use_daipanel", false)),
@@ -515,7 +511,7 @@ async function maPay(months, money, payType) {
   await s.reply(utils.image(await vorto.generateQrcodeUrl(order.pay_url)));
   for (let index = 0; index < 60; index++) {
     const child = await s.listen({ timeout: 5000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) {
+    if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) {
       await s.reply("✅ 已取消支付");
       return false;
     }

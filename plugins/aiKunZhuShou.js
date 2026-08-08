@@ -21,7 +21,6 @@ const { sender: s, Bucket, plugin, console } = require("sillygirl");
 
 const accountsStore = new Bucket("ahhh_ikuu_accounts");
 const Config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   api_base: plugin.Form.string().title("爱坤站点地址").default("https://ikuuu.de"),
   origin: plugin.Form.string().title("请求 Origin").default("https://ikuuu.art"),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(20000),
@@ -80,13 +79,12 @@ class CookieSession {
 
 async function main() {
   const cfg = (await Config.get()) || {};
-  if (cfg.enable === false) return s.reply("爱坤助手未启用");
   runtime = {
     apiBase: normalizeBase(cfg.api_base || "https://ikuuu.de"),
     origin: normalizeBase(cfg.origin || "https://ikuuu.art"),
     timeout: clampInt(cfg.timeout_ms, 3000, 120000, 20000),
   };
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (/^(爱坤|ik)登录$/i.test(content)) return handleLogin();
   if (/^(爱坤|ik)签到$/i.test(content)) return handleCheckin(false);
   if (/^(爱坤|ik)查询$/i.test(content)) return handleQuery();
@@ -233,7 +231,7 @@ async function prompt(message, trim = true) {
   await s.reply(message);
   const child = await s.listen({ timeout: 60000 });
   if (!child) return null;
-  const value = String((await child.getContent()) || "");
+  const value = String((await child.getMsg()) || "");
   const normalized = trim ? value.trim() : value;
   return !normalized || /^q$/i.test(normalized.trim()) ? null : normalized;
 }

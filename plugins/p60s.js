@@ -17,7 +17,6 @@
 const { sender: s, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   api: plugin.Form.string().title("早报接口").default("https://60s.viki.moe/v2/60s"),
   image: plugin.Form.boolean().title("默认使用图片").default(true),
 });
@@ -48,7 +47,7 @@ function text(data) {
 async function main() {
   const conf = await config.get();
   const data = await load(conf.api || "https://60s.viki.moe/v2/60s");
-  const command = String(await s.getContent().catch(() => "")).trim();
+  const command = String(await s.getMsg().catch(() => "")).trim();
   if (command === "早报数据") {
     return (await s.isAdmin()) ? s.reply(JSON.stringify(data, null, 2)) : undefined;
   }

@@ -49,7 +49,7 @@ async function login() {
   await s.reply("请在60秒内使用哔哩哔哩 App 扫码");
   for (let i = 0; i < 30; i += 1) {
     const child = await s.listen({ timeout: 2000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || ""))) throw new Error("已取消扫码");
+    if (child && /^q$/i.test(String((await child.getMsg()) || ""))) throw new Error("已取消扫码");
     const row = await api("bililogin", { do: "qrlogin", zkey: first.key });
     if (row?.data?.token && row.data?.csrf) return row.data;
   }

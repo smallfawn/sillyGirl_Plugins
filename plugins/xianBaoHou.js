@@ -16,14 +16,12 @@
 const { plugin, sender: s } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   limit: plugin.Form.number().title("返回条数").default(5),
   source_url: plugin.Form.string().title("线报开放接口").default("https://new.ixbk.net/plus/json/push.json"),
 });
 
 async function main() {
   const cfg = (await config.get()) || {};
-  if (cfg.enable === false) return s.reply("线报猴未启用");
   try {
     const response = await fetch(String(cfg.source_url || "https://new.ixbk.net/plus/json/push.json"), {
       headers: { accept: "application/json" },

@@ -59,7 +59,7 @@ const HEADERS = {
 
 async function main() {
   const cfg = (await form.get()) || {};
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (content) {
     if (!(await s.isAdmin())) return s.reply("仅管理员可用");
     if (content === "开启线报") {
@@ -207,7 +207,7 @@ function parseArray(raw, fallback) {
 }
 async function listen(timeout) {
   const child = await s.listen({ timeout });
-  return child ? String((await child.getContent()) || "").trim() : "";
+  return child ? String((await child.getMsg()) || "").trim() : "";
 }
 async function json(url, headers) {
   const response = await fetch(String(url), { headers, signal: AbortSignal.timeout(15000) });

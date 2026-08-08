@@ -22,7 +22,6 @@ const userStore = new Bucket("s_qh_user");
 const tokenStore = new Bucket("s_qh_token");
 const authStore = new Bucket("s_qh_auth");
 const Config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   osname: plugin.Form.string().title("面板变量名").default("S_TYQH"),
   qlname: plugin.Form.string()
     .title("独立青龙配置")
@@ -43,8 +42,7 @@ let runtime = { osname: "S_TYQH", qlname: "", useDumbPanel: false, vipMoney: 1, 
 
 async function main() {
   runtime = await loadConfig();
-  if (!runtime.enable) return s.reply("统一茄皇插件未启用");
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!content) return runAuthCheck(true);
   if (/登录|登陆/.test(content)) return bindAccount();
   if (/查询/.test(content) && /(茄皇|qh)/i.test(content)) return queryAccounts();
@@ -65,7 +63,6 @@ async function loadConfig() {
         ? form[formKey]
         : fallback;
   const cfg = {
-    enable: form.enable !== false,
     osname: String(value("osname", "osname", "S_TYQH") || "S_TYQH").trim(),
     qlname: String(value("qlname", "qlname", "") || "").trim(),
     useDumbPanel: boolValue(value("use_dumbpanel", "use_dumbpanel", false)),
@@ -321,7 +318,7 @@ async function processMaPayment(months, money, payType) {
   await s.reply('💳 请扫码支付，5分钟内完成；输入"q"可取消');
   for (let round = 0; round < 60; round++) {
     const child = await s.listen({ timeout: 5000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) {
+    if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) {
       await s.reply("✅ 已取消支付");
       return false;
     }

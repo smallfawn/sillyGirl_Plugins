@@ -26,7 +26,7 @@ async function finalUrl(url) {
 }
 async function main() {
   try {
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (/^dljx\s+/i.test(content)) {
       const url = content.replace(/^dljx\s+/i, "").match(/https?:\/\/\S+/)?.[0];
       if (!url) return s.reply("未找到短链接");

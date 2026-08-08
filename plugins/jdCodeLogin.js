@@ -23,7 +23,6 @@ const JD_PT_LOGIN_URL =
 const JD_COOKIE_ENV_NAME = "JD_COOKIE";
 
 const DEFAULTS = {
-  enable: true,
   smallcat_id: 1,
   account_mode: "authorized",
   manual_openids: "",
@@ -36,7 +35,6 @@ const DEFAULTS = {
 };
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   smallcat_id: plugin.Form.integer()
     .title("smallcat 编号")
     .description("后台 smallcat 页面里的编号，从 1 开始")
@@ -87,10 +85,6 @@ async function main() {
   }
 
   const cfg = normalizeConfig(await pluginConfig.get());
-  if (!cfg.enable) {
-    await s.reply("京东Code登录插件未启用，请先到插件配置开启");
-    return;
-  }
 
   try {
     validateConfig(cfg);

@@ -52,7 +52,7 @@ class Adapter {
   async destroy() {}
 }
 const sender = {
-  getContent: async () => "__fixture__",
+  getMsg: async () => "__fixture__",
   getUserId: async () => "user",
   getPlatform: async () => "qq",
   getBotId: async () => "bot",

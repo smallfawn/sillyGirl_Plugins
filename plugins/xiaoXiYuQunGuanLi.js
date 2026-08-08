@@ -27,7 +27,7 @@ async function main() {
   try {
     const event = await s.getEvent();
     if (isJoin(event)) return verifyJoin(event, await form.get());
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (/^1[3-9]\d{9}$/.test(content)) return recallPhone();
     if (/^(QQ关联|qq关联)$/.test(content)) return linkQQ();
     if (/^(人工|售后)$/.test(content)) return createTicket();
@@ -41,7 +41,7 @@ async function main() {
 }
 
 async function recallPhone() {
-  const messageId = await s.getMessageId();
+  const messageId = await s.getMsgId();
   await s.doAction({ action: "delete_msg", message_id: messageId });
   return s.reply("手机号消息已撤回");
 }

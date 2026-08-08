@@ -28,7 +28,7 @@ let cfg = {};
 async function main() {
   try {
     cfg = (await form.get()) || {};
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (content === "数据导出") return exportData();
     if (/^(代码导出|autman插件迁移)$/.test(content)) return exportCode();
     if (content === "数据迁移") return migrateKey();
@@ -129,7 +129,7 @@ async function exportCode() {
   );
   const child = await s.listen({ timeout: 120000 });
   if (!child) return s.reply("输入超时");
-  const input = String((await child.getContent()) || "").trim();
+  const input = String((await child.getMsg()) || "").trim();
   if (/^q$/i.test(input)) return s.reply("已退出代码导出流程");
   const selected =
     input === "0"

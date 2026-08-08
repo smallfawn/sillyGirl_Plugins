@@ -4,7 +4,7 @@
 // [author: smallfawn]
 // [version: v1.0.1]
 // [rule: ^(打印机|打印机状态|打印测试图片)$]
-// [status: true]
+// [status: false]
 // [admin: true]
 // [public: true]
 // [priority: 0]
@@ -20,7 +20,6 @@ const { promisify } = require("node:util");
 const { sender: s, console, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否开启该打印机脚本").default(false),
   print_url: plugin.Form.string().title("打印机 IPP 地址").description("格式：http://192.168.x.x:631/ipp/print"),
   test_enable: plugin.Form.boolean().title("是否开启每周自动打印测试图防止堵头").default(false),
   test_image: plugin.Form.string()
@@ -185,7 +184,7 @@ async function printTest() {
 
 async function content() {
   try {
-    return await s.getContent();
+    return await s.getMsg();
   } catch (error) {
     return "";
   }
@@ -194,10 +193,6 @@ async function content() {
 async function main() {
   const conf = await config.get();
 
-  if (!conf.enable) {
-    await s.reply("未启用打印机脚本，退出。");
-    return;
-  }
   if (!conf.print_url) {
     await s.reply("未输入打印机 IPP 地址，退出。");
     return;

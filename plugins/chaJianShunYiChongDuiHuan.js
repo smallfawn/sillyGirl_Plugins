@@ -27,7 +27,6 @@ const BASE = "https://app.wodeev.com",
   legacyTokens = new Bucket("G_SYC_token"),
   agent = new Bucket("G_SYC_AGENT");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   is_proxy: plugin.Form.boolean().title("启用代理").default(false),
   proxy_api: plugin.Form.string().title("代理池API").default(""),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(15000),
@@ -48,7 +47,7 @@ async function uid() {
 async function prompt(text, timeout = 60000) {
   await s.reply(text);
   const child = await s.listen({ timeout });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function userAccounts(userId) {
   let rows = list(await users.get(userId, "[]"));
@@ -274,8 +273,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("顺易充兑换插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     if (c === "顺易充库存") return stock();
     if (c === "顺易充库存兑换") return exchange();
     if (c === "顺易充总结") return summary();

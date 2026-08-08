@@ -44,6 +44,7 @@ Action 会在提交插件后扫描静态 `require` / `import` 并回写 `[depe: 
 ## 运行时约定
 
 - NodeJS/Python 插件优先使用 SillyGirl 内联函数：`sender`、`Bucket`、`plugin.Form`、`user.Form`、`user`、`container`、`utils`；新增代码不要再封装重复运行时。
+- Sender 消息 API 统一使用 `getMsg()`、`setMsg(content)` 和 `getMsgId()`；仓库审计会拦截已经移除的旧方法。
 - 公共逻辑模块必须是同目录平铺的 `.js` 文件并声明 `[module: true]`；调用方必须在 `[depe]` 中填写完整的 `./模块名.js`，不能使用 `.cjs`、`../`、嵌套目录或跨发布者路径。
 - Python 插件统一按 Python 3.12 运行时维护；不要使用 Python 3.13/3.14 专属语法或标准库 API。
 - 青龙/呆呆/smallcat 容器能力走 `container` 或运行时兼容封装读取后台容器配置，不再随插件安装额外文件。
@@ -51,7 +52,8 @@ Action 会在提交插件后扫描静态 `require` / `import` 并回写 `[depe: 
 - `[version: ...]` 固定使用 `v1.x.y` 三段版本号（例如 `v1.0.0`）；主版本固定为 `1`，`x`、`y` 只能是 `0-9`，补丁位到 `10` 时十进制进位（如 `v1.1.10` 写成 `v1.2.0`）。
 - 仓库内不放私钥、WxPusher AppToken、接口签名 Token；确实需要时放到插件配置表单。
 - 插件需要持久化文本、JSON、CSV 等数据时，统一写入傻妞存储桶，不直接读写本地文件。
-- 带 `[cron: ...]` 的插件必须在顶层 `plugin.Form` 声明 boolean 字段 `enable`。该字段是插件总开关；关闭后消息、定时和启动触发都跳过，但保留 Cron 表达式，重新开启后自动恢复。
+- 插件总开关只使用头部 `[status: true|false]`；不要再用 `plugin.Form` 的通用 `enable` 字段重复控制运行状态。
+- `[cron: ...]` 任务的启用状态由 SillyGirl“定时任务”页面独立保存，不与插件卡片的 `status` 共用；业务功能开关应使用含义明确的独立字段名。
 
 ## 仓库维护
 

@@ -45,7 +45,6 @@ const DEFAULT_USER_AGENT =
 const NANOID_ALPHABET = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
 
 const DEFAULTS = {
-  enable: true,
   smallcat_id: 1,
   account_mode: "authorized",
   manual_openids: "",
@@ -63,7 +62,6 @@ const DEFAULTS = {
 };
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   smallcat_id: plugin.Form.integer()
     .title("smallcat 编号")
     .description("后台 smallcat 页面里的编号，从 1 开始")
@@ -785,7 +783,6 @@ class HushengRunner {
 function normalizeConfig(raw) {
   const source = raw || {};
   const cfg = Object.assign({}, DEFAULTS, source);
-  cfg.enable = source.enable === undefined ? true : yes(source.enable);
   cfg.smallcat_id = positiveInt(cfg.smallcat_id, 1);
   cfg.account_mode = cfg.account_mode === "manual" ? "manual" : "authorized";
   cfg.manual_openids = String(cfg.manual_openids || "").trim();
@@ -1065,12 +1062,8 @@ function errorText(error) {
 
 async function main() {
   const cfg = normalizeConfig(await pluginConfig.get());
-  if (!cfg.enable) {
-    await s.reply("沪上阿姨签到插件未启用");
-    return;
-  }
   try {
-    const input = parseCommand(String((await s.getContent()) || ""));
+    const input = parseCommand(String((await s.getMsg()) || ""));
     if (input.dryRun) cfg.dry_run = true;
     if (input.force) cfg.force = true;
     const smallcat = new container.SmallCat({ id: cfg.smallcat_id });

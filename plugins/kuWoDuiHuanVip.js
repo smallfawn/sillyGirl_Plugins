@@ -17,7 +17,6 @@ const { sender: s, plugin } = require("sillygirl");
 const kuwo = require("./kuwoCore.js");
 
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(15000),
 });
 async function request(url, options = {}, cfg = {}) {
@@ -41,7 +40,6 @@ async function request(url, options = {}, cfg = {}) {
 async function main() {
   try {
     const cfg = (await form.get()) || {};
-    if (cfg.enable === false) return s.reply("酷我兑换VIP插件未启用");
     const ctx = {
       async requestJson(url, opt) {
         const r = await request(url, opt, cfg);
@@ -78,6 +76,6 @@ async function prompt(text, timeout) {
   await s.reply(text);
   const child = await s.listen({ timeout });
   if (!child) return null;
-  return String((await child.getContent()) || "").trim();
+  return String((await child.getMsg()) || "").trim();
 }
 main();

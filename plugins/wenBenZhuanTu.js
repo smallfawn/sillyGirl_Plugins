@@ -55,7 +55,7 @@ async function main() {
       domain: String(raw.api_domain || "127.0.0.1:3000").trim(),
       theme: String(raw.theme || "白蓝").trim(),
     };
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (content.startsWith("设置转图接口")) return s.reply("请直接在插件配置中填写文本转图接口，当前：" + cfg.domain);
     if (content.startsWith("切换转图主题")) {
       const response = await fetch(endpoint(cfg.domain, "/api/v1/templates"), { signal: AbortSignal.timeout(15000) });

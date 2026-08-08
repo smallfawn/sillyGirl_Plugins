@@ -32,7 +32,6 @@ function createRuntime(spec) {
   const configStore = new Bucket(`${spec.prefix}conf`);
   const Common = new Bucket("vhook_common");
   const Config = new plugin.Form({
-    enable: plugin.Form.boolean().title("是否启用").default(true),
     paid: plugin.Form.boolean().title("新增账号收费").default(false),
     fee: plugin.Form.number().title("新增账号费用/元").min(0).default(0),
     qr_code: plugin.Form.string().title("收款码图片URL").default(""),
@@ -64,7 +63,6 @@ function createRuntime(spec) {
           ? form[formKey]
           : fallback;
     runtime = {
-      enable: form.enable !== false,
       paid: boolValue(pick("paid", "paid", false)),
       fee: Math.max(0, Number(pick("fee", "fee", 0)) || 0),
       qrCode: String(pick("qr_code", "qr_code", "")),
@@ -95,8 +93,7 @@ function createRuntime(spec) {
 
   async function main() {
     await loadConfig();
-    if (!runtime.enable) return s.reply(`${spec.name}插件未启用`);
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (!content) return runCron();
     if (content === `${spec.name}配置`) return showConfig();
     if (content === `${spec.name}超管`) return adminOverview();

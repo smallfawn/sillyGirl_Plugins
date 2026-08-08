@@ -26,7 +26,6 @@ const users = new Bucket("dunDunE.users"),
   remarks = new Bucket("sm_ddb_remarks"),
   auth = new Bucket("sm_ddb_vip");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   disable_private: plugin.Form.boolean().title("禁用私聊").default(false),
   disable_group: plugin.Form.boolean().title("禁用群聊").default(false),
   group_whitelist: plugin.Form.string().title("群聊白名单").default(""),
@@ -41,8 +40,7 @@ let cfg = {};
 
 async function main() {
   cfg = (await form.get()) || {};
-  if (cfg.enable === false) return;
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!content) return cronCheck();
   if (!(await allowed())) return;
   if (/cookie2=/.test(content)) return bindCookie(content);
@@ -288,7 +286,7 @@ async function renew(ids, simple) {
   await s.reply("请输入续费月数，q退出");
   const child = await s.listen({ timeout: 60000 });
   if (!child) return;
-  const raw = String((await child.getContent()) || "").trim();
+  const raw = String((await child.getMsg()) || "").trim();
   if (/^q$/i.test(raw)) return s.reply("已退出");
   const months = Number(raw);
   if (!Number.isInteger(months) || months <= 0) return s.reply("月份无效");
@@ -320,7 +318,7 @@ async function setRemark(ids) {
   await s.reply("请输入新备注");
   const child = await s.listen({ timeout: 60000 });
   if (!child) return;
-  const value = String((await child.getContent()) || "").trim();
+  const value = String((await child.getMsg()) || "").trim();
   if (!value) return;
   for (const id of selected) await remarks.set(id, value);
   return s.reply(`已更新 ${selected.length} 个账号备注`);
@@ -341,7 +339,7 @@ async function recover() {
   await s.reply("请发送一个已绑定账号的 Cookie");
   const child = await s.listen({ timeout: 60000 });
   if (!child) return;
-  const profile = await userDetail(normalizeCookie(await child.getContent()));
+  const profile = await userDetail(normalizeCookie(await child.getMsg()));
   const id = String(profile.user_id || ""),
     old = String(await owners.get(id, "")),
     current = await uid();
@@ -359,13 +357,13 @@ async function adminAuthorize() {
   await s.reply("请输入 USERID 列表（逗号分隔）");
   let child = await s.listen({ timeout: 60000 });
   if (!child) return;
-  const ids = String((await child.getContent()) || "")
+  const ids = String((await child.getMsg()) || "")
     .split(/[,，\s]+/)
     .filter(Boolean);
   await s.reply("请输入增加天数（可为负数）");
   child = await s.listen({ timeout: 60000 });
   if (!child) return;
-  const days = Number(await child.getContent());
+  const days = Number(await child.getMsg());
   if (!Number.isFinite(days) || days === 0) return s.reply("天数无效");
   for (const id of ids) {
     const old = Number(await auth.get(id, "0")),
@@ -449,7 +447,7 @@ async function select(ids, verb) {
   );
   const child = await s.listen({ timeout: 60000 });
   if (!child) return null;
-  const value = String((await child.getContent()) || "").trim();
+  const value = String((await child.getMsg()) || "").trim();
   if (/^q$/i.test(value)) return null;
   const nums = value.split(/[,，\s]+/);
   if (nums.includes("0")) return [...ids];

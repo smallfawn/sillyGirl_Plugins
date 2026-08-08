@@ -18,7 +18,6 @@ const { createHash, randomBytes } = require("crypto");
 const { container, plugin, sender: s } = require("sillygirl");
 
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.integer().title("青龙容器编号").min(1).default(1),
   env_name: plugin.Form.string().title("环境变量名").default("keep"),
 });
@@ -26,8 +25,7 @@ const form = new plugin.Form({
 async function main() {
   try {
     const cfg = normalize(await form.get());
-    if (!cfg.enable) return s.reply("Keep运动插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const ql = new container.QingLong({ id: cfg.qinglongId });
     if (!content) return maintain(ql, cfg.envName);
     if (/教程/.test(content)) return s.reply("发送 Keep登录，再提交 Bearer Token/JWT；可用 备注#Token，多账号换行。");
@@ -241,7 +239,7 @@ function normalize(raw) {
   const value = raw || {};
   const envName = String(value.env_name || "keep").trim();
   if (!/^[A-Za-z_]\w*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+  return { qinglongId: Number(value.qinglong_id) || 1, envName };
 }
 function err(error) {
   return String(error?.message || error)

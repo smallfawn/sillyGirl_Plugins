@@ -16,7 +16,6 @@
 const { plugin, sender: s } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   api_url: plugin.Form.string().title("查询接口").default("https://api.key5.site/API/king/new/index.php"),
   api_key: plugin.Form.string()
     .title("接口 Key")
@@ -26,7 +25,6 @@ const config = new plugin.Form({
 
 async function main() {
   const cfg = (await config.get()) || {};
-  if (cfg.enable === false) return s.reply("王者战力查询未启用");
   s.reply("请发送：英雄名 平台；平台可选 qq、wx、ios_qq、ios_wx，省略时使用默认平台。");
   return s.listen({
     rules: ["raw ^([^\\s]+)(?:\\s+(qq|wx|ios_qq|ios_wx))?$"],

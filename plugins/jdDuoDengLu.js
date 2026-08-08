@@ -51,7 +51,7 @@ let cfg = {};
 
 async function main() {
   cfg = normalizeConfig((await form.get()) || {});
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (!content) return refreshAll(true);
   if (content === "BBK版本") return s.reply("京东多协议登录迁移版 v1.6.0");
   if (/^socks(out|ret|导入)$/.test(content)) return socksInfo(content);
@@ -196,7 +196,7 @@ async function qrLogin() {
   await s.reply(`请使用京东 App 扫码，回复 q 退出\n${utils.image(`data:image/jpeg;base64,${created.qr}`)}`);
   for (let i = 0; i < 70; i++) {
     const child = await s.listen({ timeout: 2000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) return s.reply("已退出");
+    if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) return s.reply("已退出");
     const data = await requestJson(`${cfg.qrabbit_url}/api/QrCheck`, {
       method: "POST",
       json: {
@@ -450,7 +450,7 @@ async function prompt(text) {
 }
 async function listen() {
   const child = await s.listen({ timeout: 120000 });
-  return child ? String((await child.getContent()) || "").trim() : "";
+  return child ? String((await child.getMsg()) || "").trim() : "";
 }
 async function uid() {
   return String((await s.getUserId()) || "");

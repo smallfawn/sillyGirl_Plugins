@@ -17,7 +17,6 @@ const { randomUUID } = require("crypto");
 const { container, plugin, sender: s } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
   env_name: plugin.Form.string().title("脚本环境变量名").default("XING_YA_MIAN_FEI_DUAN_JU"),
   max_duration: plugin.Form.number().title("单次最大时长（分钟）").default(120),
@@ -26,8 +25,7 @@ const config = new plugin.Form({
 async function main() {
   try {
     const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("星芽免费短剧插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const ql = new container.QingLong({ id: cfg.qinglongId });
     if (/刷时长|时长刷取/.test(content)) return durationFlow(cfg.maxDuration);
     if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
@@ -276,7 +274,6 @@ function normalize(raw) {
   const envName = String(value.env_name || "XING_YA_MIAN_FEI_DUAN_JU").trim();
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
   return {
-    enable: value.enable !== false,
     qinglongId: Number(value.qinglong_id) || 1,
     envName,
     maxDuration: Math.max(1, Math.min(1440, Number(value.max_duration) || 120)),

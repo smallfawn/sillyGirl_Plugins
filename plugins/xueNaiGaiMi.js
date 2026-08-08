@@ -246,7 +246,7 @@ async function flow(project, cfg, target = s) {
 }
 
 async function main() {
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   if (/教程|配置|管理/.test(content))
     return s.reply(
       `支持项目：\n${Object.entries(projects)

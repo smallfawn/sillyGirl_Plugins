@@ -37,7 +37,7 @@ const form = new plugin.Form({
 
 async function main() {
   const cfg = normalize((await form.get()) || {}),
-    content = String((await s.getContent()) || "").trim();
+    content = String((await s.getMsg()) || "").trim();
   try {
     if (content === "评价版本") return s.reply("京东自动评价 v1.5.0：队列、账号隔离、青龙任务/直接接口双模式");
     if (content === "评价重置") return resetQueue();

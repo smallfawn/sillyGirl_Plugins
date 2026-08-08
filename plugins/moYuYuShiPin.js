@@ -35,7 +35,7 @@ async function req(url, json = false) {
 async function prompt(text) {
   await s.reply(text);
   const child = await s.listen({ timeout: 60000 });
-  return child ? String((await child.getContent()) || "").trim() : "";
+  return child ? String((await child.getMsg()) || "").trim() : "";
 }
 async function smallVideo() {
   const options = [
@@ -120,7 +120,7 @@ async function main() {
       fish_api: String(raw.fish_api || "https://vps.gamehook.top/api/face/my"),
       timeout_ms: Number(raw.timeout_ms) || 15000,
     };
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (!content) return fish(true);
     if (content === "小视频") return smallVideo();
     if (content === "摸鱼日报") return s.reply(utils.video("https://dayu.qqsuu.cn/moyuribaoshipin/apis.php"));

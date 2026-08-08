@@ -74,7 +74,7 @@ async function pollQr(ctx, uuid) {
     if (/window\.wx_errcode=404/.test(response.text)) throw new Error("二维码已过期");
     if (!/window\.wx_errcode=(408|404|405)/.test(response.text)) throw new Error("微信扫码状态异常");
     const child = await s.listen({ timeout: 1000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) return null;
+    if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) return null;
   }
   throw new Error("扫码超时");
 }

@@ -16,7 +16,6 @@
 const { container, plugin, sender: s } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.integer()
     .title("青龙编号")
     .description("后台青龙容器页面里的编号，从 1 开始")
@@ -39,7 +38,6 @@ const config = new plugin.Form({
 async function main() {
   if (!(await s.isAdmin())) return s.reply("仅管理员可用");
   const cfg = normalizeConfig(await config.get());
-  if (!cfg.enable) return s.reply("青龙改定时插件未启用");
   if (!cfg.keywords.length) return s.reply("请先在插件设置中填写任务关键词");
 
   try {
@@ -77,7 +75,6 @@ function normalizeConfig(raw) {
     throw new Error("分钟增量必须是 -59 到 59 的整数");
   }
   return {
-    enable: value.enable !== false,
     qinglongId,
     minuteDelta,
     dryRun: value.dry_run === true,

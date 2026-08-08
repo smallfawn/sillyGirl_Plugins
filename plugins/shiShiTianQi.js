@@ -20,7 +20,7 @@ const config = new plugin.Form({
 });
 
 async function main() {
-  const content = String(await s.getContent()).trim();
+  const content = String(await s.getMsg()).trim();
   const conf = await config.get();
   const namedCity = content.match(/^(.+)天气$/)?.[1];
   const city = namedCity && namedCity !== "今天" ? namedCity : conf.city || "北京";

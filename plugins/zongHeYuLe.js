@@ -164,7 +164,7 @@ async function parseVideo(url, cfg, target = s) {
 
 async function main() {
   try {
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const raw = await config.get();
     const cfg = {
       weatherKey: String(raw.weather_key || "").trim(),

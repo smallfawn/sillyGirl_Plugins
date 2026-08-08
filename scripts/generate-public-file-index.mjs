@@ -3,14 +3,22 @@ import { execFile } from "node:child_process";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
+import { format, resolveConfig } from "prettier";
 
 const root = process.cwd();
 const pluginsDir = path.join(root, "plugins");
+const indexPath = path.join(root, "publicFileIndex.json");
 const repo = process.env.GITHUB_REPOSITORY || "smallfawn/sillyGirl_Plugins";
 const branch = process.env.GITHUB_REF_NAME || "main";
 const repoUrl = `https://github.com/${repo}`;
 const pluginExts = new Set([".js", ".py"]);
 const execFileAsync = promisify(execFile);
+let existingIndex = {};
+try {
+  existingIndex = JSON.parse(await readFile(indexPath, "utf8"));
+} catch {
+  // 首次生成索引时没有历史发布时间可复用。
+}
 
 function normalizeMetaKey(key) {
   const normalized = String(key || "")
@@ -90,7 +98,7 @@ for (const pluginFile of pluginFiles) {
   const author = meta.author || repo.split("/")[0];
   const id = pluginId(`${repo}@${branch}/${relativePath}`);
   const rawBase = `https://raw.githubusercontent.com/${repo}/${branch}`;
-  const createAt = await pluginPublishedAt(pluginFile, relativePath);
+  const createAt = existingIndex[id]?.create_at || (await pluginPublishedAt(pluginFile, relativePath));
   const declaredDependencies = parseDependencies(meta.depe);
   const dependencies = declaredDependencies.filter((item) => !item.startsWith("./"));
   const moduleDependencies = declaredDependencies.filter((item) => item.startsWith("./"));
@@ -122,5 +130,7 @@ for (const pluginFile of pluginFiles) {
   };
 }
 
-await writeFile(path.join(root, "publicFileIndex.json"), JSON.stringify(result, null, 2) + "\n");
+const prettierOptions = (await resolveConfig(indexPath)) || {};
+const output = await format(JSON.stringify(result), { ...prettierOptions, parser: "json" });
+await writeFile(indexPath, output);
 console.log(`Generated publicFileIndex.json with ${Object.keys(result).length} plugins.`);

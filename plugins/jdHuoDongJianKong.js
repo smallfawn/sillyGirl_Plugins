@@ -44,7 +44,7 @@ const form = new plugin.Form({
 
 async function main() {
   const cfg = normalize((await form.get()) || {}),
-    content = String((await s.getContent()) || "").trim();
+    content = String((await s.getMsg()) || "").trim();
   try {
     if (content.includes("关注有礼")) return followGift(content, cfg);
     if (content.startsWith("活动通知 ")) return handleNotification(content.slice(5), cfg);

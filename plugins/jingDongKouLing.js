@@ -34,7 +34,7 @@ const form = new plugin.Form({
 async function main() {
   try {
     const cfg = (await form.get()) || {};
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const parseMatch = content.match(/^(?:jx|转链接)\s+([\s\S]+)$/i);
     if (parseMatch) {
       if (!/[()#@$%¥￥!！][0-9a-z]{10,14}[()#@$%¥￥!！]/i.test(parseMatch[1])) return s.reply("好像不是京东口令");
@@ -44,14 +44,14 @@ async function main() {
       await s.reply(
         [`标题：${data.title || "未知活动"}`, `来源：${data.userName || "未知"}`, `链接：${jumpUrl}`].join("\n"),
       );
-      await s.setContent(jumpUrl);
+      await s.setMsg(jumpUrl);
       return s.resume();
     }
     const commandMatch = content.match(/^(?:生成口令|转口令)\s+([\s\S]+)$/);
     if (commandMatch) return s.reply(await command(commandMatch[1]));
     if (looksLikeCommand(content)) {
       if (/融App|马上就能拿到大奖|快来一起冲榜/.test(content)) {
-        await s.setContent(`捕鱼口令+${content}`);
+        await s.setMsg(`捕鱼口令+${content}`);
         return s.resume();
       }
       const data = await exchange(content, cfg),
@@ -60,7 +60,7 @@ async function main() {
       if (cfg.reply_url !== false) await s.reply(jumpUrl);
       const code = helpCode(jumpUrl);
       if (cfg.reply_help_code && code) await s.reply(`获取到助力码\n${code}`);
-      await s.setContent(routeHelp(jumpUrl, code));
+      await s.setMsg(routeHelp(jumpUrl, code));
       return s.resume();
     }
   } catch (error) {

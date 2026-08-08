@@ -26,7 +26,6 @@ const BASE = "https://mcs-mimp-web.sf-express.com",
   links = new Bucket("Joh_sf"),
   addresses = new Bucket("Joh_sf_dz");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   times: plugin.Form.string().title("抢兑时间").default("09:00:00,10:00:00,12:00:00,14:00:00,15:00:00,18:00:00"),
   proxy: plugin.Form.string().title("固定代理或代理API").default(""),
   free_coupon: plugin.Form.boolean().title("会员日免单券").default(true),
@@ -74,7 +73,7 @@ function validDate(v) {
 async function prompt(text, t = 120000) {
   await s.reply(text);
   const child = await s.listen({ timeout: t });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 async function accountPhone(key) {
   return phoneLike(key) ? mask(key) : String(await buckets.chuanPhone.get(key, key));
@@ -549,8 +548,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("顺丰抢兑插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     if (c === "顺丰抢兑") return configure();
     if (c === "运行抢兑") return run();
     if (c === "顺丰取消抢兑") return cancel();

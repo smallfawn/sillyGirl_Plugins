@@ -24,7 +24,7 @@ const config = new plugin.Form({
   pay_key: plugin.Form.string().title("码支付密钥").default(""),
 });
 async function main() {
-  const content = String((await s.getContent()) || ""),
+  const content = String((await s.getMsg()) || ""),
     file = path.join(__dirname, "vortoUtils.js");
   if (/清理$/.test(content)) return s.reply("当前版本使用仓库内置 vortoUtils.js，没有 Python 旧模块需要清理");
   if (!fs.existsSync(file)) return s.reply(`缺少公共模块：${file}`);

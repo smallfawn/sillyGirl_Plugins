@@ -62,7 +62,7 @@ async function main() {
       timeout_ms: Number(raw.timeout_ms) || 15000,
       beauty_cooldown: Number(raw.beauty_cooldown ?? 20),
     };
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     if (content === "美女") return beauty();
     if (/^笑话/.test(content)) return joke();
     if (content === "懒羊羊") {

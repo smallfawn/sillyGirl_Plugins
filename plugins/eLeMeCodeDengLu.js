@@ -633,7 +633,6 @@ async function buildRiskHeaders(opts = {}) {
 }
 
 const DEFAULTS = {
-  enable: true,
   smallcat_id: 1,
   account_mode: "authorized",
   manual_openids: "",
@@ -648,7 +647,6 @@ const DEFAULTS = {
 };
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   smallcat_id: plugin.Form.integer()
     .title("smallcat 编号")
     .description("命令不带 CODE 时使用；后台 smallcat 页面中的编号，从 1 开始")
@@ -704,12 +702,8 @@ async function main() {
     return;
   }
   const cfg = normalizeConfig(await pluginConfig.get());
-  if (!cfg.enable) {
-    await s.reply("饿了么Code登录插件未启用");
-    return;
-  }
   try {
-    const input = parseCommand(String((await s.getContent()) || ""));
+    const input = parseCommand(String((await s.getMsg()) || ""));
     const code = await resolveInputCode(cfg, input.code);
     await s.reply(`饿了么 CODE 登录开始（来源：${input.code ? "命令参数" : `smallcat #${cfg.smallcat_id}`}）`);
     const result = await havanaCodeLogin(code, cfg);
@@ -734,7 +728,6 @@ async function main() {
 
 function normalizeConfig(raw) {
   const cfg = Object.assign({}, DEFAULTS, raw || {});
-  cfg.enable = raw && raw.enable !== undefined ? yes(raw.enable) : true;
   cfg.smallcat_id = positiveInt(cfg.smallcat_id, 1);
   cfg.account_mode = cfg.account_mode === "manual" ? "manual" : "authorized";
   cfg.manual_openids = String(cfg.manual_openids || "").trim();

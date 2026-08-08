@@ -30,7 +30,6 @@ const userStore = new Bucket("G_LYHXQ_user"),
   WX_UA =
     "Mozilla/5.0 (Linux; Android 14; Build/TP1A.220905.001) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.103 Mobile Safari/537.36 MicroMessenger/8.0.57.2820 WeChat/arm64";
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   proxy_api: plugin.Form.string().title("代理API或固定代理").default(""),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(15000),
 });
@@ -169,7 +168,7 @@ async function scan() {
       }
     } else last = "408";
     const child = await s.listen({ timeout: 2000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || "").trim())) return null;
+    if (child && /^q$/i.test(String((await child.getMsg()) || "").trim())) return null;
   }
   return null;
 }
@@ -334,8 +333,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("梨园插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     if (/扫码$/.test(c)) return doScan();
     if (/查询$/.test(c)) return query();
     return tasks();

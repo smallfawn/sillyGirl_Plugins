@@ -34,7 +34,7 @@ const payUsers = new Bucket("pay_users");
 async function main() {
   try {
     const cfg = await form.get();
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const uid = await s.getUserId();
     if (content === "签到") return sign(uid, cfg);
     if (/^(积分查询|查询积分)$/.test(content)) return s.reply(`当前积分：${await balance(uid)}`);

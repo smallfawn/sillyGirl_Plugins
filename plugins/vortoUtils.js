@@ -713,7 +713,7 @@ async function adminAuthByUser(sender, userBucketName, authBucketName, tokenBuck
 async function waitPaymentEvent(sender, requiredMoney, timeout = 300000) {
   const child = await sender.listen({ timeout });
   if (!child) return { paid: false, cancelled: false, reason: "timeout" };
-  const content = String((await child.getContent()) || "").trim();
+  const content = String((await child.getMsg()) || "").trim();
   if (/^q$/i.test(content)) return { paid: false, cancelled: true, reason: "cancel" };
   const event = await child.getEvent().catch(() => ({}));
   const money = Number(event?.Money ?? event?.money ?? event?.payment?.money ?? content);
@@ -761,7 +761,7 @@ async function prompt(sender, text, timeout = 120000, cancelOnQ = true) {
   await sender.reply(text);
   const child = await sender.listen({ timeout });
   if (!child) return null;
-  const value = String((await child.getContent()) || "").trim();
+  const value = String((await child.getMsg()) || "").trim();
   return !value || (cancelOnQ && /^q$/i.test(value)) ? null : value;
 }
 

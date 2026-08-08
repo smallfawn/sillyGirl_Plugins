@@ -16,7 +16,6 @@
 const { sender: s, plugin, utils } = require("sillygirl"),
   BASE = "http://wap.365autogo.com/mobile/api";
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   city_id: plugin.Form.string().title("城市ID").default("622"),
   timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(30000),
 });
@@ -24,7 +23,7 @@ let cfg = {};
 async function prompt(text, t = 60000) {
   await s.reply(text);
   const child = await s.listen({ timeout: t });
-  return child ? String((await child.getContent()) || "").trim() : null;
+  return child ? String((await child.getMsg()) || "").trim() : null;
 }
 function paramUrl(path, param) {
   const url = new URL(`${BASE}${path}`);
@@ -313,8 +312,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 30000);
-    if (cfg.enable === false) return s.reply("福田下单插件未启用");
-    const c = String((await s.getContent()) || "").trim();
+    const c = String((await s.getMsg()) || "").trim();
     return c === "福田物流查询" ? logisticsFlow() : orderFlow();
   } catch (error) {
     return s.reply(`福田执行失败：${error?.message || error}`);

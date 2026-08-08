@@ -30,7 +30,7 @@ const commands = {
 };
 
 async function main() {
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   const item = commands[content];
   if (!item) return s.resume();
   const [type, key, feature] = item;

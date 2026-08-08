@@ -18,7 +18,6 @@ const { createHash } = require("crypto");
 const { container, plugin, sender: s } = require("sillygirl");
 
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.integer().title("青龙容器编号").min(1).default(1),
   env_name: plugin.Form.string().title("环境变量名").default("S_TPYQC"),
 });
@@ -30,8 +29,7 @@ const WALLET = "https://app-gateway.pcauto.com.cn/wallet/cash/balance";
 async function main() {
   try {
     const cfg = normalize(await form.get());
-    if (!cfg.enable) return s.reply("太平洋汽车插件未启用");
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const ql = new container.QingLong({ id: cfg.qinglongId });
     if (/教程/.test(content))
       return s.reply("发送“太平洋登录”，再提交 手机号#密码；查询会实时返回积分、余额、已提现和累计收入。");
@@ -208,7 +206,7 @@ function normalize(raw) {
   const value = raw || {};
   const envName = String(value.env_name || "S_TPYQC").trim();
   if (!/^[A-Za-z_]\w*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+  return { qinglongId: Number(value.qinglong_id) || 1, envName };
 }
 function err(error) {
   return String(error?.message || error)

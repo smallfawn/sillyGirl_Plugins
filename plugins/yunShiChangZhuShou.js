@@ -268,7 +268,7 @@ async function pluginDownload(cfg, target) {
     );
     const child = await target.listen({ timeout: 60000 });
     if (!child) return "输入超时";
-    const row = items[Number(String((await child.getContent()) || "")) - 1];
+    const row = items[Number(String((await child.getMsg()) || "")) - 1];
     if (!row) return "序号无效";
     const title = row.title || row.plugin?.title,
       author = row.author || row.source_author,
@@ -380,7 +380,7 @@ async function decryptPlugin(cfg, target) {
 
 async function main() {
   try {
-    let content = String((await s.getContent()) || "").trim(),
+    let content = String((await s.getMsg()) || "").trim(),
       raw = await config.get(),
       cfg = {
         backendUrl: String(raw.backend_url || "https://yuhualhh.250666.xyz/api/subscription_hub.php"),

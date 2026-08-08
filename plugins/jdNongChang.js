@@ -40,7 +40,7 @@ const form = new plugin.Form({
 
 async function main() {
   const cfg = normalize((await form.get()) || {}),
-    content = String((await s.getContent()) || "").trim();
+    content = String((await s.getMsg()) || "").trim();
   try {
     const ql = new container.QingLong({ id: cfg.qinglongId });
     if (/开关重置/.test(content)) {

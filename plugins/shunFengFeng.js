@@ -19,7 +19,6 @@ const users = new Bucket("Yzyxmm_sf_bind"),
   accounts = new Bucket("Yzyxmm_sf_account"),
   auth = new Bucket("Yzyxmm_sf_Vip");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_id: plugin.Form.integer().title("青龙容器编号").min(1).default(1),
   env_name: plugin.Form.string().title("青龙变量名").default("sfsyUrl"),
   qr_service: plugin.Form.string().title("顺丰扫码服务").default("http://yi100.top:1222/wxcode"),
@@ -117,7 +116,7 @@ async function qrLogin() {
     } catch (_) {}
     if (code) break;
     const child = await s.listen({ timeout: 1000 });
-    if (child && /^q$/i.test(String((await child.getContent()) || ""))) throw new Error("已取消扫码");
+    if (child && /^q$/i.test(String((await child.getMsg()) || ""))) throw new Error("已取消扫码");
   }
   if (!code) throw new Error("扫码超时");
   const deviceId = crypto.randomUUID(),
@@ -285,7 +284,7 @@ async function manage() {
   await s.reply(["请选择要删除的账号，Q退出", ...rows.map((x, i) => `${i + 1}. ${mask(x)}`)].join("\n"));
   const child = await s.listen({ timeout: 120000 });
   if (!child) return s.reply("输入超时");
-  const input = String((await child.getContent()) || "").trim();
+  const input = String((await child.getMsg()) || "").trim();
   if (/^q$/i.test(input)) return s.reply("已退出");
   const n = Number(input);
   if (!Number.isInteger(n) || n < 1 || n > rows.length) return s.reply("账号序号错误");
@@ -305,8 +304,7 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Number(cfg.timeout_ms) || 20000;
-    if (cfg.enable === false) return s.reply("顺丰丰插件未启用");
-    const c = String((await s.getContent()) || "");
+    const c = String((await s.getMsg()) || "");
     if (/登录|登陆/.test(c)) return login();
     if (/查询/.test(c)) return query();
     if (/管理/.test(c)) return manage();

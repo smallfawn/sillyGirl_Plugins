@@ -21,7 +21,6 @@ const restartSillyGirl = utils.restart;
 const updateSillyGirl = utils.update;
 
 const DEFAULTS = {
-  enable: true,
   update_timeout: 120,
 };
 
@@ -29,12 +28,11 @@ const STATE_BUCKET = "sillyGirl";
 const UPDATE_RESTART_NOTICE_KEY = "official_commands_update_restart_notice";
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   update_timeout: plugin.Form.integer().title("更新超时秒数").min(10).max(600).default(120),
 });
 
 async function main() {
-  const cmd = String((await s.getContent()) || "").trim();
+  const cmd = String((await s.getMsg()) || "").trim();
   if (!cmd) return notifyPendingRestart();
   if (cmd === "时间") return replyTime();
   if (cmd === "版本") return replyVersion();
@@ -98,11 +96,6 @@ async function restart() {
 async function update(cfg) {
   const bucket = new Bucket(STATE_BUCKET);
   await s.reply("收到更新命令，正在检查权限");
-
-  if (!cfg.enable) {
-    await s.reply("官方命令插件未启用，请先到插件配置开启");
-    return;
-  }
 
   if (!(await s.isAdmin())) {
     await s.reply("仅管理员可用");
@@ -170,7 +163,6 @@ async function notifyPendingRestart() {
 
 function normalizeConfig(input) {
   return Object.assign({}, DEFAULTS, input || {}, {
-    enable: input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable,
     update_timeout: clamp(Number((input && input.update_timeout) || DEFAULTS.update_timeout), 10, 600),
   });
 }

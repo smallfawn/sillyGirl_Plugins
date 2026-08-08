@@ -16,7 +16,6 @@
 const { sender: s, console, utils, plugin, container, user } = require("sillygirl");
 
 const DEFAULTS = {
-  enable: true,
   smallcat_id: 1,
   account_mode: "authorized",
   manual_openids: "",
@@ -27,7 +26,6 @@ const DEFAULTS = {
 };
 
 const pluginConfig = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   smallcat_id: plugin.Form.integer()
     .title("smallcat 编号")
     .description("后台 smallcat 页面里的编号，从 1 开始")
@@ -57,12 +55,8 @@ const pluginConfig = new plugin.Form({
 
 async function main() {
   const cfg = normalizeConfig(await pluginConfig.get());
-  if (!cfg.enable) {
-    await s.reply("smallcat登录插件未启用，请先到插件配置开启");
-    return;
-  }
 
-  const content = String((await s.getContent()) || "").trim();
+  const content = String((await s.getMsg()) || "").trim();
   const matched = content.match(/^sm(登录|退出)(?:\s+(.+))?$/);
   if (!matched) return;
 

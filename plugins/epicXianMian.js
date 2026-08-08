@@ -17,7 +17,6 @@ const { plugin, sender: s } = require("sillygirl");
 
 const API = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions";
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   locale: plugin.Form.string().title("地区语言").default("zh-CN"),
   country: plugin.Form.string().title("国家代码").default("CN"),
   show_upcoming: plugin.Form.boolean().title("显示即将限免").default(true),
@@ -25,7 +24,6 @@ const config = new plugin.Form({
 
 async function main() {
   const cfg = normalizeConfig(await config.get());
-  if (!cfg.enable) return s.reply("Epic限免插件未启用");
   try {
     const url = `${API}?${new URLSearchParams({
       locale: cfg.locale,
@@ -52,7 +50,6 @@ function normalizeConfig(raw) {
     .toUpperCase();
   if (!/^[A-Z]{2}$/.test(country)) throw new Error("国家代码必须是两个英文字母");
   return {
-    enable: value.enable !== false,
     locale: String(value.locale || "zh-CN").trim() || "zh-CN",
     country,
     showUpcoming: value.show_upcoming !== false,

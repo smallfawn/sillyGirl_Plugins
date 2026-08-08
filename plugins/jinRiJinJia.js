@@ -16,9 +16,7 @@
 
 const { sender: s, Bucket, plugin } = require("sillygirl");
 
-new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-});
+new plugin.Form({});
 const store = new Bucket("goldPriceMonitor");
 const API = "https://i.jzj9999.com/res/quote/pq.json";
 
@@ -92,7 +90,7 @@ async function monitor(data, manual) {
 }
 
 async function main() {
-  const command = String(await s.getContent().catch(() => "")).trim();
+  const command = String(await s.getMsg().catch(() => "")).trim();
   const data = await quote();
   if (command === "今日金价") return s.reply(summary(data));
   if (command === "金价监控设置") return setMonitor(data);

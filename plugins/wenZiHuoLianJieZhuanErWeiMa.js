@@ -21,7 +21,7 @@ function sendQRCode(text, target = s) {
 }
 
 async function main() {
-  const content = String(await s.getContent())
+  const content = String(await s.getMsg())
     .replace(/^转二维码\s*/, "")
     .trim();
   if (content) return sendQRCode(content);

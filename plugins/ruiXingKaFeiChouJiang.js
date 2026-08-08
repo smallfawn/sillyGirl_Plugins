@@ -31,7 +31,6 @@ const APP_ID = "wx21c7506e98a2fe75",
   UA =
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.75(0x18004b34) NetType/WIFI Language/zh_CN";
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   smallcat_id: plugin.Form.integer().title("SmallCat编号").min(1).default(1),
   api_key: plugin.Form.string().title("瑞幸CAPI AES秘钥").description("原PY从运行环境读取；需16/24/32字节").default(""),
   manual_openids: plugin.Form.string().title("手动openid，逗号分隔").default(""),
@@ -340,9 +339,8 @@ async function getPhone(sc, openid) {
 async function main() {
   try {
     cfg = (await form.get()) || {};
-    if (cfg.enable === false) return s.reply("瑞幸咖啡抽奖插件未启用");
     if (!cfg.api_key) throw new Error("请在插件配置填写瑞幸CAPI AES秘钥；原PY从运行环境读取，空值会导致加密请求失效");
-    const command = String((await s.getContent()) || ""),
+    const command = String((await s.getMsg()) || ""),
       queryOnly = Boolean(cfg.query_only) || /查询/i.test(command),
       sc = new container.SmallCat({ id: Number(cfg.smallcat_id) || 1 }),
       rows = await choose(await authorized()),

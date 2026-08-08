@@ -44,6 +44,12 @@ const required = [
 const booleanKeys = ["status", "admin", "public", "on_start", "web", "module", "carry"];
 const activationKeys = ["rule", "cron", "on_start", "web"];
 const errors = [];
+const removedSenderMethods = new Map([
+  ["getContext", "getMsg"],
+  ["getMessageId", "getMsgId"],
+  ["getContent", "getMsg"],
+  ["setContent", "setMsg"],
+]);
 
 function parseMetadata(content, filename) {
   const meta = new Map();
@@ -92,6 +98,14 @@ const plugins = new Map();
 for (const filename of files) {
   const content = await readFile(path.join(pluginsDir, filename), "utf8");
   const meta = parseMetadata(content, filename);
+  for (const [removed, replacement] of removedSenderMethods) {
+    if (new RegExp("\\." + removed + "\\s*\\(").test(content)) {
+      errors.push(filename + ": removed Sender API " + removed + "(); use " + replacement + "()");
+    }
+  }
+  if (/\benable\s*:\s*plugin\.Form\.boolean\s*\(/.test(content)) {
+    errors.push(`${filename}: generic plugin.Form enable is removed; use [status] metadata`);
+  }
   const basename = path.basename(filename, ".js");
   for (const key of required) if (!one(meta, key)) errors.push(`${filename}: missing ${key}`);
   if (one(meta, "name") !== basename) errors.push(`${filename}: name must equal ${basename}`);
@@ -160,6 +174,9 @@ for (const entry of indexEntries) {
     continue;
   }
   if (Boolean(entry.module) !== plugin.isModule) errors.push(`${filename}: index module flag mismatch`);
+  for (const key of ["status", "public", "admin", "on_start", "web", "carry"]) {
+    if (Boolean(entry[key]) !== bool(plugin.meta, key)) errors.push(`${filename}: index ${key} flag mismatch`);
+  }
   const npm = plugin.depe.filter((item) => !item.startsWith("."));
   const modules = plugin.depe.filter((item) => item.startsWith("."));
   if (JSON.stringify(entry.dependencies || []) !== JSON.stringify(npm))

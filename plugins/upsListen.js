@@ -4,7 +4,7 @@
 // [author: smallfawn]
 // [version: v1.0.1]
 // [rule: ^(ups)$]
-// [status: true]
+// [status: false]
 // [admin: true]
 // [public: true]
 // [priority: 0]
@@ -17,7 +17,6 @@ const net = require("net");
 const { sender: s, console, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否开启 ups-nut-server 监控").default(false),
   ups_nut_server_ip: plugin.Form.string().title("ups-nut-server 地址").description("格式：192.168.x.x"),
   ups_nut_server_port: plugin.Form.number().title("ups-nut-server 端口").default(3493),
   ups_nut_server_username: plugin.Form.string().title("ups nut server 用户名").default("nut"),
@@ -90,10 +89,6 @@ function buildMessage(status) {
 
 async function main() {
   const conf = await config.get();
-  if (!conf.enable) {
-    await s.reply("UPS 监控未开启，请先在配置中启用。");
-    return;
-  }
 
   if (!conf.ups_nut_server_ip) {
     await s.reply("未配置 ups-nut-server 地址。");

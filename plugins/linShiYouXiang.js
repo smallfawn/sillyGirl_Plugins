@@ -18,13 +18,11 @@ const { plugin, sender: s } = require("sillygirl");
 
 const API = "https://api.mail.tm";
 const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   wait_seconds: plugin.Form.number().title("等待邮件秒数").default(120),
 });
 
 async function main() {
   const cfg = (await config.get()) || {};
-  if (cfg.enable === false) return s.reply("临时邮箱插件未启用");
 
   try {
     const domains = await request("/domains");

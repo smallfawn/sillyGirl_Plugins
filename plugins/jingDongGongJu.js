@@ -29,7 +29,7 @@ async function main() {
   try {
     if (!(await s.isAdmin())) return s.reply("仅管理员可用");
     const cfg = normalize(await form.get());
-    const content = String((await s.getContent()) || "").trim();
+    const content = String((await s.getMsg()) || "").trim();
     const source = new container.QingLong({ id: cfg.sourceId });
     if (content === "COOKIE处理") return dedupe(source, cfg.envName);
     if (content === "JD失效通知") return invalidReport(source, cfg.envName);

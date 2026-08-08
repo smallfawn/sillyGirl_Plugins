@@ -20,9 +20,7 @@
     "path": "plugins/aiHaiYan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiHaiYan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -74,9 +72,7 @@
     "path": "plugins/aiLuQiao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiLuQiao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -102,9 +98,7 @@
     "path": "plugins/aiXianJuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiXianJuZhuShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -130,9 +124,7 @@
     "path": "plugins/appWuYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appWuYi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./tmuyunJinhuaRuntime.js"
-    ],
+    "module_dependencies": ["./tmuyunJinhuaRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -158,9 +150,7 @@
     "path": "plugins/appXiShi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appXiShi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./tmuyunJinhuaRuntime.js"
-    ],
+    "module_dependencies": ["./tmuyunJinhuaRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -212,9 +202,7 @@
     "path": "plugins/baiJingYuHuiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/baiJingYuHuiShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -266,9 +254,7 @@
     "path": "plugins/chaJianFeiMaYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianFeiMaYi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -294,9 +280,7 @@
     "path": "plugins/chaJianSenXuanZhiBo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiBo.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -322,10 +306,7 @@
     "path": "plugins/chaJianSenXuanZhiXiang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiXiang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -350,9 +331,7 @@
     "carry": false,
     "path": "plugins/chaJianShunYiChongDuiHuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianShunYiChongDuiHuan.js",
-    "dependencies": [
-      "undici"
-    ],
+    "dependencies": ["undici"],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
@@ -379,10 +358,7 @@
     "path": "plugins/daChao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daChao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./tmuyunAccountCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./tmuyunAccountCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -408,9 +384,7 @@
     "path": "plugins/daNengYiSheng.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daNengYiSheng.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -436,9 +410,7 @@
     "path": "plugins/dangDangYiXia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dangDangYiXia.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -464,9 +436,7 @@
     "path": "plugins/dd018DeJian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -492,9 +462,7 @@
     "path": "plugins/dianDangDang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianDangDang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -520,9 +488,7 @@
     "path": "plugins/dianXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianXin.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -548,9 +514,7 @@
     "path": "plugins/dongFangCaiFu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dongFangCaiFu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -758,9 +722,7 @@
     "path": "plugins/fangHuaWeiLai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fangHuaWeiLai.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -812,9 +774,7 @@
     "path": "plugins/fuTianEJia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianEJia.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -856,7 +816,7 @@
     "class": "工具",
     "rule": "^(打印机|打印机状态|打印测试图片)$",
     "cron": "",
-    "status": true,
+    "status": false,
     "public": true,
     "admin": true,
     "module": false,
@@ -865,9 +825,7 @@
     "carry": false,
     "path": "plugins/getPrinterStatus.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/getPrinterStatus.js",
-    "dependencies": [
-      "ipp"
-    ],
+    "dependencies": ["ipp"],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
@@ -920,9 +878,7 @@
     "path": "plugins/guangQi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/guangQi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -948,9 +904,7 @@
     "path": "plugins/haoEE.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoEE.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -976,9 +930,7 @@
     "path": "plugins/haoQiCheShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoQiCheShengHuo.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1004,9 +956,7 @@
     "path": "plugins/heHeTianTai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/heHeTianTai.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1162,9 +1112,7 @@
     "path": "plugins/jdCookieGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdCookieGuanLi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1216,9 +1164,7 @@
     "path": "plugins/jdHuoDongJianKong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdHuoDongJianKong.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1270,9 +1216,7 @@
     "path": "plugins/jdNongChang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdNongChang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1324,9 +1268,7 @@
     "path": "plugins/jdYingYongBaoDengLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdYingYongBaoDengLu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1352,9 +1294,7 @@
     "path": "plugins/jdZiChanChaXun.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdZiChanChaXun.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1380,9 +1320,7 @@
     "path": "plugins/jdZiDongPingJia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdZiDongPingJia.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./jdLegacyCore.js"
-    ],
+    "module_dependencies": ["./jdLegacyCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1408,9 +1346,7 @@
     "path": "plugins/jiangHuaiKaYou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangHuaiKaYou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1436,9 +1372,7 @@
     "path": "plugins/jiangXinZhongHua.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangXinZhongHua.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1464,9 +1398,7 @@
     "path": "plugins/jiaShan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiaShan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1492,9 +1424,7 @@
     "path": "plugins/jieTingChe.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1520,9 +1450,7 @@
     "path": "plugins/jiFenKaMi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiFenKaMi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1626,9 +1554,7 @@
     "path": "plugins/jiuXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiuXian.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1680,10 +1606,7 @@
     "path": "plugins/kaKan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kaKan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./kakanCore.js",
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./kakanCore.js", "./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1735,9 +1658,7 @@
     "path": "plugins/kanYuHang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1789,9 +1710,7 @@
     "path": "plugins/kuaKeTuiGuang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuaKeTuiGuang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1843,9 +1762,7 @@
     "path": "plugins/kuWoDuiHuanVip.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoDuiHuanVip.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./kuwoCore.js"
-    ],
+    "module_dependencies": ["./kuwoCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1871,9 +1788,7 @@
     "path": "plugins/kuWoMusic.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusic.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1898,13 +1813,8 @@
     "carry": false,
     "path": "plugins/kuWoMusicTiXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusicTiXian.js",
-    "dependencies": [
-      "undici"
-    ],
-    "module_dependencies": [
-      "./kuwoCore.js",
-      "./vortoUtils.js"
-    ],
+    "dependencies": ["undici"],
+    "module_dependencies": ["./kuwoCore.js", "./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1930,9 +1840,7 @@
     "path": "plugins/laoZhongYiZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/laoZhongYiZhuShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1958,9 +1866,7 @@
     "path": "plugins/leZaiShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/leZaiShengHuo.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -1986,10 +1892,7 @@
     "path": "plugins/lianTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTong.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./unicomAssetCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2015,10 +1918,7 @@
     "path": "plugins/lianTongYunPan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTongYunPan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./unicomAssetCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2069,9 +1969,7 @@
     "carry": false,
     "path": "plugins/liYuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/liYuan.js",
-    "dependencies": [
-      "undici"
-    ],
+    "dependencies": ["undici"],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
@@ -2098,9 +1996,7 @@
     "path": "plugins/m001HuiShouYuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m001HuiShouYuan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2126,9 +2022,7 @@
     "path": "plugins/m034JiuYiXiaoEr.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m034JiuYiXiaoEr.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2180,9 +2074,7 @@
     "path": "plugins/m099YiChengTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m099YiChengTong.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2208,9 +2100,7 @@
     "path": "plugins/m108XiaoSaTongLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m108XiaoSaTongLu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2236,9 +2126,7 @@
     "path": "plugins/m116JinShiPin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m116JinShiPin.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2264,9 +2152,7 @@
     "path": "plugins/meiTuanCodeDengLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanCodeDengLu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2292,9 +2178,7 @@
     "path": "plugins/meiTuanLingQuanPlus.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanLingQuanPlus.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2346,9 +2230,7 @@
     "path": "plugins/mouShouJiSuBanGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mouShouJiSuBanGuanLi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2399,12 +2281,8 @@
     "carry": false,
     "path": "plugins/mrconliAccountRuntime.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mrconliAccountRuntime.js",
-    "dependencies": [
-      "undici"
-    ],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "dependencies": ["undici"],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2430,9 +2308,7 @@
     "path": "plugins/niuKaFuHuoZhuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuHuoZhuZhuShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2458,9 +2334,7 @@
     "path": "plugins/niuKaFuSiJi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuSiJi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2486,9 +2360,7 @@
     "path": "plugins/niuNiuDuanJu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2514,9 +2386,7 @@
     "path": "plugins/niuNiuDuanJuXiaoChengXuBan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJuXiaoChengXuBan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2542,9 +2412,7 @@
     "path": "plugins/nongFuShanQuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/nongFuShanQuan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2570,9 +2438,7 @@
     "path": "plugins/oppoShangChengZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/oppoShangChengZhuShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2624,9 +2490,7 @@
     "path": "plugins/pangGuaiShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pangGuaiShengHuo.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2652,10 +2516,7 @@
     "path": "plugins/pinZan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pinZan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2681,9 +2542,7 @@
     "path": "plugins/puPuChaoShi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/puPuChaoShi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2734,9 +2593,7 @@
     "carry": false,
     "path": "plugins/ruiXingKaFeiChouJiang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ruiXingKaFeiChouJiang.js",
-    "dependencies": [
-      "undici"
-    ],
+    "dependencies": ["undici"],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
@@ -2789,9 +2646,7 @@
     "path": "plugins/shangGuanXinWen.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shangGuanXinWen.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2843,9 +2698,7 @@
     "path": "plugins/shuiFeiYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2922,9 +2775,7 @@
     "carry": false,
     "path": "plugins/shunFengQiangDui.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengQiangDui.js",
-    "dependencies": [
-      "undici"
-    ],
+    "dependencies": ["undici"],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
@@ -2951,9 +2802,7 @@
     "path": "plugins/shunFengSuYun.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengSuYun.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -2979,9 +2828,7 @@
     "path": "plugins/shunYiChongXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunYiChongXin.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3007,9 +2854,7 @@
     "path": "plugins/siGePengYou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/siGePengYou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3087,10 +2932,7 @@
     "path": "plugins/suKanXiaoShuoDaiDuanXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/suKanXiaoShuoDaiDuanXin.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./sukanCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./sukanCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3116,9 +2958,7 @@
     "path": "plugins/taiKangGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangGuanLi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3144,9 +2984,7 @@
     "path": "plugins/taiKangZaiXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3172,9 +3010,7 @@
     "path": "plugins/taiLing.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiLing.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3200,9 +3036,7 @@
     "path": "plugins/taiPingTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiPingTong.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3228,9 +3062,7 @@
     "path": "plugins/taoSeVip.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taoSeVip.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3256,9 +3088,7 @@
     "path": "plugins/tengXunDiTu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tengXunDiTu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3284,9 +3114,7 @@
     "path": "plugins/tianNiuHuiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianNiuHuiShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3312,9 +3140,7 @@
     "path": "plugins/tianYiYunPanQianDao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianYiYunPanQianDao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3365,12 +3191,8 @@
     "carry": false,
     "path": "plugins/tmuyunJinhuaRuntime.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tmuyunJinhuaRuntime.js",
-    "dependencies": [
-      "undici"
-    ],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "dependencies": ["undici"],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3396,9 +3218,7 @@
     "path": "plugins/tongYiJiaHuang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tongYiJiaHuang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3440,7 +3260,7 @@
     "class": "工具",
     "rule": "^(ups)$",
     "cron": "",
-    "status": true,
+    "status": false,
     "public": true,
     "admin": true,
     "module": false,
@@ -3502,9 +3322,7 @@
     "path": "plugins/vortoYiLaiGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/vortoYiLaiGuanLi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./vortoUtils.js"
-    ],
+    "module_dependencies": ["./vortoUtils.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3530,9 +3348,7 @@
     "path": "plugins/wangChao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3688,9 +3504,7 @@
     "path": "plugins/wuYuTingShu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wuYuTingShu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3768,9 +3582,7 @@
     "path": "plugins/xiaoCanBaWangCan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoCanBaWangCan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3796,9 +3608,7 @@
     "path": "plugins/xiaoKuaiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuaiShou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3824,9 +3634,7 @@
     "path": "plugins/xiaoKuGou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuGou.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3852,9 +3660,7 @@
     "path": "plugins/xiaoMiQianBao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiQianBao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -3879,12 +3685,8 @@
     "carry": false,
     "path": "plugins/xiaoMiShuaBuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiShuaBuZhuShou.js",
-    "dependencies": [
-      "undici"
-    ],
-    "module_dependencies": [
-      "./xiaomiStepsCore.js"
-    ],
+    "dependencies": ["undici"],
+    "module_dependencies": ["./xiaomiStepsCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4014,9 +3816,7 @@
     "path": "plugins/xingMaHui.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaHui.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4042,9 +3842,7 @@
     "path": "plugins/xingMaYouXuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaYouXuan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4096,9 +3894,7 @@
     "path": "plugins/xingYunYouXuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYunYouXuan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4124,10 +3920,7 @@
     "path": "plugins/xinJiangBei.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xinJiangBei.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./tmuyunAccountCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./tmuyunAccountCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4179,9 +3972,7 @@
     "path": "plugins/yiDongYunPan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiDongYunPan.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4233,9 +4024,7 @@
     "path": "plugins/yiLiQqXing.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiLiQqXing.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4261,9 +4050,7 @@
     "path": "plugins/yiPinCang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiPinCang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4289,9 +4076,7 @@
     "path": "plugins/yongPai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yongPai.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4317,9 +4102,7 @@
     "path": "plugins/youXiaWang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/youXiaWang.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4371,9 +4154,7 @@
     "path": "plugins/yuYunQianDao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yuYunQianDao.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4399,9 +4180,7 @@
     "path": "plugins/zaoXianShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zaoXianShengHuo.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4427,9 +4206,7 @@
     "path": "plugins/zhanMaNengLiangXingQiu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhanMaNengLiangXingQiu.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4507,10 +4284,7 @@
     "path": "plugins/zhongGuoLianTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongGuoLianTong.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js",
-      "./unicomAssetCore.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"
@@ -4536,9 +4310,7 @@
     "path": "plugins/zhongShiPinGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongShiPinGuanLi.js",
     "dependencies": [],
-    "module_dependencies": [
-      "./mrconliAccountRuntime.js"
-    ],
+    "module_dependencies": ["./mrconliAccountRuntime.js"],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
     "create_at": "2026-08-08T00:37:44.000Z"

@@ -17,7 +17,6 @@ const { sender: s, container, plugin, Bucket } = require("sillygirl"),
   crypto = require("node:crypto");
 const syncBucket = new Bucket("chuan_elm_accountId");
 const form = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
   qinglong_ids: plugin.Form.string().title("青龙容器编号，逗号分隔").default("1"),
   env_names: plugin.Form.string().title("CK变量名，逗号分隔").default("elmck"),
   force_renew: plugin.Form.boolean().title("强制续期").default(false),
@@ -248,7 +247,6 @@ async function main() {
   try {
     cfg = (await form.get()) || {};
     cfg.timeout_ms = Math.max(3000, Number(cfg.timeout_ms) || 15000);
-    if (cfg.enable === false) return s.reply("饿了么续期插件未启用");
     let total = 0,
       success = 0,
       valid = 0,

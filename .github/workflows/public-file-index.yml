@@ -54,4 +54,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update plugin dependency metadata"
-          file_pattern: plugins/*.js plugins/*.py publicFileIndex.json
+          file_pattern: plugins publicFileIndex.json

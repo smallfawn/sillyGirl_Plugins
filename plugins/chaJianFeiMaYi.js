@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: http://113.45.39.135:8080/admin/images/gallery/1749818308348537988.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/【插件】-飞蚂蚁_v1.1_By.huawei.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

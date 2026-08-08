@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 99999]
 // [class: 工具类]
-// [icon: https://img-upload.vorto.cc/b3d2f7ea6f6a312fd56204c2baab0ad5.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/夸克推广_v1.0.0_By.rujingxianghai.py]
 // [depe: ["./vortoUtils.js"]]
 

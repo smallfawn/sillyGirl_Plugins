@@ -9,7 +9,7 @@
 // [public: true]
 // [priority: 0]
 // [class: 工具]
-// [icon: https://img.zcool.cn/community/01e6075c6eb498a801213f265dbd4a.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/网易云任务_vv1.0.2_By.960342874.txt]
 // [depe: []]
 

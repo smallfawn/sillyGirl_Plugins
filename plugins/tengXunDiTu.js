@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img-upload.vorto.cc/617ce0659fd516ddb62bf889e8a7c988.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/腾讯地图_v2.3_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

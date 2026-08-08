@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 50]
 // [class: 任务]
-// [icon: https://pp.myapp.com/ma_icon/0/icon_54559488_1733299697/256]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/梨园_v1.2.2_By.huawei.py]
 // [depe: ["undici"]]
 

@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img-upload.vorto.cc/beb5a0d45aa58e08348e1e4076fa419e.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/【插件】-星韵_v1.0.0_By.huawei.py;backup/星韵优选_v1.1_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 50]
 // [class: 工具]
-// [icon: http://150.158.10.200:9876/mtt.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/美团团_v2.2.7_By.Lxg-021002.py]
 // [depe: ["./vortoUtils.js"]]
 

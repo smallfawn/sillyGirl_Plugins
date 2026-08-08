@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img.xxkx.de/file/eYvOjFXl.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/牛卡福司机_v3.5_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 50]
 // [class: 任务]
-// [icon: https://i.miji.bid/2025/06/27/23807db429fd2b7854eeeb052d604f58.jpeg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/顺丰速运_v9.7_By.sky2022.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 0]
 // [class: 工具类]
-// [icon: https://pic.qqans.com/up/2024-1/20241291554574737.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/app_武义_v0_By.601712460.py]
 // [depe: ["./tmuyunJinhuaRuntime.js"]]
 

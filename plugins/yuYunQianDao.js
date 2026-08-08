@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img-upload.vorto.cc/f5359ebff5c25a7d99acf466414d8f76.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/雨云_v1.1.1_By.sky2022.py;backup/雨云签到_v1.1_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

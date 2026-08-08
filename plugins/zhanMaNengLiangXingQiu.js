@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://api.iconify.design/lucide:badge-energy.svg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/战马_v1.5_By.8165799.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

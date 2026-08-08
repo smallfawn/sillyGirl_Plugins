@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 50]
 // [class: 任务]
-// [icon: https://picui.ogmua.cn/s1/2026/02/26/69a05264c50f8.webp]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/q002-酷我音乐_v1.1.0_By.yueiqiu4523.py;backup/酷我Music_v1.3.9_By.sky2022.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

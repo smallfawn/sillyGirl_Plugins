@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img.xxkx.de/file/9sJgODq0.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/店铛铛_v1.3_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 0]
 // [class: 任务]
-// [icon: http://113.45.39.135:8080/admin/images/gallery/1748901594846584338.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/众安健康_v3.0_By.rujingxianghai.py]
 // [depe: []]
 

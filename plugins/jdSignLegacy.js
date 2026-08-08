@@ -8,7 +8,7 @@
 // [public: true]
 // [priority: 10]
 // [class: 工具类]
-// [icon: https://api.iconify.design/simple-icons:jd.svg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [module: true]
 // [carry: true]
 // [origin: backup/JD通用sign_v1.6.3_By.chuan.py;backup/JD通用sign_v1.6.3_By.chuan.txt;backup/JDsignES5版_v1.0.0_By.hunyan.txt]

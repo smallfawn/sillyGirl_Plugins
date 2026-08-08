@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 0]
 // [class: 任务]
-// [icon: https://img-upload.vorto.cc/beb5a0d45aa58e08348e1e4076fa419e.jpg]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/m096_太平洋汽车_v1.5.0_By.mrconli.py;backup/太平洋汽车_v1.2_By.rujingxianghai.py]
 // [depe: []]
 

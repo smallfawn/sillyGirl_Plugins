@@ -9,7 +9,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 任务]
-// [icon: https://img-cf.885666.xyz/67a4e3f375b22339a460f197a764f645.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/新江北_v1.1.3_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js","./tmuyunAccountCore.js"]]
 

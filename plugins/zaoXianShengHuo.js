@@ -10,7 +10,7 @@
 // [public: true]
 // [priority: 55]
 // [class: 工具类]
-// [icon: https://img-upload.vorto.cc/4ca3151690cf36a8f6d4fe9c1febbc2a.png]
+// [icon: https://api.iconify.design/lucide:apple.svg]
 // [origin: backup/早纤生活_v2.3_By.rujingxianghai.py]
 // [depe: ["./mrconliAccountRuntime.js"]]
 

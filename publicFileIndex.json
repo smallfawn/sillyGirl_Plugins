@@ -20,10 +20,12 @@
     "path": "plugins/aiHaiYan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiHaiYan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "a7ba9e5b-9c96-a98b-7768-a8fa4602be05": {
     "id": "a7ba9e5b-9c96-a98b-7768-a8fa4602be05",
@@ -49,7 +51,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "3b5775af-328c-8c30-26eb-85acc81969c3": {
     "id": "3b5775af-328c-8c30-26eb-85acc81969c3",
@@ -72,10 +74,12 @@
     "path": "plugins/aiLuQiao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiLuQiao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "273c3ba1-ade8-4e2f-582d-92029c72c491": {
     "id": "273c3ba1-ade8-4e2f-582d-92029c72c491",
@@ -98,10 +102,12 @@
     "path": "plugins/aiXianJuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/aiXianJuZhuShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "8996f85d-f589-b905-2a59-aa6eb0837256": {
     "id": "8996f85d-f589-b905-2a59-aa6eb0837256",
@@ -124,10 +130,12 @@
     "path": "plugins/appWuYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appWuYi.js",
     "dependencies": [],
-    "module_dependencies": ["./tmuyunJinhuaRuntime.js"],
+    "module_dependencies": [
+      "./tmuyunJinhuaRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "8169c483-f0f4-7264-abb6-6957f6c35592": {
     "id": "8169c483-f0f4-7264-abb6-6957f6c35592",
@@ -150,10 +158,12 @@
     "path": "plugins/appXiShi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/appXiShi.js",
     "dependencies": [],
-    "module_dependencies": ["./tmuyunJinhuaRuntime.js"],
+    "module_dependencies": [
+      "./tmuyunJinhuaRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d7e390bd-011d-0605-9b05-24bab2c1fa30": {
     "id": "d7e390bd-011d-0605-9b05-24bab2c1fa30",
@@ -179,7 +189,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:25:44.912Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "82ecd8c3-243a-c0d1-0cba-db16eb205057": {
     "id": "82ecd8c3-243a-c0d1-0cba-db16eb205057",
@@ -202,10 +212,12 @@
     "path": "plugins/baiJingYuHuiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/baiJingYuHuiShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5703b624-0b2a-b1e8-61b4-1f2db797af40": {
     "id": "5703b624-0b2a-b1e8-61b4-1f2db797af40",
@@ -231,7 +243,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "24442085-b4aa-bade-0e0e-adac4a41faf7": {
     "id": "24442085-b4aa-bade-0e0e-adac4a41faf7",
@@ -254,10 +266,12 @@
     "path": "plugins/chaJianFeiMaYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianFeiMaYi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "2336e67c-61ee-ac9c-2ea7-89d30cb2291e": {
     "id": "2336e67c-61ee-ac9c-2ea7-89d30cb2291e",
@@ -280,10 +294,12 @@
     "path": "plugins/chaJianSenXuanZhiBo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiBo.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "619b60c8-e6d1-bb0e-680a-f969644cc60f": {
     "id": "619b60c8-e6d1-bb0e-680a-f969644cc60f",
@@ -306,10 +322,13 @@
     "path": "plugins/chaJianSenXuanZhiXiang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianSenXuanZhiXiang.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./vortoUtils.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "16976d9f-1084-5d41-55e5-932cea6f46e6": {
     "id": "16976d9f-1084-5d41-55e5-932cea6f46e6",
@@ -331,11 +350,13 @@
     "carry": false,
     "path": "plugins/chaJianShunYiChongDuiHuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/chaJianShunYiChongDuiHuan.js",
-    "dependencies": ["undici"],
+    "dependencies": [
+      "undici"
+    ],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "188559eb-ead3-385c-f7b2-09bb66878c6a": {
     "id": "188559eb-ead3-385c-f7b2-09bb66878c6a",
@@ -358,10 +379,13 @@
     "path": "plugins/daChao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daChao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./tmuyunAccountCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./tmuyunAccountCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "6c61693f-bba8-5aec-1418-3c7375bcc7d9": {
     "id": "6c61693f-bba8-5aec-1418-3c7375bcc7d9",
@@ -384,10 +408,12 @@
     "path": "plugins/daNengYiSheng.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/daNengYiSheng.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "806093f9-349a-3c92-c586-398a897b3651": {
     "id": "806093f9-349a-3c92-c586-398a897b3651",
@@ -410,10 +436,12 @@
     "path": "plugins/dangDangYiXia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dangDangYiXia.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d575081b-9e40-b816-03c2-bb5024a184e3": {
     "id": "d575081b-9e40-b816-03c2-bb5024a184e3",
@@ -436,10 +464,12 @@
     "path": "plugins/dd018DeJian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dd018DeJian.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "26ab94e9-f081-1ed8-d9ba-7f9f4d22ed95": {
     "id": "26ab94e9-f081-1ed8-d9ba-7f9f4d22ed95",
@@ -462,10 +492,12 @@
     "path": "plugins/dianDangDang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianDangDang.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5270b71c-8887-07c3-d2c6-fe2c7bea76be": {
     "id": "5270b71c-8887-07c3-d2c6-fe2c7bea76be",
@@ -488,10 +520,12 @@
     "path": "plugins/dianXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dianXin.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "b878b15e-7d40-6066-06c1-c081e04074fb": {
     "id": "b878b15e-7d40-6066-06c1-c081e04074fb",
@@ -514,10 +548,12 @@
     "path": "plugins/dongFangCaiFu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/dongFangCaiFu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5ecf0735-dd42-110d-079f-d1bf513ae774": {
     "id": "5ecf0735-dd42-110d-079f-d1bf513ae774",
@@ -543,7 +579,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:26:16.634Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "6f8ff88f-4fb7-eae2-7c50-1ebdae395ee1": {
     "id": "6f8ff88f-4fb7-eae2-7c50-1ebdae395ee1",
@@ -569,7 +605,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:48:54.693Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c369acf6-fe00-2f04-e391-431e66ae77e9": {
     "id": "c369acf6-fe00-2f04-e391-431e66ae77e9",
@@ -595,7 +631,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:55:10.215Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "89591553-f823-f3ea-a50a-bb1a7b7f76e0": {
     "id": "89591553-f823-f3ea-a50a-bb1a7b7f76e0",
@@ -621,7 +657,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-03T10:49:13.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f7138e5a-6790-3da1-9b85-ad7861b77d23": {
     "id": "f7138e5a-6790-3da1-9b85-ad7861b77d23",
@@ -647,7 +683,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "973f69c4-2f12-f875-bdc8-92f49061741f": {
     "id": "973f69c4-2f12-f875-bdc8-92f49061741f",
@@ -673,7 +709,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:54:57.238Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "7e4d89bd-1018-995a-882e-c137df98faab": {
     "id": "7e4d89bd-1018-995a-882e-c137df98faab",
@@ -699,7 +735,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "9a05bb39-9fad-bf28-32f4-03ead39407bb": {
     "id": "9a05bb39-9fad-bf28-32f4-03ead39407bb",
@@ -722,10 +758,12 @@
     "path": "plugins/fangHuaWeiLai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fangHuaWeiLai.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "9e331de1-3d12-a519-e08a-a7c2ba24a0f5": {
     "id": "9e331de1-3d12-a519-e08a-a7c2ba24a0f5",
@@ -751,7 +789,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "a65ae9c4-f382-387d-43d1-83ac9c8ee88b": {
     "id": "a65ae9c4-f382-387d-43d1-83ac9c8ee88b",
@@ -774,10 +812,12 @@
     "path": "plugins/fuTianEJia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/fuTianEJia.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "10c64abe-9993-8ccf-266a-c03645de6368": {
     "id": "10c64abe-9993-8ccf-266a-c03645de6368",
@@ -803,7 +843,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "fbd8dead-f6ca-56e8-8293-d7980d1bbf91": {
     "id": "fbd8dead-f6ca-56e8-8293-d7980d1bbf91",
@@ -825,11 +865,13 @@
     "carry": false,
     "path": "plugins/getPrinterStatus.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/getPrinterStatus.js",
-    "dependencies": ["ipp"],
+    "dependencies": [
+      "ipp"
+    ],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f87bce03-b983-64ab-8c63-27e0f1170d3a": {
     "id": "f87bce03-b983-64ab-8c63-27e0f1170d3a",
@@ -855,7 +897,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "10ae435f-5846-158a-9d5e-919e9a879db0": {
     "id": "10ae435f-5846-158a-9d5e-919e9a879db0",
@@ -878,10 +920,12 @@
     "path": "plugins/guangQi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/guangQi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "66dfad1c-eebc-6e2b-88c8-5c97bde2cc7e": {
     "id": "66dfad1c-eebc-6e2b-88c8-5c97bde2cc7e",
@@ -904,10 +948,12 @@
     "path": "plugins/haoEE.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoEE.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f74a323b-45a0-b6f2-4967-4b7c9974b8f7": {
     "id": "f74a323b-45a0-b6f2-4967-4b7c9974b8f7",
@@ -930,10 +976,12 @@
     "path": "plugins/haoQiCheShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/haoQiCheShengHuo.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "56b95374-cf24-8682-2ff0-2044dc792861": {
     "id": "56b95374-cf24-8682-2ff0-2044dc792861",
@@ -956,10 +1004,12 @@
     "path": "plugins/heHeTianTai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/heHeTianTai.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e825f047-6395-5259-0f50-f10981fc1bd8": {
     "id": "e825f047-6395-5259-0f50-f10981fc1bd8",
@@ -985,7 +1035,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:39:48.339Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "bdbb8793-a784-67cf-cd67-63d6feb77732": {
     "id": "bdbb8793-a784-67cf-cd67-63d6feb77732",
@@ -1011,7 +1061,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:59:40.451Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "01be5c41-8d36-506e-ada7-9fb08841ff4f": {
     "id": "01be5c41-8d36-506e-ada7-9fb08841ff4f",
@@ -1037,7 +1087,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-03T10:49:13.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "16c8bb7e-5d81-27f1-6d9d-3b941f527c21": {
     "id": "16c8bb7e-5d81-27f1-6d9d-3b941f527c21",
@@ -1063,7 +1113,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "7c5b44d4-f595-2f26-083b-0a4073402483": {
     "id": "7c5b44d4-f595-2f26-083b-0a4073402483",
@@ -1089,7 +1139,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5c7e4eb5-5154-b215-2b08-fbee348b2751": {
     "id": "5c7e4eb5-5154-b215-2b08-fbee348b2751",
@@ -1112,10 +1162,12 @@
     "path": "plugins/jdCookieGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdCookieGuanLi.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:10:10.925Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e00e1baa-eb46-4da2-1ec4-2a7e7fd2efb5": {
     "id": "e00e1baa-eb46-4da2-1ec4-2a7e7fd2efb5",
@@ -1141,7 +1193,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:59:16.641Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "aab4415b-69ad-04a7-8118-617cf25a70ce": {
     "id": "aab4415b-69ad-04a7-8118-617cf25a70ce",
@@ -1164,10 +1216,12 @@
     "path": "plugins/jdHuoDongJianKong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdHuoDongJianKong.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:15:10.351Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "1e4b7e10-6f92-e764-ca9d-d7e5490df56e": {
     "id": "1e4b7e10-6f92-e764-ca9d-d7e5490df56e",
@@ -1193,7 +1247,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:10:10.925Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "fb79517c-e65e-23e3-c6f1-2561f15d3039": {
     "id": "fb79517c-e65e-23e3-c6f1-2561f15d3039",
@@ -1216,10 +1270,12 @@
     "path": "plugins/jdNongChang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdNongChang.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:12:29.277Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "47587074-4d26-b11e-3e99-12f4ddf323ca": {
     "id": "47587074-4d26-b11e-3e99-12f4ddf323ca",
@@ -1245,7 +1301,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:05:27.543Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "df71e880-7458-8ed7-10aa-3cb558405fc0": {
     "id": "df71e880-7458-8ed7-10aa-3cb558405fc0",
@@ -1268,10 +1324,12 @@
     "path": "plugins/jdYingYongBaoDengLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdYingYongBaoDengLu.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:18:10.220Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "97e8bd59-6ffe-c5de-00bc-30bce7398b1d": {
     "id": "97e8bd59-6ffe-c5de-00bc-30bce7398b1d",
@@ -1294,10 +1352,12 @@
     "path": "plugins/jdZiChanChaXun.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdZiChanChaXun.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:11:22.774Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4c663333-6012-4ca4-c526-9d2bf5cd59de": {
     "id": "4c663333-6012-4ca4-c526-9d2bf5cd59de",
@@ -1320,10 +1380,12 @@
     "path": "plugins/jdZiDongPingJia.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jdZiDongPingJia.js",
     "dependencies": [],
-    "module_dependencies": ["./jdLegacyCore.js"],
+    "module_dependencies": [
+      "./jdLegacyCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T14:13:38.009Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "a4f58c24-f23a-1437-e5e8-f7b1a5e7bfa3": {
     "id": "a4f58c24-f23a-1437-e5e8-f7b1a5e7bfa3",
@@ -1346,10 +1408,12 @@
     "path": "plugins/jiangHuaiKaYou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangHuaiKaYou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "b94c7e97-1a65-96a4-6430-28dd5b19b209": {
     "id": "b94c7e97-1a65-96a4-6430-28dd5b19b209",
@@ -1372,10 +1436,12 @@
     "path": "plugins/jiangXinZhongHua.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiangXinZhongHua.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "07e534b6-0238-5f54-9a54-ba00c84bb821": {
     "id": "07e534b6-0238-5f54-9a54-ba00c84bb821",
@@ -1398,10 +1464,12 @@
     "path": "plugins/jiaShan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiaShan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "dd234a61-2d4c-1df6-f669-aea6be4cb428": {
     "id": "dd234a61-2d4c-1df6-f669-aea6be4cb428",
@@ -1424,10 +1492,12 @@
     "path": "plugins/jieTingChe.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jieTingChe.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "26807e41-fa21-6c83-f4fc-07ed76076d85": {
     "id": "26807e41-fa21-6c83-f4fc-07ed76076d85",
@@ -1450,10 +1520,12 @@
     "path": "plugins/jiFenKaMi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiFenKaMi.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:41:51.094Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c1a674b2-1239-c79f-2895-a80d38fa665a": {
     "id": "c1a674b2-1239-c79f-2895-a80d38fa665a",
@@ -1479,7 +1551,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:34:16.739Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f0847d25-9bd3-1628-9b7f-eb45b094d363": {
     "id": "f0847d25-9bd3-1628-9b7f-eb45b094d363",
@@ -1505,7 +1577,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:35:47.093Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "78c4af24-4427-b8d1-08ad-4aee5fbd1154": {
     "id": "78c4af24-4427-b8d1-08ad-4aee5fbd1154",
@@ -1531,7 +1603,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c6b12afc-bdeb-6f84-1ca1-628c591c2290": {
     "id": "c6b12afc-bdeb-6f84-1ca1-628c591c2290",
@@ -1554,10 +1626,12 @@
     "path": "plugins/jiuXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/jiuXian.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "87655cd8-dc8c-4045-7d77-d206074401a4": {
     "id": "87655cd8-dc8c-4045-7d77-d206074401a4",
@@ -1583,7 +1657,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "377a1321-9e51-33f9-bfd8-01fab4778737": {
     "id": "377a1321-9e51-33f9-bfd8-01fab4778737",
@@ -1606,10 +1680,13 @@
     "path": "plugins/kaKan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kaKan.js",
     "dependencies": [],
-    "module_dependencies": ["./kakanCore.js", "./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./kakanCore.js",
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5f9b5c32-1214-b83f-0150-09309747bbb5": {
     "id": "5f9b5c32-1214-b83f-0150-09309747bbb5",
@@ -1635,7 +1712,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T12:08:58.719Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "036ae0cc-53ff-1071-73ad-5f578a45590f": {
     "id": "036ae0cc-53ff-1071-73ad-5f578a45590f",
@@ -1658,10 +1735,12 @@
     "path": "plugins/kanYuHang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kanYuHang.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "131bf25d-003b-0234-626c-a0dc9194de77": {
     "id": "131bf25d-003b-0234-626c-a0dc9194de77",
@@ -1687,7 +1766,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f6c52c79-65ef-6326-ed3c-1adb462e78da": {
     "id": "f6c52c79-65ef-6326-ed3c-1adb462e78da",
@@ -1710,10 +1789,12 @@
     "path": "plugins/kuaKeTuiGuang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuaKeTuiGuang.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "01cc833b-8ac2-a051-019c-9de865ebd541": {
     "id": "01cc833b-8ac2-a051-019c-9de865ebd541",
@@ -1739,7 +1820,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T12:35:09.966Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "9d2a8d25-67bc-d656-9f99-f7cbfa449ab0": {
     "id": "9d2a8d25-67bc-d656-9f99-f7cbfa449ab0",
@@ -1762,10 +1843,12 @@
     "path": "plugins/kuWoDuiHuanVip.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoDuiHuanVip.js",
     "dependencies": [],
-    "module_dependencies": ["./kuwoCore.js"],
+    "module_dependencies": [
+      "./kuwoCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "29ac3364-14c7-b0f6-c031-7ec4fa017f4a": {
     "id": "29ac3364-14c7-b0f6-c031-7ec4fa017f4a",
@@ -1788,10 +1871,12 @@
     "path": "plugins/kuWoMusic.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusic.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d8bf12a3-b934-98f5-bb4d-1e84f953b5bf": {
     "id": "d8bf12a3-b934-98f5-bb4d-1e84f953b5bf",
@@ -1813,11 +1898,16 @@
     "carry": false,
     "path": "plugins/kuWoMusicTiXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/kuWoMusicTiXian.js",
-    "dependencies": ["undici"],
-    "module_dependencies": ["./kuwoCore.js", "./vortoUtils.js"],
+    "dependencies": [
+      "undici"
+    ],
+    "module_dependencies": [
+      "./kuwoCore.js",
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "283d7439-429b-7b27-7321-7ed2e34dd720": {
     "id": "283d7439-429b-7b27-7321-7ed2e34dd720",
@@ -1840,10 +1930,12 @@
     "path": "plugins/laoZhongYiZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/laoZhongYiZhuShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "dac65579-fbbf-c61c-82f1-f5beff6943c5": {
     "id": "dac65579-fbbf-c61c-82f1-f5beff6943c5",
@@ -1866,10 +1958,12 @@
     "path": "plugins/leZaiShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/leZaiShengHuo.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "ae852c55-0f54-845d-e6ab-85aa2a69c175": {
     "id": "ae852c55-0f54-845d-e6ab-85aa2a69c175",
@@ -1892,10 +1986,13 @@
     "path": "plugins/lianTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTong.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./unicomAssetCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "72ae3485-cfaf-98d1-99bf-472e4d206abf": {
     "id": "72ae3485-cfaf-98d1-99bf-472e4d206abf",
@@ -1918,10 +2015,13 @@
     "path": "plugins/lianTongYunPan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/lianTongYunPan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./unicomAssetCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "64109f03-3b34-4f54-4592-089f94b57e5c": {
     "id": "64109f03-3b34-4f54-4592-089f94b57e5c",
@@ -1947,7 +2047,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "63854e40-975e-4bd6-f487-81e7a95a2ef7": {
     "id": "63854e40-975e-4bd6-f487-81e7a95a2ef7",
@@ -1969,11 +2069,13 @@
     "carry": false,
     "path": "plugins/liYuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/liYuan.js",
-    "dependencies": ["undici"],
+    "dependencies": [
+      "undici"
+    ],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "7f76a49d-75e3-ff02-4785-08bd3029f83d": {
     "id": "7f76a49d-75e3-ff02-4785-08bd3029f83d",
@@ -1996,10 +2098,12 @@
     "path": "plugins/m001HuiShouYuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m001HuiShouYuan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c1487f4f-1206-2066-5737-4ecb479749ff": {
     "id": "c1487f4f-1206-2066-5737-4ecb479749ff",
@@ -2022,10 +2126,12 @@
     "path": "plugins/m034JiuYiXiaoEr.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m034JiuYiXiaoEr.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "9d775bb5-63de-5971-25df-cee8961c5780": {
     "id": "9d775bb5-63de-5971-25df-cee8961c5780",
@@ -2051,7 +2157,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e52c615a-a532-44d6-c94e-67f6123aa416": {
     "id": "e52c615a-a532-44d6-c94e-67f6123aa416",
@@ -2074,10 +2180,12 @@
     "path": "plugins/m099YiChengTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m099YiChengTong.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e7960c71-76fc-402e-9740-12906bd6285b": {
     "id": "e7960c71-76fc-402e-9740-12906bd6285b",
@@ -2100,10 +2208,12 @@
     "path": "plugins/m108XiaoSaTongLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m108XiaoSaTongLu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "02f6a937-c5ae-a419-e613-20dc0bd47529": {
     "id": "02f6a937-c5ae-a419-e613-20dc0bd47529",
@@ -2126,10 +2236,12 @@
     "path": "plugins/m116JinShiPin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/m116JinShiPin.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "918d4ed5-b5b3-5157-4284-451f78554329": {
     "id": "918d4ed5-b5b3-5157-4284-451f78554329",
@@ -2152,10 +2264,12 @@
     "path": "plugins/meiTuanCodeDengLu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanCodeDengLu.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f106c265-652b-2548-1f47-4688b7ad0db9": {
     "id": "f106c265-652b-2548-1f47-4688b7ad0db9",
@@ -2178,10 +2292,12 @@
     "path": "plugins/meiTuanLingQuanPlus.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/meiTuanLingQuanPlus.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e4b8e0b4-c91d-8906-6604-3a5879c5d321": {
     "id": "e4b8e0b4-c91d-8906-6604-3a5879c5d321",
@@ -2207,7 +2323,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4fc78fa6-c2f0-3a01-d3b8-ec42f59cf904": {
     "id": "4fc78fa6-c2f0-3a01-d3b8-ec42f59cf904",
@@ -2230,10 +2346,12 @@
     "path": "plugins/mouShouJiSuBanGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mouShouJiSuBanGuanLi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "60cf5046-1fdb-7c0b-31e9-530e321f8ca1": {
     "id": "60cf5046-1fdb-7c0b-31e9-530e321f8ca1",
@@ -2259,7 +2377,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:30:21.179Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "92adae2c-f535-474c-51a4-d8d266b5b8d6": {
     "id": "92adae2c-f535-474c-51a4-d8d266b5b8d6",
@@ -2281,11 +2399,15 @@
     "carry": false,
     "path": "plugins/mrconliAccountRuntime.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/mrconliAccountRuntime.js",
-    "dependencies": ["undici"],
-    "module_dependencies": ["./vortoUtils.js"],
+    "dependencies": [
+      "undici"
+    ],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T10:13:48.998Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "00483a08-0670-3725-970c-5b1f80bc860e": {
     "id": "00483a08-0670-3725-970c-5b1f80bc860e",
@@ -2308,10 +2430,12 @@
     "path": "plugins/niuKaFuHuoZhuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuHuoZhuZhuShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4b62d94a-501a-a8fe-fee2-142042c0eff7": {
     "id": "4b62d94a-501a-a8fe-fee2-142042c0eff7",
@@ -2334,10 +2458,12 @@
     "path": "plugins/niuKaFuSiJi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuKaFuSiJi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "7727febd-16a0-dbdd-bf6c-9ec18db84293": {
     "id": "7727febd-16a0-dbdd-bf6c-9ec18db84293",
@@ -2360,10 +2486,12 @@
     "path": "plugins/niuNiuDuanJu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "992b0696-395f-755e-2267-87c2960d0bb4": {
     "id": "992b0696-395f-755e-2267-87c2960d0bb4",
@@ -2386,10 +2514,12 @@
     "path": "plugins/niuNiuDuanJuXiaoChengXuBan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/niuNiuDuanJuXiaoChengXuBan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "8eb7395c-22b2-15f8-daed-53d54c6f38ce": {
     "id": "8eb7395c-22b2-15f8-daed-53d54c6f38ce",
@@ -2412,10 +2542,12 @@
     "path": "plugins/nongFuShanQuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/nongFuShanQuan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "1236566a-54e2-c0b9-5002-a1861f5918fb": {
     "id": "1236566a-54e2-c0b9-5002-a1861f5918fb",
@@ -2438,10 +2570,12 @@
     "path": "plugins/oppoShangChengZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/oppoShangChengZhuShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "77265ab7-505f-9caa-ec99-19bb7ea8f2ec": {
     "id": "77265ab7-505f-9caa-ec99-19bb7ea8f2ec",
@@ -2467,7 +2601,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c249ba17-2941-6765-6b1b-0b4d489b8ca8": {
     "id": "c249ba17-2941-6765-6b1b-0b4d489b8ca8",
@@ -2490,10 +2624,12 @@
     "path": "plugins/pangGuaiShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pangGuaiShengHuo.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "edad3163-4af2-c6d3-d8a0-5e4c52a0c0e8": {
     "id": "edad3163-4af2-c6d3-d8a0-5e4c52a0c0e8",
@@ -2516,10 +2652,13 @@
     "path": "plugins/pinZan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/pinZan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./vortoUtils.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5a6a53e2-3687-a482-c986-a8664fc1482f": {
     "id": "5a6a53e2-3687-a482-c986-a8664fc1482f",
@@ -2542,10 +2681,12 @@
     "path": "plugins/puPuChaoShi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/puPuChaoShi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "effb3a18-3ca4-5fe7-c841-aa1b45b59526": {
     "id": "effb3a18-3ca4-5fe7-c841-aa1b45b59526",
@@ -2571,7 +2712,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "09edb956-a1c6-f1e2-d474-c00a5ac02035": {
     "id": "09edb956-a1c6-f1e2-d474-c00a5ac02035",
@@ -2593,11 +2734,13 @@
     "carry": false,
     "path": "plugins/ruiXingKaFeiChouJiang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/ruiXingKaFeiChouJiang.js",
-    "dependencies": ["undici"],
+    "dependencies": [
+      "undici"
+    ],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "ab959828-09a4-b14e-f2eb-2f446dd56700": {
     "id": "ab959828-09a4-b14e-f2eb-2f446dd56700",
@@ -2623,7 +2766,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:57:19.670Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "72e2095a-9c82-0df5-925e-47a2e7cce6ca": {
     "id": "72e2095a-9c82-0df5-925e-47a2e7cce6ca",
@@ -2646,10 +2789,12 @@
     "path": "plugins/shangGuanXinWen.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shangGuanXinWen.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e54b8b84-16a6-c0dd-7e71-39236f4b1856": {
     "id": "e54b8b84-16a6-c0dd-7e71-39236f4b1856",
@@ -2675,7 +2820,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "622cc28e-0096-2f73-9822-0830cd31d96c": {
     "id": "622cc28e-0096-2f73-9822-0830cd31d96c",
@@ -2698,10 +2843,12 @@
     "path": "plugins/shuiFeiYi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shuiFeiYi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d0a54515-26f5-5511-d633-f45d8c1cae65": {
     "id": "d0a54515-26f5-5511-d633-f45d8c1cae65",
@@ -2727,7 +2874,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:43:15.580Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "eae902d2-5a2c-302f-26f4-d5e645b80aff": {
     "id": "eae902d2-5a2c-302f-26f4-d5e645b80aff",
@@ -2753,7 +2900,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "0119af8a-1eb6-1347-f766-904febd501a9": {
     "id": "0119af8a-1eb6-1347-f766-904febd501a9",
@@ -2775,11 +2922,13 @@
     "carry": false,
     "path": "plugins/shunFengQiangDui.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengQiangDui.js",
-    "dependencies": ["undici"],
+    "dependencies": [
+      "undici"
+    ],
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "2b151020-7e5b-25d1-8c5a-2c2df7c1dbf7": {
     "id": "2b151020-7e5b-25d1-8c5a-2c2df7c1dbf7",
@@ -2802,10 +2951,12 @@
     "path": "plugins/shunFengSuYun.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunFengSuYun.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "6970cbfd-38fd-df57-222c-1daf1424f72a": {
     "id": "6970cbfd-38fd-df57-222c-1daf1424f72a",
@@ -2828,10 +2979,12 @@
     "path": "plugins/shunYiChongXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/shunYiChongXin.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "81967b15-6eb5-883b-05f3-56eee14887be": {
     "id": "81967b15-6eb5-883b-05f3-56eee14887be",
@@ -2854,10 +3007,12 @@
     "path": "plugins/siGePengYou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/siGePengYou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "f5722f18-f02e-9aed-0a6e-70c06c4b41b7": {
     "id": "f5722f18-f02e-9aed-0a6e-70c06c4b41b7",
@@ -2883,7 +3038,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "01d02440-040b-2b6f-23e9-3b493920f4e3": {
     "id": "01d02440-040b-2b6f-23e9-3b493920f4e3",
@@ -2909,7 +3064,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T12:18:33.367Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "941cbd0b-26b6-6ee2-93fb-64999f0ab0b6": {
     "id": "941cbd0b-26b6-6ee2-93fb-64999f0ab0b6",
@@ -2932,10 +3087,13 @@
     "path": "plugins/suKanXiaoShuoDaiDuanXin.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/suKanXiaoShuoDaiDuanXin.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./sukanCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./sukanCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e460d311-67d1-f979-dbd7-2f7645b5bf37": {
     "id": "e460d311-67d1-f979-dbd7-2f7645b5bf37",
@@ -2958,10 +3116,12 @@
     "path": "plugins/taiKangGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangGuanLi.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "02ca4a8f-c8bc-d98a-6297-8473a49a629c": {
     "id": "02ca4a8f-c8bc-d98a-6297-8473a49a629c",
@@ -2984,10 +3144,12 @@
     "path": "plugins/taiKangZaiXian.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiKangZaiXian.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "0f2e882e-f88a-db98-a54d-86532b75eedd": {
     "id": "0f2e882e-f88a-db98-a54d-86532b75eedd",
@@ -3010,10 +3172,12 @@
     "path": "plugins/taiLing.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiLing.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "1a4fe2ff-c864-c7d4-a28f-d1610cc9347d": {
     "id": "1a4fe2ff-c864-c7d4-a28f-d1610cc9347d",
@@ -3036,10 +3200,12 @@
     "path": "plugins/taiPingTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taiPingTong.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "ac67fade-bf71-c540-fef7-d4c4ef80f670": {
     "id": "ac67fade-bf71-c540-fef7-d4c4ef80f670",
@@ -3062,10 +3228,12 @@
     "path": "plugins/taoSeVip.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/taoSeVip.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "bd587eec-d936-7b9e-f743-532e7b60b47b": {
     "id": "bd587eec-d936-7b9e-f743-532e7b60b47b",
@@ -3088,10 +3256,12 @@
     "path": "plugins/tengXunDiTu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tengXunDiTu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "2a65e604-b408-4249-c2fd-068d3c3ae9f9": {
     "id": "2a65e604-b408-4249-c2fd-068d3c3ae9f9",
@@ -3114,10 +3284,12 @@
     "path": "plugins/tianNiuHuiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianNiuHuiShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "0eedf7ab-156e-8395-ec44-3de00675eff2": {
     "id": "0eedf7ab-156e-8395-ec44-3de00675eff2",
@@ -3140,10 +3312,12 @@
     "path": "plugins/tianYiYunPanQianDao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tianYiYunPanQianDao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "6a6257b9-8574-d5ea-46b3-3f76decf03f1": {
     "id": "6a6257b9-8574-d5ea-46b3-3f76decf03f1",
@@ -3169,7 +3343,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T11:40:55.152Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "fef4398b-b8ce-7e1d-ac3c-296e703c0f9d": {
     "id": "fef4398b-b8ce-7e1d-ac3c-296e703c0f9d",
@@ -3191,11 +3365,15 @@
     "carry": false,
     "path": "plugins/tmuyunJinhuaRuntime.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tmuyunJinhuaRuntime.js",
-    "dependencies": ["undici"],
-    "module_dependencies": ["./vortoUtils.js"],
+    "dependencies": [
+      "undici"
+    ],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T10:05:46.163Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "806d9f0f-5f8f-1621-9d85-66e605de35f4": {
     "id": "806d9f0f-5f8f-1621-9d85-66e605de35f4",
@@ -3218,10 +3396,12 @@
     "path": "plugins/tongYiJiaHuang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/tongYiJiaHuang.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4178bd87-6d20-ff9e-6089-cd4086276801": {
     "id": "4178bd87-6d20-ff9e-6089-cd4086276801",
@@ -3247,7 +3427,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T11:46:56.180Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "30bfe66b-4e34-fe98-24de-83a412b27039": {
     "id": "30bfe66b-4e34-fe98-24de-83a412b27039",
@@ -3273,7 +3453,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-07-26T05:03:29.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "74d5b4d9-aa92-7bdd-0a43-6dbf7430ae43": {
     "id": "74d5b4d9-aa92-7bdd-0a43-6dbf7430ae43",
@@ -3299,7 +3479,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T09:51:56.466Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "0143affa-7b5b-b118-2177-4c194bd430e0": {
     "id": "0143affa-7b5b-b118-2177-4c194bd430e0",
@@ -3322,10 +3502,12 @@
     "path": "plugins/vortoYiLaiGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/vortoYiLaiGuanLi.js",
     "dependencies": [],
-    "module_dependencies": ["./vortoUtils.js"],
+    "module_dependencies": [
+      "./vortoUtils.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:27:31.865Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "dce9e2e7-1c2b-62f2-ff0e-badc2b7ac579": {
     "id": "dce9e2e7-1c2b-62f2-ff0e-badc2b7ac579",
@@ -3348,10 +3530,12 @@
     "path": "plugins/wangChao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wangChao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "46100c1a-7b25-3117-ea65-7f0b2b963f50": {
     "id": "46100c1a-7b25-3117-ea65-7f0b2b963f50",
@@ -3377,7 +3561,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "5f92b4fd-9e37-f9ea-34e4-02c10eab3407": {
     "id": "5f92b4fd-9e37-f9ea-34e4-02c10eab3407",
@@ -3403,7 +3587,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4e2eec35-f253-9de7-c77e-f4341f9ecb70": {
     "id": "4e2eec35-f253-9de7-c77e-f4341f9ecb70",
@@ -3429,7 +3613,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "b673b28b-d8c0-d04a-41e6-fd3845f9b9d7": {
     "id": "b673b28b-d8c0-d04a-41e6-fd3845f9b9d7",
@@ -3455,7 +3639,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:55:34.364Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "08949c02-15cf-892c-d1ab-08382537db72": {
     "id": "08949c02-15cf-892c-d1ab-08382537db72",
@@ -3481,7 +3665,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e54640ef-c4a6-365b-0259-2b7d5bdd6768": {
     "id": "e54640ef-c4a6-365b-0259-2b7d5bdd6768",
@@ -3504,10 +3688,12 @@
     "path": "plugins/wuYuTingShu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/wuYuTingShu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c13cdaba-b2ba-3de9-94aa-fc8c6d54dac7": {
     "id": "c13cdaba-b2ba-3de9-94aa-fc8c6d54dac7",
@@ -3533,7 +3719,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "b595a50f-046b-6dc4-e0df-694fc5fef2e5": {
     "id": "b595a50f-046b-6dc4-e0df-694fc5fef2e5",
@@ -3559,7 +3745,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:37:33.833Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "039f05fe-7f9a-17c8-7582-28a89e5226e1": {
     "id": "039f05fe-7f9a-17c8-7582-28a89e5226e1",
@@ -3582,10 +3768,12 @@
     "path": "plugins/xiaoCanBaWangCan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoCanBaWangCan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "ba86346b-445e-e08f-b106-24ffb91bbf8e": {
     "id": "ba86346b-445e-e08f-b106-24ffb91bbf8e",
@@ -3608,10 +3796,12 @@
     "path": "plugins/xiaoKuaiShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuaiShou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "2e39cdbe-9ffa-c2a1-f775-1f225c0cc170": {
     "id": "2e39cdbe-9ffa-c2a1-f775-1f225c0cc170",
@@ -3634,10 +3824,12 @@
     "path": "plugins/xiaoKuGou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoKuGou.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "64b5ebee-d99d-0468-649d-78889d983dcf": {
     "id": "64b5ebee-d99d-0468-649d-78889d983dcf",
@@ -3660,10 +3852,12 @@
     "path": "plugins/xiaoMiQianBao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiQianBao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "c37f92e7-f4be-2afe-b5e9-ccb53403a438": {
     "id": "c37f92e7-f4be-2afe-b5e9-ccb53403a438",
@@ -3685,11 +3879,15 @@
     "carry": false,
     "path": "plugins/xiaoMiShuaBuZhuShou.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xiaoMiShuaBuZhuShou.js",
-    "dependencies": ["undici"],
-    "module_dependencies": ["./xiaomiStepsCore.js"],
+    "dependencies": [
+      "undici"
+    ],
+    "module_dependencies": [
+      "./xiaomiStepsCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "777defdc-d6bf-d237-28d3-d378240d8c58": {
     "id": "777defdc-d6bf-d237-28d3-d378240d8c58",
@@ -3715,7 +3913,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:03:10.254Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "1383644a-1577-cbf7-5244-f19b983c156a": {
     "id": "1383644a-1577-cbf7-5244-f19b983c156a",
@@ -3741,7 +3939,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:56:32.674Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "78450fb2-e4db-a13d-f418-b5af15dac9d2": {
     "id": "78450fb2-e4db-a13d-f418-b5af15dac9d2",
@@ -3767,7 +3965,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:38:31.895Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e1873a71-3275-7510-0a59-bff91e725422": {
     "id": "e1873a71-3275-7510-0a59-bff91e725422",
@@ -3793,7 +3991,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "e382b88c-1d44-ed51-8fb1-8ce49c3ad74e": {
     "id": "e382b88c-1d44-ed51-8fb1-8ce49c3ad74e",
@@ -3816,10 +4014,12 @@
     "path": "plugins/xingMaHui.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaHui.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "445d6273-211a-8368-611f-a566fe6e356e": {
     "id": "445d6273-211a-8368-611f-a566fe6e356e",
@@ -3842,10 +4042,12 @@
     "path": "plugins/xingMaYouXuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingMaYouXuan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d4c16065-89e4-4ce0-a353-bf9cc74bf05b": {
     "id": "d4c16065-89e4-4ce0-a353-bf9cc74bf05b",
@@ -3871,7 +4073,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "8f72f1b9-8fb1-845b-2d5d-fd4f4bbc57cb": {
     "id": "8f72f1b9-8fb1-845b-2d5d-fd4f4bbc57cb",
@@ -3894,10 +4096,12 @@
     "path": "plugins/xingYunYouXuan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xingYunYouXuan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "662e19f4-7d9e-4630-ffbf-b288c08456a6": {
     "id": "662e19f4-7d9e-4630-ffbf-b288c08456a6",
@@ -3920,10 +4124,13 @@
     "path": "plugins/xinJiangBei.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/xinJiangBei.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./tmuyunAccountCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./tmuyunAccountCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "7ad404cd-12bc-fda8-bffa-ed1c79728d06": {
     "id": "7ad404cd-12bc-fda8-bffa-ed1c79728d06",
@@ -3949,7 +4156,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T09:00:56.604Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "db3352d6-cc2f-a2d6-6f63-50fa239bf534": {
     "id": "db3352d6-cc2f-a2d6-6f63-50fa239bf534",
@@ -3972,10 +4179,12 @@
     "path": "plugins/yiDongYunPan.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiDongYunPan.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "2653432a-0302-6d93-82d4-17c4fe72798a": {
     "id": "2653432a-0302-6d93-82d4-17c4fe72798a",
@@ -4001,7 +4210,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T13:27:31.864Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "a550550d-541f-21aa-3a49-d5c5981fe327": {
     "id": "a550550d-541f-21aa-3a49-d5c5981fe327",
@@ -4024,10 +4233,12 @@
     "path": "plugins/yiLiQqXing.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiLiQqXing.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "d9ead93b-4621-1521-0ad0-a349292038d5": {
     "id": "d9ead93b-4621-1521-0ad0-a349292038d5",
@@ -4050,10 +4261,12 @@
     "path": "plugins/yiPinCang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yiPinCang.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "fe773be4-1f7a-6497-9942-27117bcf0441": {
     "id": "fe773be4-1f7a-6497-9942-27117bcf0441",
@@ -4076,10 +4289,12 @@
     "path": "plugins/yongPai.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yongPai.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "0bb90297-e796-b8a1-7d42-7bedbcdbe0ae": {
     "id": "0bb90297-e796-b8a1-7d42-7bedbcdbe0ae",
@@ -4102,10 +4317,12 @@
     "path": "plugins/youXiaWang.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/youXiaWang.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "542a76b1-2820-9849-8b77-6f054249a7fe": {
     "id": "542a76b1-2820-9849-8b77-6f054249a7fe",
@@ -4131,7 +4348,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T09:03:51.715Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "86fc3902-f610-6f2c-cec5-2053620b9ca5": {
     "id": "86fc3902-f610-6f2c-cec5-2053620b9ca5",
@@ -4154,10 +4371,12 @@
     "path": "plugins/yuYunQianDao.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/yuYunQianDao.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "781afee8-a60a-4ecb-977b-bd7234ef0dd5": {
     "id": "781afee8-a60a-4ecb-977b-bd7234ef0dd5",
@@ -4180,10 +4399,12 @@
     "path": "plugins/zaoXianShengHuo.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zaoXianShengHuo.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "67333842-0206-bb77-c30e-98dc515c7c84": {
     "id": "67333842-0206-bb77-c30e-98dc515c7c84",
@@ -4206,10 +4427,12 @@
     "path": "plugins/zhanMaNengLiangXingQiu.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhanMaNengLiangXingQiu.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "73ea4c5f-b854-476c-8ec2-c97dba4fc07c": {
     "id": "73ea4c5f-b854-476c-8ec2-c97dba4fc07c",
@@ -4235,7 +4458,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-05T11:02:34.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "4e163016-3536-10ee-8cdc-88c3072674c6": {
     "id": "4e163016-3536-10ee-8cdc-88c3072674c6",
@@ -4261,7 +4484,7 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "3dbc9512-02da-c94e-cc95-61d0c8cabf3b": {
     "id": "3dbc9512-02da-c94e-cc95-61d0c8cabf3b",
@@ -4284,10 +4507,13 @@
     "path": "plugins/zhongGuoLianTong.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongGuoLianTong.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js", "./unicomAssetCore.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js",
+      "./unicomAssetCore.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "ce6d953d-d689-6c7d-3c6e-e3dafcf209f1": {
     "id": "ce6d953d-d689-6c7d-3c6e-e3dafcf209f1",
@@ -4310,10 +4536,12 @@
     "path": "plugins/zhongShiPinGuanLi.js",
     "raw": "https://raw.githubusercontent.com/smallfawn/sillyGirl_Plugins/main/plugins/zhongShiPinGuanLi.js",
     "dependencies": [],
-    "module_dependencies": ["./mrconliAccountRuntime.js"],
+    "module_dependencies": [
+      "./mrconliAccountRuntime.js"
+    ],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:12:17.000Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   },
   "1200154f-2845-6157-1830-038204d90013": {
     "id": "1200154f-2845-6157-1830-038204d90013",
@@ -4339,6 +4567,6 @@
     "module_dependencies": [],
     "type": "node",
     "origin": "https://github.com/smallfawn/sillyGirl_Plugins",
-    "create_at": "2026-08-07T08:53:37.103Z"
+    "create_at": "2026-08-08T00:20:11.000Z"
   }
 }

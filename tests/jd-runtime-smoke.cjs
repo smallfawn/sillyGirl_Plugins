@@ -36,8 +36,6 @@ class Bucket {
     return [...buckets.get(this.name).keys()];
   }
 }
-global.Bucket = Bucket;
-
 const chain = () => {
   const value = {};
   for (const method of ["title", "description", "default", "min", "max", "widget", "options", "format"])
@@ -90,7 +88,14 @@ const sender = {
   listen: async () => undefined,
   resume: async () => undefined,
 };
-const fake = { sender, container: { QingLong }, plugin: { Form }, utils: { sleep: async () => undefined }, console };
+const fake = {
+  Bucket,
+  sender,
+  container: { QingLong },
+  plugin: { Form },
+  utils: { sleep: async () => undefined },
+  console,
+};
 const originalLoad = Module._load;
 Module._load = function (request, parent, isMain) {
   if (request === "sillygirl") return fake;

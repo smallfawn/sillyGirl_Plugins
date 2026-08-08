@@ -18,7 +18,7 @@
 // [depe: ["./jdLegacyCore.js"]]
 
 "use strict";
-const { container, plugin, sender: s } = require("sillygirl");
+const { Bucket, container, plugin, sender: s } = require("sillygirl");
 const core = require("./jdLegacyCore.js");
 const cache = new Bucket("jdHuoDongJianKong");
 

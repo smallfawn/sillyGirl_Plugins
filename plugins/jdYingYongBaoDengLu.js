@@ -15,7 +15,7 @@
 // [depe: ["./jdLegacyCore.js"]]
 
 "use strict";
-const { container, plugin, sender: s, utils } = require("sillygirl");
+const { Bucket, container, plugin, sender: s, utils } = require("sillygirl");
 const core = require("./jdLegacyCore.js");
 const notify = new Bucket("jdNotify"),
   accounts = new Bucket("jdYingYongBaoDengLu");

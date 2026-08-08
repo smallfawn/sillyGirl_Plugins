@@ -17,7 +17,7 @@
 // [depe: []]
 
 const crypto = require("node:crypto");
-const { sender: s, plugin, container } = require("sillygirl");
+const { Bucket, sender: s, plugin, container } = require("sillygirl");
 
 const users = new Bucket("dunDunE.users"),
   cookies = new Bucket("sm_ddb_CKDB"),

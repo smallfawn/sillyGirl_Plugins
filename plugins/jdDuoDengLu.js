@@ -20,7 +20,7 @@
 // [depe: []]
 
 const crypto = require("node:crypto");
-const { sender: s, plugin, container, utils } = require("sillygirl");
+const { Bucket, sender: s, plugin, container, utils } = require("sillygirl");
 
 const accountStore = new Bucket("jdDuoDengLu.accounts"),
   credentialStore = new Bucket("AutoJdck"),

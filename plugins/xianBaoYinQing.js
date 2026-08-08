@@ -16,7 +16,7 @@
 // [origin: backup/线报引擎_v6_By.funyhook.txt]
 // [depe: []]
 
-const { sender: s, plugin, utils } = require("sillygirl");
+const { Bucket, sender: s, plugin, utils } = require("sillygirl");
 
 const cache = new Bucket("xianBaoYinQing.cache");
 const state = new Bucket("xianBaoYinQing.state");

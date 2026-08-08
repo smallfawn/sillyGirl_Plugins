@@ -15,7 +15,7 @@
 // [origin: backup/短视频图集解析_v1.1.2_By.297129582.txt;backup/短视频图集解析_v1.2.0_By.297129582.js]
 // [depe: []]
 
-const { sender: s, plugin, utils } = require("sillygirl");
+const { Bucket, sender: s, plugin, utils } = require("sillygirl");
 
 const settings = new Bucket("duanShiPinTuJiJieXi.groups");
 const form = new plugin.Form({

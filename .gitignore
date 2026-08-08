@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+node_modules/
 .codex-artifacts/
 
 # Local credentials and private key material
@@ -13,3 +14,4 @@ __pycache__/
 *.p12
 *.pfx
 credentials*.json
+backup/*

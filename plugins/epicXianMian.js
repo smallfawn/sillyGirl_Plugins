@@ -1,15 +1,16 @@
 // [title: Epic限免]
 // [name: epicXianMian]
-// [language: javascript]
-// [class: 任务]
+// [desc: 查询 Epic Games Store 当前和即将开始的免费领取游戏]
 // [author: buzhi]
 // [version: v1.0.3]
-// [public: true]
-// [disable: false]
-// [admin: false]
 // [rule: ^(epic|EPIC|Epic)限免$|^(epic|EPIC|Epic)限免?$]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 0]
+// [class: 任务]
 // [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 查询 Epic Games Store 当前和即将开始的免费领取游戏]
+// [origin: backup/Epic限免_v1.0.1_By.buzhi.txt]
 // [depe: []]
 
 const { plugin, sender: s } = require("sillygirl");
@@ -36,7 +37,8 @@ async function main() {
     const offers = parseOffers(await response.json(), new Date());
     const sections = [];
     if (offers.current.length) sections.push(formatSection("正在限免", offers.current, cfg.locale));
-    if (cfg.showUpcoming && offers.upcoming.length) sections.push(formatSection("即将限免", offers.upcoming, cfg.locale));
+    if (cfg.showUpcoming && offers.upcoming.length)
+      sections.push(formatSection("即将限免", offers.upcoming, cfg.locale));
     await s.reply(sections.length ? sections.join("\n\n") : "当前没有查到 Epic 限免游戏");
   } catch (error) {
     await s.reply(`Epic限免查询失败：${message(error)}`);
@@ -45,7 +47,9 @@ async function main() {
 
 function normalizeConfig(raw) {
   const value = raw || {};
-  const country = String(value.country || "CN").trim().toUpperCase();
+  const country = String(value.country || "CN")
+    .trim()
+    .toUpperCase();
   if (!/^[A-Z]{2}$/.test(country)) throw new Error("国家代码必须是两个英文字母");
   return {
     enable: value.enable !== false,
@@ -89,7 +93,9 @@ function collectPromotions(item, groups, now, output, futureOnly) {
 function storeUrl(item) {
   const mapping = item?.offerMappings?.[0] || item?.catalogNs?.mappings?.[0];
   const slug = mapping?.pageSlug || item?.productSlug || item?.urlSlug;
-  return slug ? `https://store.epicgames.com/p/${String(slug).replace(/^\/+|\/+$/g, "")}` : "https://store.epicgames.com/free-games";
+  return slug
+    ? `https://store.epicgames.com/p/${String(slug).replace(/^\/+|\/+$/g, "")}`
+    : "https://store.epicgames.com/free-games";
 }
 
 function unique(items) {
@@ -103,11 +109,12 @@ function unique(items) {
 }
 
 function formatSection(title, items, locale) {
-  return [title, ...items.map((item) => [
-    `• ${item.title}`,
-    `${formatTime(item.start, locale)} - ${formatTime(item.end, locale)}`,
-    item.url,
-  ].join("\n"))].join("\n");
+  return [
+    title,
+    ...items.map((item) =>
+      [`• ${item.title}`, `${formatTime(item.start, locale)} - ${formatTime(item.end, locale)}`, item.url].join("\n"),
+    ),
+  ].join("\n");
 }
 
 function formatTime(value, locale) {
@@ -122,7 +129,9 @@ function formatTime(value, locale) {
 }
 
 function message(error) {
-  return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300);
+  return String(error?.message || error)
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 300);
 }
 
 main();

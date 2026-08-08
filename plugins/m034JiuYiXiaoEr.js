@@ -1,118 +1,92 @@
 // [title: m034_旧衣小二]
 // [name: m034JiuYiXiaoEr]
-// [language: javascript]
-// [class: 任务]
+// [desc: 旧衣小二token批量登录、手机号/昵称/环保币查询、定时签到、账号管理、授权和青龙同步。]
 // [author: mrconli]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.0.1]
+// [rule: raw ^小二(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 34 7,16 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^小二(.*)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: m034_旧衣小二凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://bbs.autman.cn/assets/files/2025-10-16/1760618042-109879-jyxe.webp]
+// [origin: backup/m034_旧衣小二_v1.0.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("M034_JIU_YI_XIAO_ER"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("m034_旧衣小二插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("m034_旧衣小二：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`m034_旧衣小二处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const H = {
+  host: "jiuyixiaoer.fzjingzhou.com",
+  connection: "keep-alive",
+  "user-agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20 MiniProgramEnv/Windows",
+  xweb_xhr: "1",
+  "content-type": "application/x-www-form-urlencoded",
+  platform: "MP-WEIXIN",
+  accept: "*/*",
+  referer: "https://servicewechat.com/wx426d52c8130b8559/5/page-frame.html",
+  "accept-encoding": "gzip, deflate, br",
+  "accept-language": "zh-CN,zh;q=0.9",
+};
+async function info(ctx, token) {
+  const d = await ctx.requestJson("https://jiuyixiaoer.fzjingzhou.com/api/Person/index", {
+      method: "POST",
+      headers: H,
+      form: { token },
+    }),
+    x = d?.data;
+  if (!x?.mobile) throw new Error(d?.msg || "token认证失败");
+  return { phone: String(x.mobile), nickname: x.nickname || "", score: x.score ?? 0 };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`m034_旧衣小二同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`m034_旧衣小二提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的m034_旧衣小二账号");
-  return s.reply([`m034_旧衣小二账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的m034_旧衣小二账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个m034_旧衣小二账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function sign(ctx, token) {
+  const d = await ctx.requestJson("https://jiuyixiaoer.fzjingzhou.com/api/Person/sign", {
+    method: "POST",
+    headers: H,
+    form: { token },
   });
+  if (Number(d?.code) === 1000) return `签到成功，获得积分：${d.data}`;
+  if (Number(d?.code) === 1001) return `${d.msg}！`;
+  throw new Error(d?.msg || "签到异常");
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "m034JiuYiXiaoEr|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "M034_JIU_YI_XIAO_ER").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "旧衣小二",
+  shortName: "小二",
+  prefix: "mrconli.jiuyixiaoer",
+  defaultEnvName: "M034_JIU_YI_XIAO_ER",
+  orderPrefix: "JYXE",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入token，支持批量每行一个", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const token of input
+      .split(/\r?\n/)
+      .map((v) => v.trim())
+      .filter(Boolean))
+      try {
+        const x = await info(ctx, token);
+        rows.push({ account: x.phone, token, remark: x.nickname || x.phone });
+      } catch (error) {
+        await ctx.sender.reply(`旧衣小二登录失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = await info(ctx, item.token);
+    return `👤 昵称：${x.nickname}\n🌸 环保币：${x.score}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      return await sign(ctx, item.token);
+    } catch (error) {
+      return `签到异常：${error?.message || error}`;
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====旧衣小二教程=====\n抓包提交token，支持批量\n查询昵称和环保币；定时任务自动签到并通知结果\n指令：小二登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (error) => s.reply(`旧衣小二执行失败：${error?.message || error}`));

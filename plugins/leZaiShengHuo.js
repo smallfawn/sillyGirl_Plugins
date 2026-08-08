@@ -1,118 +1,165 @@
 // [title: 乐仔生活]
 // [name: leZaiShengHuo]
-// [language: javascript]
-// [class: 任务]
+// [desc: 乐仔生活 Token/短信登录、积分查询、签到、扫码及日常任务、授权和青龙同步。]
 // [author: yuhualhh]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.3]
+// [rule: raw ^乐仔(登录|登陆|查询|管理|清理|检测|运行|一键运行|授权|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(乐仔)(登录|查询|管理|清理|检测|运行|一键运行)$]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
 // [icon: https://gcore.jsdelivr.net/gh/lhz03/img@e9cd9a11a480cadebc2fd54b8302d737d580595d/2026/01/30/81fd4cd42a523da597582e5727913a23.png]
-// [description: 乐仔生活凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/乐仔生活_v1.1.3_By.yuhualhh.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("LE_ZAI_SHENG_HUO"),
-});
-
-async function main() {
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://infor.leyaoyao.com/infor/xiaolelife";
+function h(token = "") {
+  return {
+    xiaoletoken: token,
+    "user-agent": "okhttp/4.9.2",
+    "content-type": "application/json",
+    "accept-encoding": "gzip",
+  };
+}
+async function api(ctx, token, path, opt = {}) {
+  return ctx.requestJson(`${BASE}${path}`, { ...opt, headers: { ...h(token), ...(opt.headers || {}) } });
+}
+function ok(d) {
+  return String(d?.code) === "0000000";
+}
+async function profile(ctx, token) {
+  const d = await api(ctx, token, "/user-info");
+  if (!ok(d)) throw new Error(d?.message || "Token无效");
+  const x = d.body || {};
+  return { uid: String(x.userId || ""), phone: String(x.telephone || "") };
+}
+async function assets(ctx, token) {
+  const [a, b] = await Promise.all([api(ctx, token, "/points/wall/v4"), api(ctx, token, "/points/desc")]);
+  if (!ok(a)) throw new Error(a?.message || "查询失败");
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    records = Array.isArray(b?.body) ? b.body : [],
+    todayScore = records
+      .filter((x) => String(x.createTime || "").includes(today) && Number(x.points) > 0)
+      .reduce((n, x) => n + Number(x.points), 0);
+  return { total: a?.body?.totalPoints ?? 0, today: todayScore, wall: a?.body || {}, records };
+}
+async function finish(ctx, token, id) {
+  let payload = { taskId: id };
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("乐仔生活插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
+    const x = await ctx.requestJson(`https://yuhualhh.250666.xyz/api/lezai_sign.php?taskId=${encodeURIComponent(id)}`);
+    if (x?.signedText) payload = { taskId: id, random: x.random, timestamp: x.timestamp, signedText: x.signedText };
+  } catch {}
+  const d = await api(ctx, token, "/points/mark-finished", { method: "POST", json: payload });
+  return ok(d) && d?.body?.flag === true;
+}
+async function run(ctx, token) {
+  const out = [],
+    sign = await api(ctx, token, "/sign-in");
+  out.push(
+    ok(sign)
+      ? `🎨 签到：${Number(sign?.body?.points) > 0 ? `获得${sign.body.points}分` : "今日已签"}`
+      : `❌ 签到：${sign?.message || "失败"}`,
+  );
+  const a = await assets(ctx, token),
+    today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    qrDone = a.records.filter(
+      (x) => String(x.createTime || "").includes(today) && String(x.desc || "").includes("扫码积分派发任务"),
+    ).length;
+  let q = qrDone;
+  for (; q < 3; q++) {
+    const d = await api(ctx, token, "/third/auth/qr-code/wxmini/url/v3", {
+      method: "POST",
+      json: { authDomain: "c.cooleasy.net", equipmentValue: String(541000 + Math.floor(Math.random() * 9000)) },
+    });
+    if (!ok(d)) break;
+  }
+  out.push(`💳 扫码积分派发任务：${Math.min(q, 3)}/3`);
+  for (const g of a.wall.types || [])
+    for (const t of g.tasks || []) {
+      if ([150, 151].includes(Number(t.taskId))) continue;
+      const limit = Number(t.limit || 1),
+        done = Number(t.doneCount || 0);
+      if (t.finished || done >= limit) {
+        out.push(`✅ ${t.name}`);
+        continue;
+      }
+      let n = done;
+      for (; n < limit; n++) {
+        if (!(await finish(ctx, token, t.taskId))) break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      out.push(`${n >= limit ? "✅" : "❌"} ${t.name}：${n}/${limit}`);
+    }
+  const z = await assets(ctx, token);
+  out.push(`🎫 总积分：${z.total}，今日+${z.today}`);
+  return out;
+}
+const rt = createAccountRuntime({
+  title: "乐仔生活",
+  shortName: "乐仔",
+  prefix: "yuhua_lezai",
+  defaultEnvName: "LE_ZAI_SHENG_HUO",
+  orderPrefix: "LEZAI",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const way = await ctx.prompt(ctx.sender, "[1] Token登录\n[2] 短信登录", 120000);
+    if (way === null) return [];
+    let token = "";
+    if (way === "1") token = await ctx.prompt(ctx.sender, "请输入 xiaoletoken", 120000);
+    else if (way === "2") {
+      const phone = await ctx.prompt(ctx.sender, "请输入手机号", 120000);
+      if (!phone) return [];
+      const sd = await api(ctx, "", `/verification-code?phoneNumber=${encodeURIComponent(phone)}`);
+      if (!ok(sd)) throw new Error(sd?.message || "短信发送失败");
+      const code = await ctx.prompt(ctx.sender, "验证码已发送，请输入验证码", 120000);
+      if (!code) return [];
+      const ld = await api(ctx, "", "/register-or-login", {
+        method: "POST",
+        json: {
+          phoneNumber: phone,
+          verificationCode: code,
+          deviceId: "fb965a27c91647849b642751dfbd6e59",
+          endpoint: "ANDROID",
+          modelName: "default",
+          version: "v_1.2.4",
         },
       });
-    }
-    return s.reply("乐仔生活：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`乐仔生活处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+      if (!ok(ld) || !ld?.body?.token) throw new Error(ld?.message || "登录失败");
+      token = ld.body.token;
+    } else return [];
+    const u = await profile(ctx, token);
+    return [{ account: u.uid || u.phone, token, remark: u.phone || u.uid }];
+  },
+  async query(ctx, item) {
+    const u = await profile(ctx, item.token),
+      a = await assets(ctx, item.token);
+    return `📱 手机：${u.phone}\n🆔 UID：${u.uid}\n🎫 总积分：${a.total}\n🎨 今日积分：${a.today}`;
+  },
+  async handle(ctx, content) {
+    if (!/运行/.test(content)) return;
+    const uid = await ctx.currentUserId(),
+      accounts = JSON.parse(await ctx.users.get(uid, "[]"));
+    if (!accounts.length) return ctx.sender.reply("❌ 未找到账号，发送“乐仔登录”绑定");
+    for (const account of accounts) {
+      const remark = await ctx.remarks.get(account, account);
+      try {
+        const out = await run(ctx, await ctx.tokens.get(account, ""));
+        await ctx.sender.reply(`=====乐仔运行=====\n👤 ${remark}\n${out.join("\n")}\n==================`);
+      } catch (e) {
+        await ctx.sender.reply(`❌ ${remark}：${e?.message || e}`);
       }
     }
-    return replySender.reply(`乐仔生活同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`乐仔生活提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的乐仔生活账号");
-  return s.reply([`乐仔生活账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的乐仔生活账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个乐仔生活账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "leZaiShengHuo|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "LE_ZAI_SHENG_HUO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+  },
+  async cronCheck(ctx, item) {
+    return (await run(ctx, item.token)).join("\n");
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====乐仔生活教程=====\n可用 xiaoletoken 或手机号短信登录；查询积分，运行签到、扫码和日常积分任务。授权后同步青龙变量 LE_ZAI_SHENG_HUO。\n==================",
+});
+rt.main().catch((e) => s.reply(`乐仔生活执行失败：${e?.message || e}`));

@@ -1,118 +1,109 @@
 // [title: 桃色VIP]
 // [name: taoSeVip]
-// [language: javascript]
-// [class: 任务]
+// [desc: 桃色VIP账号密码批量登录、SSID刷新、等级/成长值/豆子查询、每日签到、授权和账号管理。]
 // [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.4.0]
+// [rule: raw ^桃色(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 18 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^桃色登录$|^登录桃色$|^桃色查询$|^桃色管理$|^桃色运行$|^桃色一键运行$|^桃色刷新$|^刷新桃色$|^桃色$|^桃色检测$|^桃色教程$]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
 // [icon: https://y.gtimg.cn/music/photo_new/T053M0000011Juce2IQQ8j.jpg]
-// [description: 桃色VIP凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/桃色VIP_v1.4.0_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("TAO_SE_VIP"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("桃色VIP插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("桃色VIP：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`桃色VIP处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://wxapp.lllac.com/xqw";
+function headers(cookie = "") {
+  return {
+    host: "wxapp.lllac.com",
+    connection: "keep-alive",
+    charset: "utf-8",
+    cookie,
+    "user-agent":
+      "Mozilla/5.0 (Linux; Android 15; 2210132C) AppleWebKit/537.36 Chrome/130.0.6723.103 Mobile Safari/537.36 MicroMessenger/8.0.49 MiniProgramEnv/android",
+    "content-type": "application/x-www-form-urlencoded",
+    "accept-encoding": "gzip,compress,br,deflate",
+    referer: "https://servicewechat.com/wxa11d535651f0f097/58/page-frame.html",
+  };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+async function login(ctx, user, password) {
+  const ssid = crypto.randomBytes(16).toString("hex"),
+    d = await ctx.requestJson(`${BASE}/login.php`, {
+      method: "POST",
+      headers: headers(`SSID=${ssid}`),
+      form: { act: "login", u_name: user, u_pass: password, session_id: ssid },
+    });
+  if (Number(d?.error) !== 0) throw new Error(d?.msg || "登录失败");
+  return `SSID=${ssid}`;
+}
+async function info(ctx, cookie) {
+  const d = await ctx.requestJson(
+    `${BASE}/user_home_v2.php?act=home&channel=tsvip&qudao=normal&cid_most=&gid_most=&version=30&od_count=`,
+    { headers: headers(cookie) },
+  );
+  if (Number(d?.error) !== 0) throw new Error(d?.msg || "用户信息获取失败");
+  return {
+    name: d.user_name || "未知",
+    rank: d.user_rank || "未知",
+    point: d.user_point || 0,
+    dou: d.user_dou || 0,
+    nextRank: d.next_rank || "未知",
+    nextPoint: d.next_point || 0,
+    bar: d.bar || 0,
+  };
+}
+async function sign(ctx, cookie) {
+  const ssid = String(cookie).replace(/^SSID=/i, ""),
+    d = await ctx.requestJson(`${BASE}/user_mall.php?act=signToday&ssid=${encodeURIComponent(ssid)}&spm=x.user`, {
+      headers: headers(cookie),
+    });
+  return d;
+}
+const rt = createAccountRuntime({
+  title: "桃色VIP",
+  shortName: "桃色",
+  prefix: "s_taose",
+  defaultEnvName: "S_TAOSE",
+  orderPrefix: "TAOSE",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入账号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const cut = line.indexOf("#"),
+          account = line.slice(0, cut).trim(),
+          password = line.slice(cut + 1).trim();
+        if (cut < 0 || !account || !password) throw new Error("格式应为账号#密码");
+        const cookie = await login(ctx, account, password),
+          x = await info(ctx, cookie);
+        rows.push({ account, token: password, remark: x.name || account });
+      } catch (e) {
+        await ctx.sender.reply(`桃色登录失败：${e?.message || e}`);
       }
-    }
-    return replySender.reply(`桃色VIP同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`桃色VIP提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的桃色VIP账号");
-  return s.reply([`桃色VIP账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的桃色VIP账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个桃色VIP账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "taoSeVip|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "TAO_SE_VIP").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+    return rows;
+  },
+  async query(ctx, item) {
+    const cookie = await login(ctx, item.account, item.token),
+      x = await info(ctx, cookie);
+    return `👤 昵称：${x.name}\n🎖️ 等级：${x.rank}\n📈 成长值：${x.point}\n💰 豆子：${x.dou}\n⏭️ 下一级：${x.nextRank}（${x.nextPoint}）`;
+  },
+  async cronCheck(ctx, item) {
+    const cookie = await login(ctx, item.account, item.token),
+      d = await sign(ctx, cookie),
+      x = await info(ctx, cookie);
+    return `签到：${d?.msg || d?.message || (Number(d?.error) === 0 ? "成功" : "失败")}\n当前豆子：${x.dou}，等级：${x.rank}`;
+  },
+  envValue(_ctx, item) {
+    return `${item.account}#${item.token}`;
+  },
+  tutorial:
+    "=====桃色VIP教程=====\n发送桃色登录，按账号#密码提交，支持批量\n每次运行自动重新登录刷新SSID，查询等级/成长值/豆子并每日签到\n指令：桃色登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`桃色VIP执行失败：${e?.message || e}`));

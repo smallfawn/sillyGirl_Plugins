@@ -1,65 +1,83 @@
 // [title: 酷我兑换VIP]
 // [name: kuWoDuiHuanVip]
-// [language: javascript]
-// [class: 任务]
+// [desc: 酷我账号验证码登录并兑换1至5个月VIP]
 // [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
-// [admin: false]
+// [version: v1.1.0]
 // [rule: ^酷我兑换$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 使用 SillyGirl 青龙内联客户端查找并运行对应业务任务]
-// [depe: []]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 50]
+// [class: 工具]
+// [icon: https://img.cdn1.vip/i/69d62b975e88c_1775643543.png]
+// [origin: backup/酷我兑换VIP_v1.1_By.sky2022.py]
+// [depe: ["./kuwoCore.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
+const { sender: s, plugin } = require("sillygirl");
+const kuwo = require("./kuwoCore.js");
 
-const config = new plugin.Form({
+const form = new plugin.Form({
   enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  task_keyword: plugin.Form.string().title("青龙任务关键词").default("酷我兑换VIP"),
+  timeout_ms: plugin.Form.integer().title("接口超时毫秒").min(3000).max(120000).default(15000),
 });
-
+async function request(url, options = {}, cfg = {}) {
+  const controller = new AbortController(),
+    timer = setTimeout(() => controller.abort(), cfg.timeout_ms || 15000),
+    headers = { ...(options.headers || {}) };
+  let body = options.body;
+  if (options.json !== undefined) {
+    body = JSON.stringify(options.json);
+    headers["content-type"] ||= "application/json";
+  }
+  try {
+    const response = await fetch(url, { method: options.method || "GET", headers, body, signal: controller.signal }),
+      text = await response.text();
+    if (response.status >= 400) throw new Error(`HTTP ${response.status}: ${text.slice(0, 160)}`);
+    return { text };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function main() {
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("酷我兑换VIP插件未启用");
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    const content = String(s.getContent() || "").trim();
-    const tasks = await findTasks(ql, [content, cfg.taskKeyword]);
-    if (!tasks.length) return s.reply(`未找到青龙任务：${cfg.taskKeyword}`);
-    const ids = tasks.map((task) => task.id ?? task._id).filter((id) => id !== undefined && id !== null);
-    if (!ids.length) throw new Error("匹配任务缺少 id");
-    await ql.request("PUT", "/crons/run", ids);
-    return s.reply(["酷我兑换VIP任务已触发", ...tasks.map((task) => `• ${task.name || task.command || task.id}`)].join("\n"));
-  } catch (error) {
-    return s.reply(`酷我兑换VIP执行失败：${message(error)}`);
-  }
-}
-
-async function findTasks(ql, keywords) {
-  const found = new Map();
-  for (const keyword of [...new Set(keywords.map((value) => String(value || "").trim()).filter(Boolean))]) {
-    const response = await ql.request("GET", "/crons", null, { searchValue: keyword });
-    for (const task of unwrapList(response)) {
-      const id = task?.id ?? task?._id;
-      if (id === undefined || id === null) continue;
-      const text = `${task.name || ""}\n${task.command || ""}`;
-      if (text.includes(keyword) || keyword === String(keywords.at(-1))) found.set(String(id), task);
+    const cfg = (await form.get()) || {};
+    if (cfg.enable === false) return s.reply("酷我兑换VIP插件未启用");
+    const ctx = {
+      async requestJson(url, opt) {
+        const r = await request(url, opt, cfg);
+        try {
+          return JSON.parse(r.text);
+        } catch (_) {
+          throw new Error(`接口返回非JSON：${r.text.slice(0, 160)}`);
+        }
+      },
+    };
+    const raw = await prompt("请输入手机号#密码", 120000);
+    if (raw === null) return;
+    const cut = raw.indexOf("#"),
+      phone = raw.slice(0, cut).trim(),
+      password = raw.slice(cut + 1);
+    if (cut < 1 || !/^1[3-9]\d{9}$/.test(phone) || !password) throw new Error("格式应为11位手机号#密码");
+    const countRaw = await prompt("请输入兑换次数(1-5)", 60000),
+      count = Number(countRaw);
+    if (!Number.isInteger(count) || count < 1 || count > 5) throw new Error("兑换次数必须是1-5");
+    const session = await kuwo.login(ctx, phone, password),
+      lines = [];
+    for (let i = 0; i < count; i++) {
+      const result = await kuwo.exchangeVip(ctx, session),
+        description = result?.data?.description || result?.data?.text || result?.msg || JSON.stringify(result);
+      lines.push(`${i + 1}. ${JSON.stringify(result).includes("成功") ? "兑换成功" : "兑换结果"}：${description}`);
+      if (i + 1 < count) await new Promise((r) => setTimeout(r, 1000));
     }
+    return s.reply(lines.join("\n"));
+  } catch (error) {
+    return s.reply(`酷我兑换VIP执行失败：${error?.message || error}`);
   }
-  return [...found.values()];
 }
-
-function unwrapList(value) {
-  let current = value;
-  for (let index = 0; index < 4 && current && !Array.isArray(current); index += 1) current = current.data ?? current.items ?? current.list;
-  return Array.isArray(current) ? current : [];
+async function prompt(text, timeout) {
+  await s.reply(text);
+  const child = await s.listen({ timeout });
+  if (!child) return null;
+  return String((await child.getContent()) || "").trim();
 }
-function normalize(raw) {
-  const value = raw || {};
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, taskKeyword: String(value.task_keyword || "酷我兑换VIP").trim() || "酷我兑换VIP" };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
 main();

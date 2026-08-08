@@ -1,118 +1,183 @@
 // [title: 小快手]
 // [name: xiaoKuaiShou]
-// [language: javascript]
-// [class: 任务]
+// [desc: 快手普通版/极速版CK校验、金币现金余额与今日收益查询]
 // [author: linzixuan]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v5.3.0]
+// [rule: ^快手(登录|登陆|查询|管理|教程|授权|清理)?$]
+// [cron: 40 18 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^快手(登录|登陆|查询|管理|教程)?$]
+// [public: true]
+// [priority: 50]
+// [class: 任务]
 // [icon: http://5b0988e595225.cdn.sohucs.com/images/20190724/f8f8ace898584a2dbd3f20c2d2822c96.jpeg]
-// [description: 小快手凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/小快手_v5.2.5_By.linzixuan.py;backup/小快手测试_v5.0_By.linzixuan.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("XIAO_KUAI_SHOU"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("小快手插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("小快手：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`小快手处理失败：${message(error)}`);
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+function cookies(v) {
+  const out = {};
+  for (const p of String(v).split(";")) {
+    const i = p.indexOf("=");
+    if (i > 0) out[p.slice(0, i).trim()] = p.slice(i + 1).trim();
   }
+  return out;
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`小快手同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`小快手提交失败：${message(error)}`);
-  }
+function parse(v) {
+  const p = String(v).split("#");
+  if (p.length < 4 || !["1", "2"].includes(p[0])) throw new Error("凭证格式应为 版本#备注#Cookie#Salt，可追加#代理");
+  return { version: p[0], name: p[1], cookie: p[2], salt: p[3], proxy: p.slice(4).join("#") };
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的小快手账号");
-  return s.reply([`小快手账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
+function mask(v) {
+  return String(v).length > 8 ? `${String(v).slice(0, 4)}****${String(v).slice(-4)}` : String(v);
 }
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的小快手账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个小快手账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function get(ctx, url, cookie, normal = false) {
+  return ctx.requestJson(url, {
+    headers: {
+      "user-agent": normal ? "kwai-android aegon/4.27.0" : "kwai-android aegon/4.29.0",
+      cookie,
+      "content-type": "application/x-www-form-urlencoded",
+      accept: "application/json, text/plain, */*",
+    },
   });
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function verify(ctx, a) {
+  if (a.version === "1") {
+    a.cookie = a.cookie.replace(/kpn=KUAISHOU/g, "kpn=NEBULA");
+    const r = await get(
+      ctx,
+      "https://nebula.kuaishou.com/rest/n/nebula/activity/earn/overview/basicInfo?source=bottom_guide_first",
+      a.cookie,
+    );
+    if (Number(r?.result) !== 1 || !r?.data) throw new Error("极速版CK验证失败");
+    return { nickname: r.data?.userData?.nickname || a.name, coin: r.data.totalCoin || 0, cash: r.data.allCash || 0 };
+  }
+  a.cookie = a.cookie.replace(/kpn=NEBULA/g, "kpn=KUAISHOU");
+  const r = await get(ctx, "https://encourage.kuaishou.com/rest/wd/encourage/account/basicInfo", a.cookie, true);
+  if (Number(r?.result) !== 1 || !r?.data) throw new Error("普通版CK验证失败");
+  return {
+    nickname: r.data?.userData?.nickname || a.name,
+    coin: r.data.coinAmount || 0,
+    cash: r.data.cashAmountDisplay || 0,
+  };
 }
-function ownerKey(sender) { return "xiaoKuaiShou|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "XIAO_KUAI_SHOU").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+function todayFast(list) {
+  const now = new Date(),
+    key = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()}`;
+  return list.reduce(
+    (n, x) => (String(x.createTime || "").startsWith(key) && Number(x.amount) > 0 ? n + Number(x.amount) : n),
+    0,
+  );
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+function todayNormal(list) {
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  return list.reduce(
+    (n, x) =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(Number(x.createTime))) === day &&
+      x.direction === "IN" &&
+      Number(x.displayAmount) > 0
+        ? n + Number(x.displayAmount)
+        : n,
+    0,
+  );
+}
+async function details(ctx, a) {
+  if (a.version === "1") {
+    a.cookie = a.cookie.replace(/kpn=KUAISHOU/g, "kpn=NEBULA");
+    const r = await get(ctx, "https://nebula.kuaishou.com/rest/n/nebula/account/overview", a.cookie);
+    if (Number(r?.result) !== 1 || !r?.data) throw new Error("极速版账户详情查询失败");
+    const coin = r.data.coinAccountPage?.data || [],
+      cash = r.data.cashAccountPage?.data || [];
+    return {
+      nickname: a.name,
+      coin: r.data.coinBalance || 0,
+      cash: r.data.cashBalance || 0,
+      totalCash: r.data.accumulativeAmount || 0,
+      today: todayFast(coin),
+      coinRecords: coin.slice(0, 5),
+      cashRecords: cash.slice(0, 3),
+    };
+  }
+  a.cookie = a.cookie.replace(/kpn=NEBULA/g, "kpn=KUAISHOU");
+  const [basic, coin, cash] = await Promise.all([
+    get(ctx, "https://encourage.kuaishou.com/rest/wd/encourage/account/basicInfo", a.cookie, true),
+    get(
+      ctx,
+      "https://encourage.kuaishou.com/rest/wd/encourage/account/detail?sigCatVer=1&accountType=coin&cursor",
+      a.cookie,
+      true,
+    ),
+    get(
+      ctx,
+      "https://encourage.kuaishou.com/rest/wd/encourage/account/detail?sigCatVer=1&accountType=cash&cursor",
+      a.cookie,
+      true,
+    ),
+  ]);
+  if (Number(basic?.result) !== 1) throw new Error("普通版账户详情查询失败");
+  const coins = coin?.data?.datas || [],
+    cashs = cash?.data?.datas || [];
+  return {
+    nickname: basic.data?.userData?.nickname || a.name,
+    coin: basic.data?.coinAmount || 0,
+    cash: basic.data?.cashAmountDisplay || 0,
+    totalCash: "",
+    today: todayNormal(coins),
+    coinRecords: coins.slice(0, 5),
+    cashRecords: cashs.slice(0, 3),
+  };
+}
+const rt = createAccountRuntime({
+  title: "小快手",
+  shortName: "快手",
+  prefix: "dd_ks",
+  defaultEnvName: "ksjsb",
+  orderPrefix: "KS",
+  requireAuthForQuery: false,
+  async login(ctx) {
+    const v = await ctx.prompt(ctx.sender, "选择版本：[1]极速版 [2]普通版", 120000);
+    if (!["1", "2"].includes(v)) throw new Error("版本选择无效");
+    const raw = await ctx.prompt(ctx.sender, "请输入 备注#Cookie#Salt，可在末尾追加#代理；支持多行", 120000);
+    if (raw === null) return [];
+    const out = [];
+    for (const line of raw
+      .split(/\r?\n/)
+      .map((x) => x.trim())
+      .filter(Boolean)) {
+      const a = parse(`${v}#${line}`),
+        p = await verify(ctx, a),
+        uid = cookies(a.cookie).userId;
+      if (!uid) throw new Error("Cookie缺少userId");
+      out.push({ account: `${v}:${uid}`, token: `${v}#${line}`, remark: p.nickname });
+    }
+    return out;
+  },
+  async query(ctx, item) {
+    const a = parse(item.token),
+      d = await details(ctx, a),
+      uid = cookies(a.cookie).userId || item.account;
+    return `📦 版本：${a.version === "1" ? "极速版" : "普通版"}\n👤 昵称：${d.nickname}\n🆔 UID：${mask(uid)}\n🪙 金币：${d.coin}\n💵 现金：${d.cash}${d.totalCash !== "" ? `\n📊 累计现金：${d.totalCash}` : ""}\n📈 今日金币：${d.today}${d.coinRecords.length ? `\n📜 最近金币：\n${d.coinRecords.map((x) => `${x.title || x.bizDesc || x.desc || "变动"} ${x.amount ?? x.displayAmount ?? ""}`).join("\n")}` : ""}`;
+  },
+  async cronCheck(ctx, item) {
+    const d = await details(ctx, parse(item.token));
+    return `账号有效，金币${d.coin}，现金${d.cash}，今日金币${d.today}`;
+  },
+  envValue(_c, i) {
+    const a = parse(i.token);
+    return `${a.name}#${a.cookie}#${a.salt}${a.proxy ? `#${a.proxy}` : ""}`;
+  },
+  tutorial:
+    "快手登录先选极速版/普通版，再提交备注#Cookie#Salt（可追加代理）。查询会显示金币、现金、今日收益和最近明细。",
+});
+rt.main().catch((e) => s.reply(`快手执行失败：${e?.message || e}`));

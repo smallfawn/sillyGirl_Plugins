@@ -1,118 +1,113 @@
 // [title: 游侠网]
 // [name: youXiaWang]
-// [language: javascript]
-// [class: 任务]
+// [desc: 游侠网账号密码批量登录、金币/现金/可提现/历史收益查询、账号管理、授权、青龙同步和到期检测。]
 // [author: mrconli]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.3.1]
+// [rule: raw ^游侠(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 47 9,18 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^游侠(.*)|(.*)游侠$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 游侠网凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://bbs.autman.cn/assets/files/2025-06-20/1750410377-465804-256-13.webp]
+// [origin: backup/游侠网_v1.3.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("YOU_XIA_WANG"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("游侠网插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("游侠网：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`游侠网处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`游侠网同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`游侠网提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的游侠网账号");
-  return s.reply([`游侠网账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的游侠网账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个游侠网账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+const crypto2 = require("node:crypto");
+const { sender: sy } = require("sillygirl");
+const { createAccountRuntime: createRuntime } = require("./mrconliAccountRuntime");
+async function loginAli(ctx, username, password) {
+  const time = Math.floor(Date.now() / 1000),
+    raw = `username-${username}-time-${time}-passwd-${password}-from-feedearn-action-loginBGg)K6ng4?&x9sCIuO%C2%{@TJ?fnFJ,bZKy/[/EWnw9UsC$@1`,
+    signature = crypto2.createHash("md5").update(raw).digest("hex");
+  const data = await ctx.requestJson("https://i.ali213.net/api.html", {
+    method: "POST",
+    headers: {
+      connection: "keep-alive",
+      accept: "application/json, text/plain, */*",
+      "user-agent": "Apache-HttpClient/UNAVAILABLE (java 1.4)",
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    form: { action: "login", username, passwd: password, time, from: "feedearn", signature },
   });
+  if (Number(data?.status) !== 1 || !data?.data?.token) throw new Error(data?.message || "登录失败");
+  return {
+    phone: String(data.data.userinfo.mobile),
+    nickname: data.data.userinfo.nickname || "",
+    token: data.data.token,
+  };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function userInfo(ctx, token) {
+  const url = new URL("https://api3.ali213.net/feedearn/userbaseinfo");
+  url.searchParams.set("token", token);
+  const d = await ctx.requestJson(url, {
+    method: "POST",
+    headers: {
+      "accept-encoding": "gzip, deflate, br",
+      accept: "*/*",
+      connection: "keep-alive",
+      host: "api3.ali213.net",
+      "user-agent": "ali213app",
+      "accept-language": "zh-Hans-CN;q=1",
+      "content-length": "0",
+    },
+  });
+  if (!d?.mobile) throw new Error("token查询失败");
+  return {
+    phone: String(d.mobile),
+    nickname: d.nickname || "",
+    total: Number(d.total || 0) / 100,
+    available: Number(d.available || 0) / 100,
+    coins: d.coins || 0,
+    history: Number(d.history || 0) / 100,
+  };
 }
-function ownerKey(sender) { return "youXiaWang|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "YOU_XIA_WANG").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+function splitCred(raw) {
+  const i = String(raw).indexOf("#");
+  if (i <= 0) throw new Error("格式应为账号#密码");
+  return { username: String(raw).slice(0, i), password: String(raw).slice(i + 1) };
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createRuntime({
+  title: "游侠网",
+  shortName: "游侠",
+  prefix: "mrconli.youxia",
+  defaultEnvName: "m_yxw",
+  orderPrefix: "YXW",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入账号#密码，支持批量每行一个", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const c = splitCred(line.trim()),
+          x = await loginAli(ctx, c.username, c.password);
+        rows.push({ account: x.phone, token: `${c.username}#${c.password}`, remark: x.nickname || x.phone });
+      } catch (error) {
+        await ctx.sender.reply(`游侠登录失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const c = splitCred(item.token),
+      login = await loginAli(ctx, c.username, c.password),
+      x = await userInfo(ctx, login.token);
+    return `👤 昵称：${x.nickname}\n🎯 当前金币：${x.coins}\n💰 当前现金：${x.total}元\n💹 可提余额：${x.available}元\n📊 历史总额：${x.history}元`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const c = splitCred(item.token);
+      await loginAli(ctx, c.username, c.password);
+      return "";
+    } catch (_) {
+      return "账号密码登录失效，请更新凭证";
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====游侠网教程=====\n登录格式：账号#密码，支持批量\n查询金币、当前现金、可提现余额和历史总额\n指令：游侠登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (error) => sy.reply(`游侠网执行失败：${error?.message || error}`));

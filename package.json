@@ -1,0 +1,22 @@
+{
+  "name": "sillygirl-plugins",
+  "version": "1.0.9",
+  "private": true,
+  "description": "SillyGirl JavaScript plugin collection",
+  "scripts": {
+    "format": "prettier --write \".github/**/*.yml\" \"plugins/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.cjs\" \"*.{json,md,mjs}\"",
+    "format:check": "prettier --check \".github/**/*.yml\" \"plugins/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.cjs\" \"*.{json,md,mjs}\"",
+    "lint": "eslint plugins scripts tests",
+    "metadata:check": "node scripts/normalize-plugin-metadata.mjs && node scripts/update-plugin-dependencies.mjs --check && node scripts/audit-plugin-metadata.mjs",
+    "index": "node scripts/generate-public-file-index.mjs",
+    "test:runtime": "node tests/shared-runtime-smoke.cjs && node tests/jd-runtime-smoke.cjs",
+    "verify": "npm run format:check && npm run lint && npm run metadata:check && npm run test:runtime"
+  },
+  "devDependencies": {
+    "eslint": "9.39.1",
+    "prettier": "3.9.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,24 +1,20 @@
-//[title: 官方命令]
-//[name: guanFangMingLing]
-//[language: javascript]
-//[class: 工具]
-//[author: sillyGirl]
-//[version: v1.0.7]
-//[public: true]
-//[admin: false]
-//[rule: ^\s*(时间|版本|我是谁|更新|升级|重启)\s*$]
-//[on_start: true]
-//[priority: 1]
-//[icon: https://api.iconify.design/lucide:bot.svg]
-//[description: 提供时间、版本、我是谁、更新、升级、重启基础管理命令]
+// [title: 官方命令]
+// [name: guanFangMingLing]
+// [desc: 提供时间、版本、我是谁、更新、升级、重启基础管理命令]
+// [author: sillyGirl]
+// [version: v1.0.7]
+// [rule: ^\s*(时间|版本|我是谁|更新|升级|重启)\s*$]
+// [on_start: true]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 1]
+// [class: 工具]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [origin: 自定义]
 // [depe: []]
 
-const {
-  sender: s,
-  Bucket,
-  plugin,
-  utils
-} = require('sillygirl');
+const { sender: s, Bucket, plugin, utils } = require("sillygirl");
 
 const getSillyGirlVersion = utils.version;
 const restartSillyGirl = utils.restart;
@@ -38,7 +34,7 @@ const pluginConfig = new plugin.Form({
 });
 
 async function main() {
-  const cmd = String(await s.getContent() || "").trim();
+  const cmd = String((await s.getContent()) || "").trim();
   if (!cmd) return notifyPendingRestart();
   if (cmd === "时间") return replyTime();
   if (cmd === "版本") return replyVersion();
@@ -58,12 +54,14 @@ async function loadConfig() {
 
 async function replyTime() {
   const now = new Date();
-  await s.reply([
-    "当前时间",
-    formatDate(now),
-    `时间戳：${Math.floor(now.getTime() / 1000)}`,
-    `时区：${Intl.DateTimeFormat().resolvedOptions().timeZone || "local"}`,
-  ].join("\n"));
+  await s.reply(
+    [
+      "当前时间",
+      formatDate(now),
+      `时间戳：${Math.floor(now.getTime() / 1000)}`,
+      `时区：${Intl.DateTimeFormat().resolvedOptions().timeZone || "local"}`,
+    ].join("\n"),
+  );
 }
 
 async function replyVersion() {
@@ -72,22 +70,17 @@ async function replyVersion() {
   const current = String(info.current || "").trim() || "-";
   const latest = String(info.remote || "").trim() || current;
   const startedAt = await bucket.get("started_at", "");
-  const text = [
-    "SillyGirl 版本",
-    `当前版本：${current}`,
-    `最新版本：${latest || current}`,
-  ];
+  const text = ["SillyGirl 版本", `当前版本：${current}`, `最新版本：${latest || current}`];
   if (info.source) text.push(`来源：${info.source}`);
   if (startedAt) text.push(`启动时间：${startedAt}`);
-  text.push(current && latest && normalizeVersion(current) !== normalizeVersion(latest) ? "状态：有新版本" : "状态：已是最新");
+  text.push(
+    current && latest && normalizeVersion(current) !== normalizeVersion(latest) ? "状态：有新版本" : "状态：已是最新",
+  );
   await s.reply(text.join("\n"));
 }
 
 async function replyIdentity() {
-  const [nicknameValue, keyValue] = await Promise.all([
-    s.getUserName(),
-    s.getUserId(),
-  ]);
+  const [nicknameValue, keyValue] = await Promise.all([s.getUserName(), await s.getUserId()]);
   const key = String(keyValue || "").trim() || "-";
   const nickname = String(nicknameValue || "").trim() || key;
   await s.reply(`${nickname}的key：${key}`);
@@ -132,7 +125,7 @@ async function update(cfg) {
         restart: true,
       }),
       (cfg.update_timeout + 15) * 1000,
-      "更新执行超时"
+      "更新执行超时",
     );
     const lines = [
       result.changed ? "更新完成" : "已经是最新版本",
@@ -150,8 +143,7 @@ async function update(cfg) {
   } catch (error) {
     await bucket.delete(UPDATE_RESTART_NOTICE_KEY).catch(() => undefined);
     await s.reply(
-      "更新失败：" + errorText(error) + "\n" +
-      "请确认当前版本已内置 curl，且 GitHub 加速地址可以访问 Release 文件。"
+      "更新失败：" + errorText(error) + "\n" + "请确认当前版本已内置 curl，且 GitHub 加速地址可以访问 Release 文件。",
     );
   }
 }
@@ -179,7 +171,7 @@ async function notifyPendingRestart() {
 function normalizeConfig(input) {
   return Object.assign({}, DEFAULTS, input || {}, {
     enable: input && input.enable !== undefined ? Boolean(input.enable) : DEFAULTS.enable,
-    update_timeout: clamp(Number(input && input.update_timeout || DEFAULTS.update_timeout), 10, 600),
+    update_timeout: clamp(Number((input && input.update_timeout) || DEFAULTS.update_timeout), 10, 600),
   });
 }
 
@@ -189,7 +181,10 @@ function clamp(value, min, max) {
 }
 
 function normalizeVersion(value) {
-  return String(value || "").trim().replace(/^refs\/tags\//, "").replace(/^[vV]/, "");
+  return String(value || "")
+    .trim()
+    .replace(/^refs\/tags\//, "")
+    .replace(/^[vV]/, "");
 }
 
 function formatDate(date) {
@@ -212,7 +207,10 @@ function formatDate(date) {
 function compactOutput(value) {
   const text = String(value || "").trim();
   if (!text) return "";
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   return lines.slice(-8).join("\n").slice(0, 1000);
 }
 

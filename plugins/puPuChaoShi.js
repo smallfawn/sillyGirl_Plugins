@@ -1,118 +1,159 @@
 // [title: 朴朴超市]
 // [name: puPuChaoShi]
-// [language: javascript]
-// [class: 任务]
-// [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 朴朴 refresh_token/微信扫码登录、自动刷新、朴分查询、授权及青龙同步。]
+// [author: sky2022 / yuhualhh]
+// [version: v1.1.3]
+// [rule: raw ^(朴朴登陆|朴朴登录|登录朴朴|登陆朴朴|朴朴查询|查询朴朴|朴朴管理|管理朴朴|朴朴刷新|刷新朴朴|朴朴授权|朴朴清理|朴朴教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^朴朴登陆$|^朴朴登录$|^登录朴朴$|^登陆朴朴$|^朴朴查询$|^查询朴朴$|^朴朴管理$|^管理朴朴$|^朴朴刷新$|^刷新朴朴$]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
 // [icon: https://static.foodtalks.cn/company/images/214/35logo.jpg]
-// [description: 朴朴超市凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/朴朴超市_v1.1.3_By.yuhualhh.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("PU_PU_CHAO_SHI"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("朴朴超市插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("朴朴超市：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`朴朴超市处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`朴朴超市同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`朴朴超市提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的朴朴超市账号");
-  return s.reply([`朴朴超市账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的朴朴超市账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个朴朴超市账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+const { sender: s, utils } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_1_2 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 MicroMessenger/8.0.46 miniProgram/wx122ef876a7132eb4";
+async function refresh(ctx, token) {
+  const d = await ctx.requestJson("https://cauth.pupuapi.com/clientauth/user/refresh_token", {
+    method: "PUT",
+    headers: { "user-agent": UA },
+    json: { refresh_token: token },
   });
+  if (Number(d?.errcode) !== 0) throw new Error(d?.message || "refresh_token失效");
+  const x = d.data || {},
+    i = await ctx.requestJson("https://cauth.pupuapi.com/clientauth/user/info", {
+      headers: { "user-agent": UA, authorization: `Bearer ${x.access_token}` },
+    }),
+    u = i.data || {};
+  return {
+    access: x.access_token,
+    refresh: x.refresh_token,
+    userId: String(x.user_id || ""),
+    phone: String(u.phone || ""),
+    name: String(u.nick_name || ""),
+  };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function coin(ctx, access) {
+  const headers = {
+      authorization: `Bearer ${access}`,
+      "user-agent": "Mozilla/5.0 (Linux; Android 13) Chrome/108 Mobile",
+    },
+    [a, b] = await Promise.all([
+      ctx.requestJson("https://j1.pupuapi.com/client/coin", { headers }),
+      ctx.requestJson("https://j1.pupuapi.com/client/coin/record?page=1&size=20", { headers }),
+    ]),
+    x = a.data || {},
+    today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    gain = (b.data || [])
+      .filter(
+        (y) =>
+          Number(y.type) === 0 &&
+          new Date(Number(y.time_create)).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }) === today,
+      )
+      .reduce((n, y) => n + Number(y.value || 0), 0);
+  return {
+    balance: x.balance ?? 0,
+    today: gain,
+    expiring: x.expiring_coin ?? 0,
+    expire: x.expire_time
+      ? new Date(Number(x.expire_time)).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" })
+      : "",
+  };
 }
-function ownerKey(sender) { return "puPuChaoShi|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "PU_PU_CHAO_SHI").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+async function qr(ctx) {
+  const api = "https://yuhualhh.250666.xyz/api/wxcode.php",
+    c = await ctx.requestJson(api, { method: "POST", json: { project: "pupu", action: "create_qr" } }),
+    x = c.data || {};
+  if (!c.success || !x.uuid || !x.qr_img_url) throw new Error("二维码获取失败");
+  await ctx.sender.reply(utils.image(x.qr_img_url));
+  for (let i = 0; i < 100; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const p = await ctx.requestJson(api, {
+        method: "POST",
+        json: { project: "pupu", action: "poll_scan_status", uuid: x.uuid },
+      }),
+      code = p?.data?.code;
+    if (code) {
+      const d = await ctx.requestJson(
+        "https://cauth.pupuapi.com/clientauth/user/society/wechat/login?user_society_type=11",
+        {
+          method: "POST",
+          headers: {
+            "user-agent": "Pupumall/4.8.4;Android/13;",
+            "pp-version": "2023022500",
+            "pp-os": "10",
+            pp_store_city_zip: "440100",
+            "pp-elder-mode": "false",
+          },
+          json: {
+            code,
+            user_device: {
+              app_version: 400804,
+              device_model: "MEIZU 20",
+              device_os: 10,
+              device_token: "",
+              mac_address: "",
+            },
+          },
+        },
+      );
+      if (Number(d?.errcode ?? d?.code) !== 0) throw new Error(d?.message || "扫码登录失败");
+      return d.data.refresh_token;
+    }
+  }
+  throw new Error("扫码超时");
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "朴朴超市",
+  shortName: "朴朴",
+  prefix: "yuhua_pp",
+  defaultEnvName: "pupuCookie",
+  orderPrefix: "PUPU",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const way = await ctx.prompt(ctx.sender, "[1] refresh_token登录\n[2] 微信扫码登录", 120000);
+    if (way === null) return [];
+    let token = way === "2" ? await qr(ctx) : await ctx.prompt(ctx.sender, "请输入 refresh_token", 120000);
+    if (!token) return [];
+    const u = await refresh(ctx, token);
+    return [{ account: u.userId, token: u.refresh, remark: u.name || u.phone || u.userId, extra: { mobile: u.phone } }];
+  },
+  async query(ctx, item) {
+    const u = await refresh(ctx, item.token);
+    if (u.refresh !== item.token) await ctx.tokens.set(item.account, u.refresh);
+    const a = await coin(ctx, u.access);
+    return `📱 手机：${u.phone}\n👤 昵称：${u.name}\n🎫 当前朴分：${a.balance}\n🎨 今日朴分：${a.today}\n⛱️ 过期朴分：${a.expiring}${a.expire ? `（${a.expire}）` : ""}`;
+  },
+  async handle(ctx, content) {
+    if (!/刷新/.test(content)) return;
+    const uid = await ctx.currentUserId(),
+      accounts = JSON.parse(await ctx.users.get(uid, "[]"));
+    if (!accounts.length) return ctx.sender.reply("❌ 未找到朴朴账号");
+    let n = 0;
+    for (const account of accounts)
+      try {
+        const u = await refresh(ctx, await ctx.tokens.get(account, ""));
+        await ctx.tokens.set(account, u.refresh);
+        n++;
+      } catch (e) {
+        await ctx.sender.reply(`❌ ${await ctx.remarks.get(account, account)} 刷新失败：${e?.message || e}`);
+      }
+    return ctx.sender.reply(`朴朴刷新完成：${n}/${accounts.length}`);
+  },
+  async cronCheck(ctx, item) {
+    const u = await refresh(ctx, item.token);
+    if (u.refresh !== item.token) await ctx.tokens.set(item.account, u.refresh);
+    const a = await coin(ctx, u.access);
+    return `Token有效，朴分${a.balance}，今日+${a.today}${a.expiring ? `，将过期${a.expiring}` : ""}`;
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====朴朴超市教程=====\n支持 refresh_token 或微信扫码登录；查询朴分、今日获得及即将过期积分，自动轮换 refresh_token。授权后同步变量 pupuCookie。\n==================",
+});
+rt.main().catch((e) => s.reply(`朴朴超市执行失败：${e?.message || e}`));

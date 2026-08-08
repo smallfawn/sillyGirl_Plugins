@@ -1,15 +1,16 @@
 // [title: 青龙改定时]
 // [name: qingLongGaiDingShi]
-// [language: javascript]
-// [class: 任务]
+// [desc: 使用傻妞青龙内联客户端批量调整青龙任务的分钟字段]
 // [author: sn_jmh]
 // [version: v1.0.11]
-// [public: true]
-// [disable: false]
-// [admin: true]
 // [rule: ^改$]
+// [status: true]
+// [admin: true]
+// [public: true]
+// [priority: 0]
+// [class: 任务]
 // [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 使用傻妞青龙内联客户端批量调整青龙任务的分钟字段]
+// [origin: backup/青龙改定时_v0.0.7_By.sn_jmh.py]
 // [depe: []]
 
 const { container, plugin, sender: s } = require("sillygirl");
@@ -32,10 +33,7 @@ const config = new plugin.Form({
     .min(-59)
     .max(59)
     .default(1),
-  dry_run: plugin.Form.boolean()
-    .title("仅预览")
-    .description("开启后只显示变化，不写入青龙")
-    .default(false),
+  dry_run: plugin.Form.boolean().title("仅预览").description("开启后只显示变化，不写入青龙").default(false),
 });
 
 async function main() {
@@ -57,12 +55,14 @@ async function main() {
     }
 
     const lines = changes.map((item) => `${item.name}\n${item.before} -> ${item.after}`);
-    await s.reply([
-      cfg.dryRun ? "青龙定时预览完成" : "青龙定时修改完成",
-      `容器：#${cfg.qinglongId}`,
-      `任务：${changes.length} 个`,
-      ...lines,
-    ].join("\n"));
+    await s.reply(
+      [
+        cfg.dryRun ? "青龙定时预览完成" : "青龙定时修改完成",
+        `容器：#${cfg.qinglongId}`,
+        `任务：${changes.length} 个`,
+        ...lines,
+      ].join("\n"),
+    );
   } catch (error) {
     await s.reply(`青龙改定时失败：${errorMessage(error)}`);
   }
@@ -134,7 +134,9 @@ function buildChange(task, delta) {
 }
 
 function errorMessage(error) {
-  return String(error && error.message ? error.message : error).replace(/[\r\n]+/g, " ").slice(0, 300);
+  return String(error && error.message ? error.message : error)
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 300);
 }
 
 main();

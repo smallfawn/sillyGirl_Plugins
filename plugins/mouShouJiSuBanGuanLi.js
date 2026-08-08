@@ -1,118 +1,123 @@
 // [title: 某手极速版管理]
 // [name: mouShouJiSuBanGuanLi]
-// [language: javascript]
-// [class: 任务]
+// [desc: 某手极速版完整CK解析、有效性校验、金币/余额/累计收益查询与面板同步]
 // [author: 8165799]
-// [version: v2.0.0]
+// [version: v1.6.0]
+// [rule: ^某手极速版(登录|登陆|查询|管理|教程|授权|清理)?$|^登(录|陆)某手极速版$|^(查询|管理)某手极速版$|^ks(login|query|manage)$]
+// [cron: 15 19 * * *]
+// [status: true]
+// [admin: false]
 // [public: true]
-// [disable: false]
-// [admin: true]
-// [rule: ^某手极速版(登录|登陆|查询|管理|教程)?$|^登(录|陆)某手极速版$|^(查询|管理)某手极速版$|^ks(login|query|manage)$]
+// [priority: 51]
+// [class: 任务]
 // [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 某手极速版管理凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/某手极速版_v1.5_By.8165799.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("MOU_SHOU_JI_SU_BAN_GUAN_LI"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("某手极速版管理插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
+const crypto = require("crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+function cookieMap(text) {
+  const o = {};
+  for (const seg of String(text || "").split(";")) {
+    const i = seg.indexOf("=");
+    if (i > 0) o[seg.slice(0, i).trim()] = seg.slice(i + 1).trim();
+  }
+  return o;
+}
+function looks(v) {
+  return /kuaishou\.api_st=|kpn=/.test(v) || (v.includes("=") && (v.match(/;/g) || []).length >= 2);
+}
+function parse(raw) {
+  const token = String(raw || "").trim();
+  let remark = "",
+    cookie = "",
+    salt = "";
+  const first = token.indexOf("#");
+  if (first > 0 && looks(token.slice(first + 1))) {
+    remark = token.slice(0, first).trim();
+    cookie = token.slice(first + 1).trim();
+  } else if (looks(token)) cookie = token;
+  else {
+    const p = token
+        .split("#")
+        .map((x) => x.trim())
+        .filter(Boolean),
+      ci = p.findIndex(looks);
+    if (ci >= 0) {
+      cookie = p[ci];
+      remark = ci > 0 ? p[0] : "";
+      salt = p[ci + 1] || "";
+    } else {
+      cookie = p[0] || "";
+      salt = p[1] || "";
+      remark = p[2] || "";
+    }
+  }
+  const map = cookieMap(cookie),
+    uid = map.ud || map.userId || map.did || crypto.createHash("md5").update(token).digest("hex").slice(0, 8);
+  if (!cookie.includes("kuaishou.api_st=")) throw new Error("CK缺少 kuaishou.api_st");
+  return { token, cookie, salt, remark, map, uid, final: salt ? `${cookie}#${salt}` : cookie };
+}
+async function overview(ctx, a) {
+  const r = await ctx.requestJson("https://nebula.kuaishou.com/rest/n/nebula/account/overview", {
+    headers: {
+      "user-agent":
+        "Mozilla/5.0 (Linux; Android 10; MI 8 Build/QKQ1.190828.002; wv) AppleWebKit/537.36 Version/4.0 Chrome/83.0.4103.101 Mobile Safari/537.36 Yoda/3.2.16-rc4 ksNebula/13.7.20.10468",
+      accept: "*/*",
+      "x-requested-with": "com.kuaishou.nebula",
+      cookie: a.cookie,
+    },
+  });
+  if (Number(r?.result) !== 1) throw new Error(r?.error_msg || r?.message || "账号详情获取失败");
+  const d = r.data || {};
+  return {
+    nickname: d.nickname || d.userData?.nickname || a.remark || a.uid,
+    coin: Number(d.coinBalance) || 0,
+    cash: String(d.cashBalance || "0"),
+    totalCash: Number(d.accumulativeAmount || 0).toFixed(2),
+    coinRecords: d.coinAccountPage?.data || [],
+  };
+}
+const rt = createAccountRuntime({
+  title: "某手极速版",
+  shortName: "某手极速版",
+  prefix: "ks_nebula",
+  defaultEnvName: "ksjsb",
+  orderPrefix: "KSN",
+  requireAuthForQuery: false,
+  async login(ctx) {
+    const raw = await ctx.prompt(ctx.sender, "请输入 备注#完整CK，一行一个；也兼容直接提交CK或CK#salt", 120000);
+    if (raw === null) return [];
+    const out = [];
+    for (const line of raw
+      .split(/\r?\n/)
+      .map((x) => x.trim())
+      .filter(Boolean)) {
+      const a = parse(line),
+        d = await overview(ctx, a);
+      out.push({
+        account: a.uid,
+        token: a.final,
+        remark: a.remark || d.nickname,
+        extra: { aliases: [...new Set([a.map.did, a.map.oDid, a.map.egid].filter(Boolean))] },
       });
     }
-    return s.reply("某手极速版管理：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`某手极速版管理处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`某手极速版管理同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`某手极速版管理提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的某手极速版管理账号");
-  return s.reply([`某手极速版管理账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的某手极速版管理账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个某手极速版管理账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "mouShouJiSuBanGuanLi|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "MOU_SHOU_JI_SU_BAN_GUAN_LI").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+    return out;
+  },
+  async query(ctx, item) {
+    const a = parse(item.token),
+      d = await overview(ctx, a);
+    return `👤 昵称：${d.nickname}\n🆔 UID：${a.uid.length > 6 ? `${a.uid.slice(0, 3)}****${a.uid.slice(-3)}` : a.uid}\n💰 金币：${d.coin}（${(d.coin / 10000).toFixed(2)}元）\n💵 余额：${d.cash}元\n💎 累计收益：${d.totalCash}元`;
+  },
+  async cronCheck(ctx, item) {
+    const d = await overview(ctx, parse(item.token));
+    return `CK有效，金币${d.coin}，余额${d.cash}元，累计${d.totalCash}元`;
+  },
+  envValue(_c, i) {
+    return i.token;
+  },
+  tutorial:
+    "发送某手极速版登录，按“备注#完整CK”提交；CK必须包含 kuaishou.api_st。查询返回金币、余额和累计收益，授权后同步青龙/呆呆面板。",
+});
+rt.main().catch((e) => s.reply(`某手极速版执行失败：${e?.message || e}`));

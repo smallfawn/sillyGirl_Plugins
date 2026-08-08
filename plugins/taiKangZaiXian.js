@@ -1,118 +1,129 @@
 // [title: 泰康在线]
 // [name: taiKangZaiXian]
-// [language: javascript]
-// [class: 任务]
+// [desc: 泰康在线 unionid 批量绑定、实名/金币/红包查询、每日签到、授权及青龙同步。]
 // [author: mrconli]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.5.0]
+// [rule: raw ^泰康(登录|登陆|上车|查询|管理|签到|授权|清理|教程)$]
+// [cron: 0 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^泰康(.*)|(.*)泰康$]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
 // [icon: https://pp.myapp.com/ma_icon/0/icon_42327729_1745494497/256]
-// [description: 泰康在线凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/泰康在线_v1.5.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("TAI_KANG_ZAI_XIAN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("泰康在线插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("泰康在线：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`泰康在线处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 MicroMessenger/8.0.25";
+function h(url) {
+  return {
+    host: new URL(url).host,
+    connection: "keep-alive",
+    "user-agent": UA,
+    referer: "https://servicewechat.com/wx9e3e7020c4a10356/185/page-frame.html",
+    "content-type": "application/x-www-form-urlencoded",
+  };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`泰康在线同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`泰康在线提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的泰康在线账号");
-  return s.reply([`泰康在线账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的泰康在线账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个泰康在线账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function form(ctx, url, data) {
+  return ctx.requestJson(url, {
+    method: "POST",
+    headers: h(url),
+    form: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, typeof v === "object" ? JSON.stringify(v) : v])),
   });
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function user(ctx, unionid) {
+  const d = await form(ctx, "https://m.tk.cn/member_api/", {
+    api_s: "member.userbind",
+    api_m: "selectwxbindbybindid",
+    params: { platform: "APPLET", fromid: "71672", bindid: unionid },
+  });
+  if (d?.result !== "success" || !d?.data?.memberid) throw new Error(d?.message || "unionid失效");
+  const p = d.data.pmemberuser || {};
+  return {
+    memberid: String(d.data.memberid),
+    token: d.data.token,
+    mobile: String(p.membertmmobile || ""),
+    name: p.membertmrealname || "",
+  };
 }
-function ownerKey(sender) { return "taiKangZaiXian|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "TAI_KANG_ZAI_XIAN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+async function mainPage(ctx, u) {
+  const d = await form(ctx, "https://m.tk.cn/activity_execute/rest/membergoldbean/mainPage", {
+    enc: false,
+    memberid: u.memberid,
+    token: u.token,
+    platform: "WECHAT",
+    fromid: "71672",
+  });
+  if (![0, "0"].includes(d?.error_code)) throw new Error(d?.error_message || d?.message || "金币查询失败");
+  return d?.data?.allbeans ?? 0;
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+async function coupon(ctx, u, status) {
+  const d = await form(ctx, "https://m.tk.cn/member_api/", {
+    api_s: "member.coupon",
+    api_m: "selectmembercouponlist",
+    params: { memberid: u.memberid, token: u.token, status: String(status), fromid: "67527" },
+  });
+  return d?.result === "success" ? d?.data?.pmembercoupon || [] : [];
+}
+async function sign(ctx, unionid, u) {
+  const d = await form(ctx, "https://m.tk.cn/activity_execute/rest/membergoldbean/sign", {
+    enc: false,
+    memberid: u.memberid,
+    token: u.token,
+    unionid,
+    deviceId: "",
+    fromid: "71672",
+    platform: "WECHAT",
+    coordinate: "",
+    nickName: "",
+  });
+  if ([0, "0"].includes(d?.error_code)) return `签到成功，获得${d?.data?.amount ?? 0}积分`;
+  if (String(d?.error_code) === "200004200003") return "今日已完成签到";
+  throw new Error(d?.error_message || d?.message || d?.msg || "签到失败");
+}
+const rt = createAccountRuntime({
+  title: "泰康在线",
+  shortName: "泰康",
+  prefix: "mrconli.taikang",
+  defaultEnvName: "mrconli_tkzx",
+  orderPrefix: "TKZX",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入unionid，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const unionid of input
+      .split(/\r?\n/)
+      .map((x) => x.trim())
+      .filter(Boolean))
+      try {
+        const u = await user(ctx, unionid);
+        rows.push({ account: u.memberid, token: unionid, remark: u.mobile || u.name || u.memberid });
+      } catch (e) {
+        await ctx.sender.reply(`泰康登录失败：${e?.message || e}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const u = await user(ctx, item.token),
+      [beans, pending, used] = await Promise.all([mainPage(ctx, u), coupon(ctx, u, 1), coupon(ctx, u, 2)]),
+      total = used.reduce((n, x) => n + Number(x.inventoryvalue || 0), 0),
+      p = pending
+        .slice(0, 5)
+        .map((x) => `${x.couponname || "红包"} ${x.inventoryvalue || 0}元 至${x.voiddateend || ""}`);
+    return `📱 手机：${ctx.mask(u.mobile)}\n👤 实名：${u.name ? `**${u.name.slice(-1)}` : "***"}\n💰 金币：${beans}\n🍀 待领红包：${pending.length}个\n${p.join("\n")}\n🍃 已领：${used.length}个，共${total.toFixed(2)}元`;
+  },
+  async cronCheck(ctx, item) {
+    const u = await user(ctx, item.token);
+    return `${await sign(ctx, item.token, u)}\n当前金币：${await mainPage(ctx, u)}`;
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====泰康在线教程=====\n抓包泰康在线小程序 https://m.tk.cn/wechat_item/rest/xcx/login，复制响应 unionid。\n支持批量换行登录；查询实名、金币、待领/已领红包，每日自动签到。\n授权后同步青龙变量 mrconli_tkzx。\n指令：泰康登录、查询、管理、签到、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`泰康在线执行失败：${e?.message || e}`));

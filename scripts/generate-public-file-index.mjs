@@ -13,7 +13,9 @@ const pluginExts = new Set([".js", ".py"]);
 const execFileAsync = promisify(execFile);
 
 function normalizeMetaKey(key) {
-  const normalized = String(key || "").trim().toLowerCase();
+  const normalized = String(key || "")
+    .trim()
+    .toLowerCase();
   if (!normalized || normalized === "param") return "";
   if (normalized === "description") return "desc";
   return normalized;
@@ -21,12 +23,9 @@ function normalizeMetaKey(key) {
 
 function parseMeta(content) {
   const meta = {};
-  const patterns = [
-    /^\s*(?:\/\/|#+)\s*\[\s*([\w+-]+)\s*:\s*(.*?)\s*\]\s*$/gm,
-  ];
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(content))) {
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(/^[ \t]*(?:\/\/|#+)[ \t]*\[[ \t]*([\w+-]+)[ \t]*:[ \t]*(.*?)[ \t]*\][ \t]*$/);
+    if (match) {
       const key = normalizeMetaKey(match[1]);
       if (key) meta[key] = String(match[2] || "").trim();
     }
@@ -56,12 +55,15 @@ function parseDependencies(value) {
 
 async function pluginPublishedAt(pluginFile, relativePath) {
   try {
-    const { stdout } = await execFileAsync(
-      "git",
-      ["log", "--follow", "--format=%aI", "--", relativePath],
-      { cwd: root, encoding: "utf8", windowsHide: true },
-    );
-    const history = String(stdout || "").split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    const { stdout } = await execFileAsync("git", ["log", "--follow", "--format=%aI", "--", relativePath], {
+      cwd: root,
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    const history = String(stdout || "")
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
     const value = history.at(-1);
     if (value && !Number.isNaN(Date.parse(value))) return new Date(value).toISOString();
   } catch {
@@ -89,6 +91,9 @@ for (const pluginFile of pluginFiles) {
   const id = pluginId(`${repo}@${branch}/${relativePath}`);
   const rawBase = `https://raw.githubusercontent.com/${repo}/${branch}`;
   const createAt = await pluginPublishedAt(pluginFile, relativePath);
+  const declaredDependencies = parseDependencies(meta.depe);
+  const dependencies = declaredDependencies.filter((item) => !item.startsWith("./"));
+  const moduleDependencies = declaredDependencies.filter((item) => item.startsWith("./"));
   result[id] = {
     id,
     name,
@@ -99,11 +104,18 @@ for (const pluginFile of pluginFiles) {
     icon: meta.icon || "",
     class: meta.class || "",
     rule: meta.rule || "",
+    cron: meta.cron || "",
+    status: meta.status !== "false",
     public: meta.public === "true",
     admin: meta.admin === "true",
+    module: meta.module === "true",
+    on_start: meta.on_start === "true",
+    web: meta.web === "true",
+    carry: meta.carry === "true",
     path: relativePath,
     raw: `${rawBase}/${relativePath}`,
-    dependencies: parseDependencies(meta.depe),
+    dependencies,
+    module_dependencies: moduleDependencies,
     type: meta.type || pluginType(pluginFile),
     origin: repoUrl,
     create_at: createAt,

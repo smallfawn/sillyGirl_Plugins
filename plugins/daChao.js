@@ -1,118 +1,150 @@
 // [title: 大潮]
 // [name: daChao]
-// [language: javascript]
-// [class: 任务]
+// [desc: 大潮账号密码登录、积分查询、活动 member_token 与未领取红包链接、授权和青龙同步。]
 // [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.4.0]
+// [rule: raw ^(大潮|dc)(登录|登陆|查询|管理|红包推送|检测|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(大潮|dc)(登录|登陆)$|^登(录|陆)(大潮|dc)$|^(大潮|dc)(查询|管理)$|^(查询|管理)(大潮|dc)$|^大潮$|^大潮检测$|^大潮红包推送$|^大潮教程$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 大潮凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://api.iconify.design/lucide:waves.svg]
+// [origin: backup/大潮_v1.4_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js","./tmuyunAccountCore.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("DA_CHAO"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("大潮插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("大潮：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`大潮处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const tm = require("./tmuyunAccountCore.js");
+function parse(x) {
+  const i = String(x).indexOf("#");
+  return { phone: String(x).slice(0, i), password: String(x).slice(i + 1) };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`大潮同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`大潮提交失败：${message(error)}`);
-  }
+async function auth(ctx, t) {
+  return tm.login(ctx, { ...t, tenant: "94", client: "10048" });
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的大潮账号");
-  return s.reply([`大潮账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的大潮账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个大潮账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function member(ctx, a) {
+  const t = Math.floor(Date.now() / 1000),
+    d = a.detail || {},
+    signature = crypto
+      .createHash("sha256")
+      .update(` &id&mobile&nick_name&&${t}&&KO>N<O5&3^L1%23YH0H1#G91*2H`)
+      .digest("hex"),
+    body = {
+      accountId: a.account,
+      signature,
+      mobile: "1",
+      sessionId: a.session,
+      login: "1",
+      user: {
+        realName: "",
+        image_url: d.image_url || "",
+        nick_name: d.nick_name || "",
+        is_face_verify: 0,
+        idcard: "",
+        id: a.account,
+      },
+      timestamp: String(t),
+      sign: "xsb_hn",
+    },
+    r = await ctx.requestJson("https://m.aihoge.com/api/memberhy/tm/signature", {
+      method: "POST",
+      headers: {
+        "x-device-sign": "xsb_hn",
+        "x-client-version": "1314",
+        sessionid: a.session,
+        accountid: a.account,
+        "x-device-id": "000",
+      },
+      json: body,
+    });
+  if (!r?.token) throw new Error("member_token获取失败");
+  return JSON.stringify({
+    id: r.id || "",
+    black: 0,
+    btoken: r.btoken || "",
+    expire: r.expire || "",
+    token: r.token || "",
+    source: "xsb_hn",
   });
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function redpacks(ctx, a) {
+  const m = await member(ctx, a),
+    d = await ctx.requestJson(
+      "https://axh5.aihoge.com/api/lotteryhy/api/client/cj/member/prize/info?prize_type=3&page=1&count=20",
+      {
+        headers: {
+          "x-device-sign": "xsb_hn",
+          "x-client-version": "1314",
+          member: m,
+          sessionid: a.session,
+          accountid: a.account,
+          "x-device-id": "000",
+          referer: "https://axh5.aihoge.com/winningList",
+        },
+      },
+    );
+  return (d?.data || [])
+    .filter((x) => ![2, 6].includes(Number(x.status)))
+    .map((x) => {
+      let p = {};
+      try {
+        p = JSON.parse(x.prize_info || "{}");
+      } catch {}
+      return {
+        amount: x.prize_content || "未知",
+        expire: x.end_time
+          ? new Date(x.end_time * 1000).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })
+          : "未知",
+        activity: x.activity_name || "",
+        link: `https://m.aihoge.com/lottery/rotor/drawRedPacket?CHECK_CODE=${p.code || ""}`,
+      };
+    });
 }
-function ownerKey(sender) { return "daChao|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "DA_CHAO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "大潮",
+  shortName: "大潮",
+  prefix: "s_dc",
+  defaultEnvName: "DA_CHAO",
+  orderPrefix: "DC",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const p = parse(line),
+        a = await auth(ctx, p);
+      rows.push({ account: a.account, token: line.trim(), remark: a.detail.nick_name || p.phone });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const a = await auth(ctx, parse(item.token)),
+      r = await redpacks(ctx, a);
+    return `👤 昵称：${a.detail.nick_name || item.remark}\n📱 手机：${a.detail.mobile || parse(item.token).phone}\n💰 积分：${a.detail.total_integral ?? 0}\n🧧 未领取红包：${r.length}${r.length ? `\n${r.map((x, i) => `${i + 1}. ${x.amount}｜${x.expire}\n${x.link}`).join("\n")}` : ""}`;
+  },
+  async handle(ctx, c) {
+    if (!/红包推送/.test(c)) return;
+    const uid = await ctx.currentUserId(),
+      as = JSON.parse(await ctx.users.get(uid, "[]"));
+    for (const k of as) {
+      const a = await auth(ctx, parse(await ctx.tokens.get(k, ""))),
+        r = await redpacks(ctx, a);
+      await ctx.sender.reply(
+        `${await ctx.remarks.get(k, k)} 未领取红包 ${r.length} 个${r.length ? `\n${r.map((x) => `${x.amount} ${x.link}`).join("\n")}` : ""}`,
+      );
+    }
+  },
+  async cronCheck(ctx, item) {
+    const a = await auth(ctx, parse(item.token)),
+      r = await redpacks(ctx, a);
+    return `账号有效，积分${a.detail.total_integral ?? 0}，未领取红包${r.length}个`;
+  },
+  envValue(_c, i) {
+    return i.token;
+  },
+  tutorial: "输入大潮手机号#密码登录；查询积分与未领取红包，红包推送会返回领取链接，授权后同步青龙。",
+});
+rt.main().catch((e) => s.reply(`大潮执行失败：${e?.message || e}`));

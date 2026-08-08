@@ -1,24 +1,20 @@
-//[title: upsListen]
-//[name: upsListen]
-//[language: javascript]
-//[class: 工具]
-//[author: smallfawn]
-//[version: v1.0.1]
-//[public: true]
-//[admin: true]
-//[rule: ^(ups)$]
-//[priority: 0]
-//[icon: https://api.iconify.design/lucide:bot.svg]
-//[description: 获取 UPS 状态并监控断电情况]
+// [title: upsListen]
+// [name: upsListen]
+// [desc: 获取 UPS 状态并监控断电情况]
+// [author: smallfawn]
+// [version: v1.0.1]
+// [rule: ^(ups)$]
+// [status: true]
+// [admin: true]
+// [public: true]
+// [priority: 0]
+// [class: 工具]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [origin: smallfawn/Bncr_Plugins]
 // [depe: []]
-//[origin: smallfawn/Bncr_Plugins]
 
 const net = require("net");
-const {
-  sender: s,
-  console,
-  plugin
-} = require('sillygirl');
+const { sender: s, console, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
   enable: plugin.Form.boolean().title("是否开启 ups-nut-server 监控").default(false),

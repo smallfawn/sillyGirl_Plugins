@@ -1,118 +1,125 @@
 // [title: 新江北]
 // [name: xinJiangBei]
-// [language: javascript]
-// [class: 任务]
+// [desc: 新江北账号密码登录、积分查询、支付宝实名信息、兑吧红包明细、授权及青龙同步。]
 // [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.3]
+// [rule: raw ^新江北(登录|登陆|查询|管理|红包|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(新江北|xjb)(登录|登陆)$|^登(录|陆)(新江北|xjb)$|^(新江北|xjb)(查询|管理)$|^(查询|管理)(新江北|xjb)$|^新江北清理$|^新江北检测$|^新江北$|^新江北教程$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 新江北凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://img-cf.885666.xyz/67a4e3f375b22339a460f197a764f645.png]
+// [origin: backup/新江北_v1.1.3_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js","./tmuyunAccountCore.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("XIN_JIANG_BEI"),
-});
-
-async function main() {
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const tm = require("./tmuyunAccountCore.js");
+function parse(x) {
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("新江北插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
+    return JSON.parse(x);
+  } catch {
+    return {};
+  }
+}
+async function auth(ctx, x) {
+  return tm.login(ctx, { phone: x.phone, password: x.password, tenant: "102", client: "10050" });
+}
+async function records(ctx, a) {
+  const redirect = encodeURIComponent(
+      "https://92261.activity-14.m.duiba.com.cn/hdtool/index?id=299402208083641&dbnewopen",
+    ),
+    d = await ctx.requestJson(
+      `https://92261.activity-42.m.duiba.com.cn/customActivity/zjtm/autoLogin?_=${Date.now()}&sessionId=${encodeURIComponent(a.session)}&accountId=${encodeURIComponent(a.account)}&redirectUrl=${redirect}`,
+      {
+        headers: {
+          "user-agent": "Mozilla/5.0 Android WebView;xsb_xinjiangbei;1.7.0;native_app;6.9.0",
+          "x-requested-with": "io.pailian.jiangbei",
         },
-      });
+      },
+    );
+  if (!d?.success || !d.data) throw new Error("兑吧自动登录失败");
+  const u = String(d.data).startsWith("//") ? "https:" + d.data : d.data,
+    r = await ctx.request(u, { headers: { "user-agent": "Mozilla/5.0 Android WebView" } }),
+    set =
+      typeof r.headers.getSetCookie === "function"
+        ? r.headers.getSetCookie().join(";")
+        : r.headers.get("set-cookie") || "",
+    cookie = set
+      .split(/,(?=\s*[^;,=]+=[^;,]+)/)
+      .map((x) => x.split(";")[0])
+      .join("; "),
+    z = await ctx.requestJson(`https://92261.activity-14.m.duiba.com.cn/crecord/getrecord?page=1&_=${Date.now()}`, {
+      headers: {
+        cookie,
+        "x-requested-with": "XMLHttpRequest",
+        accept: "application/json",
+        "user-agent": "Mozilla/5.0 Android WebView",
+        referer: "https://92261.activity-14.m.duiba.com.cn/crecord/record?dbnewopen&dpm=92261.3.2.0",
+      },
+    });
+  if (!z?.success) throw new Error(z?.message || "红包明细失败");
+  return z.data?.records || z.data?.list || z.records || [];
+}
+function fmt(rs) {
+  let sum = 0,
+    n = 0;
+  const lines = rs.slice(0, 10).map((x) => {
+    const m = String(x.title || "").match(/(?:充值)?([\d.]+)元/),
+      a = Number(m?.[1] || 0),
+      ok = String(x.statusText || "").includes("成功");
+    if (ok) {
+      sum += a;
+      n++;
     }
-    return s.reply("新江北：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`新江北处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`新江北同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`新江北提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的新江北账号");
-  return s.reply([`新江北账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的新江北账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个新江北账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+    return `${ok ? "🧧" : "❌"} ${a.toFixed(2)}元 ${x.gmtCreate || ""}`;
   });
+  return `${lines.join("\n") || "🧧 暂无红包明细"}\n✅ 成功提现：${n}笔\n💰 累计金额：${sum.toFixed(2)}元`;
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "xinJiangBei|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "XIN_JIANG_BEI").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "新江北",
+  shortName: "新江北",
+  prefix: "s_xjb",
+  defaultEnvName: "XIN_JIANG_BEI",
+  orderPrefix: "XJB",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码#支付宝姓名（姓名可省略），支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const [phone, password, alipay = ""] = line.split("#"),
+        x = { phone, password, alipay },
+        a = await auth(ctx, x);
+      rows.push({ account: a.account, token: JSON.stringify(x), remark: a.detail.nick_name || phone });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = parse(item.token),
+      a = await auth(ctx, x),
+      rs = await records(ctx, a);
+    return `👤 昵称：${a.detail.nick_name || item.remark}\n📱 手机：${a.detail.mobile || x.phone}\n💰 积分：${a.detail.total_integral ?? 0}${x.alipay ? `\n💳 支付宝姓名：${x.alipay}` : ""}\n${fmt(rs)}`;
+  },
+  async handle(ctx, c) {
+    if (!/红包/.test(c)) return;
+    const uid = await ctx.currentUserId(),
+      as = JSON.parse(await ctx.users.get(uid, "[]"));
+    for (const k of as) {
+      const a = await auth(ctx, parse(await ctx.tokens.get(k, "{}")));
+      await ctx.sender.reply(`=====新江北红包=====\n${fmt(await records(ctx, a))}\n==================`);
+    }
+  },
+  async cronCheck(ctx, item) {
+    const a = await auth(ctx, parse(item.token)),
+      rs = await records(ctx, a);
+    return `账号有效，积分${a.detail.total_integral ?? 0}，红包记录${rs.length}条`;
+  },
+  envValue(_c, i) {
+    const x = parse(i.token);
+    return `${x.phone}#${x.password}#${x.alipay || ""}`;
+  },
+  tutorial: "输入 手机号#密码#支付宝实名姓名；查询积分和兑吧红包明细，授权后同步青龙。",
+});
+rt.main().catch((e) => s.reply(`新江北执行失败：${e?.message || e}`));

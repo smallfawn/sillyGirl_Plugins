@@ -1,22 +1,22 @@
-//[title: 今日金价]
-//[name: jinRiJinJia]
-//[language: javascript]
-//[class: 工具]
-//[author: 974566903@qq.com]
-//[version: v1.8.1]
-//[public: true]
-//[disable: false]
-//[admin: false]
-//[rule: ^今日金价$|^金价监控设置$|^金价监控通知$]
-//[cron: */5 * * * *]
-//[icon: https://pic2.ziyuan.wang/user/974566903/2025/08/jj_ab8218111b3f2.jpg]
-//[description: 查询实时金银价格，并按设定价格定时通知管理员]
+// [title: 今日金价]
+// [name: jinRiJinJia]
+// [desc: 查询实时金银价格，并按设定价格定时通知管理员]
+// [author: 974566903@qq.com]
+// [version: v1.8.1]
+// [rule: ^今日金价$|^金价监控设置$|^金价监控通知$]
+// [cron: */5 * * * *]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 0]
+// [class: 工具]
+// [icon: https://pic2.ziyuan.wang/user/974566903/2025/08/jj_ab8218111b3f2.jpg]
+// [origin: backup/今日金价_v1.7_By.974566903@qq.com.txt]
 // [depe: []]
 
 const { sender: s, Bucket, plugin } = require("sillygirl");
 
-
-const runtimeConfig = new plugin.Form({
+new plugin.Form({
   enable: plugin.Form.boolean().title("是否启用").default(true),
 });
 const store = new Bucket("goldPriceMonitor");
@@ -49,11 +49,7 @@ function time(timestamp) {
 }
 
 function summary({ gold, silver }) {
-  const lines = [
-    "今日金价信息",
-    `黄金 Au99.99：${number(gold)} 元/克`,
-    `更新时间：${time(gold.stime)}`,
-  ];
+  const lines = ["今日金价信息", `黄金 Au99.99：${number(gold)} 元/克`, `更新时间：${time(gold.stime)}`];
   if (silver) lines.splice(2, 0, `白银（含税）：买入 ${silver.bidprice || "--"} / 卖出 ${silver.askprice || "--"}`);
   return lines.join("\n");
 }

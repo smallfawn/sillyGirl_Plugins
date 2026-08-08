@@ -1,118 +1,124 @@
 // [title: 看余杭]
 // [name: kanYuHang]
-// [language: javascript]
-// [class: 任务]
-// [author: Lies]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 看余杭手机号短信登录、Token与lotteryActivityUid提取、中奖记录查询、授权和青龙同步。]
+// [author: huawei / rujingxianghai]
+// [version: v1.2.2]
+// [rule: raw ^看余杭(登录|登陆|上车|查询|管理|授权|清理|教程|中奖记录)$]
+// [cron: 28 9 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(看余杭)(登录|登陆)$|^登(录|陆)(看余杭)$|^(看余杭)(查询|管理)$|^(查询|管理)(看余杭)$|^清理看余杭$|^看余杭$]
-// [icon: https://www.helloimg.com/i/2025/02/03/67a06719bd58f.jpg]
-// [description: 看余杭凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://i.mji.rip/2025/07/11/c15f6ee61d307572a981010a53fbb572.png]
+// [origin: backup/【插件】-看余杭_v1.2.2_By.huawei.py;backup/看余杭_v1.3.1_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("KAN_YU_HANG"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("看余杭插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("看余杭：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`看余杭处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const API = "https://app.eyh.cn/gateway/api",
+  EQUIP = "8765B063-3A14-4B96-A305-46906482D5A5",
+  GTCID = "fbb032d8742f3db47d4274098811fd0a";
+function trace() {
+  return crypto.randomBytes(5).toString("hex") + Math.floor(Date.now() / 1000);
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`看余杭同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`看余杭提交失败：${message(error)}`);
-  }
+function device(id = EQUIP) {
+  return {
+    device: "ios",
+    equipmentId: id,
+    deviceId: "000000",
+    os: "17.6",
+    deviceType: "iPhone15,4",
+    clientVersion: "5.2.6",
+    gtCid: GTCID,
+    deviceBrand: "iphone",
+  };
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的看余杭账号");
-  return s.reply([`看余杭账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
+function headers() {
+  return {
+    "user-agent": "kan yu hang/5.2.6 (iPhone; iOS 17.6; Scale/3.00)",
+    "content-type": "application/json",
+    "accept-language": "zh-Hans-CN;q=1",
+  };
 }
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的看余杭账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个看余杭账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function call(ctx, api, data, token = "", service = "core", equipment = EQUIP) {
+  const d = await ctx.requestJson(API, {
+    method: "POST",
+    headers: headers(),
+    json: { api, data, traceId: trace(), userDevice: device(equipment), token, service },
   });
+  if (String(d?.code) !== "0") throw new Error(d?.message || d?.msg || `${api}失败`);
+  return d.data;
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function login(ctx) {
+  const phone = await ctx.prompt(ctx.sender, "请输入手机号", 60000);
+  if (!/^1[3-9]\d{9}$/.test(String(phone || ""))) throw new Error("手机号格式错误");
+  const sent = await call(ctx, "v2/login/sendLoginCode", { mobilePhone: phone }),
+    serial =
+      typeof sent === "object"
+        ? sent.serialNum || sent.serial_num || sent.serialNumber || sent.serialNo || sent.smsSerialNum
+        : sent;
+  const code = await ctx.prompt(ctx.sender, "验证码已发送，请输入验证码", 300000);
+  if (!/^\d+$/.test(String(code || ""))) throw new Error("验证码格式错误");
+  const auth = await call(ctx, "v2/login/codeLogin", { serialNum: serial, code }, "", "core", EQUIP),
+    token = typeof auth === "object" ? auth.token : auth;
+  if (!token) throw new Error("登录接口未返回Token");
+  const spread = await call(ctx, "spreadActivity/getAppUserSpreadActivity", {}, token, "media"),
+    uid = spread?.lotteryActivityUid || "";
+  return { phone, token, uid, equipment: EQUIP };
 }
-function ownerKey(sender) { return "kanYuHang|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "KAN_YU_HANG").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+function parse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return {};
+  }
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+async function records(ctx, x) {
+  return (await call(ctx, "lottery/queryActivityAwardRecordList", { uid: x.uid }, x.token, "media", x.equipment)) || [];
+}
+const rt = createAccountRuntime({
+  title: "看余杭",
+  shortName: "看余杭",
+  prefix: "G_kyh",
+  defaultEnvName: "G_KYH",
+  orderPrefix: "KYH",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    try {
+      const x = await login(ctx),
+        account = `kyh_${crypto.createHash("md5").update(x.phone).digest("hex").slice(0, 10)}`;
+      return [{ account, token: JSON.stringify(x), remark: x.phone }];
+    } catch (e) {
+      await ctx.sender.reply(`看余杭登录失败：${e?.message || e}`);
+      return [];
+    }
+  },
+  async query(ctx, item) {
+    const x = parse(item.token),
+      list = await records(ctx, x),
+      out = [`📱 手机号：${ctx.mask(x.phone)}`, `🎁 中奖记录：${list.length}条`];
+    for (const row of list.slice(0, 10))
+      out.push(
+        `- ${row.awardName || row.prizeName || row.name || "未知奖品"} ${row.createTime || row.awardTime || ""}`,
+      );
+    return out.join("\n");
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const x = parse(item.token),
+        list = await records(ctx, x);
+      return `Token有效，当前中奖记录${list.length}条`;
+    } catch (_) {
+      return "看余杭Token已失效，请重新短信登录";
+    }
+  },
+  envValue(_ctx, item) {
+    const x = parse(item.token);
+    return `${x.phone}#${x.token}#${x.uid}#${x.equipment}`;
+  },
+  tutorial:
+    "=====看余杭教程=====\n发送看余杭登录，输入手机号和短信验证码\n插件自动提取Token、lotteryActivityUid、设备ID，查询中奖记录并按 手机号#Token#UID#DEVICEID 同步青龙\n指令：看余杭登录、查询、中奖记录、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`看余杭执行失败：${e?.message || e}`));

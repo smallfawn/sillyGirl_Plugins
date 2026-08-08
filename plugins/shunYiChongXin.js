@@ -1,118 +1,237 @@
 // [title: 顺易充（新）]
 // [name: shunYiChongXin]
-// [language: javascript]
-// [class: 任务]
+// [desc: 顺易充短信登录、Token刷新、每日签到、任务领奖及积分查询]
 // [author: huawei]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.7]
+// [rule: ^(顺易充|syc)(教程|登录|登陆|绑定|管理|查询|授权|运行|一键运行|清理|刷新|一键刷新)$]
+// [cron: 0 20 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(顺易充|syc)(登录|登陆|绑定|管理|查询|运行|一键运行|刷新|一键刷新)$]
+// [public: true]
+// [priority: 50]
+// [class: 任务]
 // [icon: https://i.mji.rip/2025/07/11/5132e8c191f16ac574c0328105061ec4.jpeg]
-// [description: 顺易充（新）凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/顺易充（新）_v1.1.7_By.huawei.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("SHUN_YI_CHONG_XIN"),
+const { sender: s } = require("sillygirl");
+const { createHash, createCipheriv } = require("crypto");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://app.wodeev.com",
+  KEY = Buffer.from("+7+hkq4l97VMgGHTufKDEHzfH8FzQ0aw", "base64");
+function md5(v) {
+  return createHash("md5").update(v).digest("hex");
+}
+function signed(keyword, value) {
+  const n = String(Math.floor(100 + Math.random() * 900)),
+    now = Date.now(),
+    raw = `${n[0]}${keyword}${n[1]}${value}${n[2]}${now}${n}`,
+    c = createCipheriv("des-ede3", KEY, null);
+  c.setAutoPadding(true);
+  return {
+    timestamp: String(now) + n,
+    sign: Buffer.concat([c.update(md5(raw), "utf8"), c.final()]).toString("base64"),
+  };
+}
+function headers(token = "") {
+  return {
+    accept: "application/json, text/plain, */*",
+    authorization: token ? `Bearer ${String(token).replace(/^Bearer\s+/i, "")}` : "",
+    "client-version": "5.10.0",
+    lang: "1",
+    loginChannel: "07",
+    "user-agent": "okhttp/4.9.0",
+  };
+}
+async function req(ctx, path, opt = {}) {
+  const r = await ctx.requestJson(BASE + path, opt);
+  if (Number(r?.ret) !== 200) throw new Error(r?.msg || `接口失败 ret=${r?.ret}`);
+  return r;
+}
+async function sendSms(ctx, phone) {
+  const x = signed("mobile", phone);
+  return req(
+    ctx,
+    `/cst-front/v2.0/sms?verifyType=05&mobile=${phone}&timestamp=${x.timestamp}&sign=${encodeURIComponent(x.sign)}&countryAreaTelCode=86`,
+    {
+      headers: {
+        ...headers(),
+        authorization: "Bearer",
+        Origin: "https://www.wodeev.com",
+        Referer: "https://www.wodeev.com/",
+        "x-requested-with": "com.longshine.nanwang.electric.charge",
+      },
+    },
+  );
+}
+async function login(ctx, phone, code) {
+  const regions = [
+      ["440100", "440000"],
+      ["320500", "320000"],
+      ["330100", "330000"],
+      ["510100", "510000"],
+    ],
+    r = regions[Math.floor(Math.random() * regions.length)],
+    v = await req(ctx, "/cst-front/open/v3.0/login", {
+      method: "POST",
+      json: {
+        cityCode: r[0],
+        countryCode: "中国",
+        loginType: "02",
+        mobile: phone,
+        verifyCode: code,
+        countryAreaTelCode: "86",
+        provinceCode: r[1],
+        rsaFlag: "1",
+        deviceId: "",
+        deviceModel: "Android",
+        systemVersion: "Android 13",
+      },
+      headers: headers(),
+    });
+  if (!v.token) throw new Error("登录响应缺少token");
+  return {
+    phone,
+    token: v.token,
+    refreshToken: v.refreshToken || "",
+    custInfo: v.custInfo || {},
+    updatedAt: new Date().toISOString(),
+  };
+}
+async function refresh(ctx, x) {
+  if (!x.refreshToken) throw new Error("refreshToken为空");
+  const sg = signed("token", x.refreshToken),
+    r = await req(ctx, "/cst-front/open/v2.0/refreshToken", {
+      method: "POST",
+      json: { sign: sg.sign, refreshToken: x.refreshToken, timestamp: sg.timestamp },
+      headers: headers(),
+    });
+  return { ...x, token: r.token, refreshToken: r.refreshToken || x.refreshToken, updatedAt: new Date().toISOString() };
+}
+function sess(raw) {
+  return typeof raw === "string" && raw.trim().startsWith("{") ? JSON.parse(raw) : { token: String(raw || "") };
+}
+async function score(ctx, x) {
+  const r = await req(ctx, "/bil-front/v2.0/accounts/myScoreRank?scoreType=02", { headers: headers(x.token) });
+  return { score: r.data?.myScores || 0, available: r.data?.myAvailableScores || 0, rank: r.data?.myRank || "未知" };
+}
+async function run(ctx, x) {
+  const lines = [];
+  try {
+    const r = await ctx.requestJson(BASE + "/bil-front/v2.0/activity/getWelfare", {
+      method: "POST",
+      json: { type: "1201", taskNo: "20221231" },
+      headers: headers(x.token),
+    });
+    if (Number(r?.ret) === 200) lines.push("签到成功");
+    else if (Number(r?.ret) === 400 && String(r.msg).includes("超过最大可领取次数")) lines.push("今日已签到");
+    else lines.push(`签到失败:${r?.msg || r?.ret}`);
+  } catch (e) {
+    lines.push(`签到异常:${e.message}`);
+  }
+  let claimed = 0;
+  try {
+    const list = await req(ctx, "/bil-front/v2.0/activity/queryWelfareList", { headers: headers(x.token) });
+    for (const task of list.data?.list || []) {
+      if (Number(task.status) !== 0 || String(task.type) === "1216") continue;
+      try {
+        await req(ctx, "/bil-front/v2.0/activity/getWelfare", {
+          method: "POST",
+          json: { type: task.type, taskNo: task.taskNo },
+          headers: headers(x.token),
+        });
+        claimed++;
+      } catch (_) {}
+    }
+    lines.push(`领取任务奖励${claimed}个`);
+  } catch (e) {
+    lines.push(`任务检查异常:${e.message}`);
+  }
+  const q = await score(ctx, x);
+  return { lines, q };
+}
+async function owned(ctx) {
+  const uid = await ctx.currentUserId(),
+    a = JSON.parse((await ctx.users.get(uid, "[]")) || "[]");
+  if (!a.length) throw new Error("未绑定顺易充账号");
+  return Promise.all(
+    a.map(async (account) => ({
+      account,
+      remark: await ctx.remarks.get(account, account),
+      x: sess(await ctx.tokens.get(account, "")),
+    })),
+  );
+}
+async function runAll(ctx) {
+  const out = [];
+  for (const a of await owned(ctx)) {
+    try {
+      const r = await run(ctx, a.x);
+      out.push(`${a.remark}：${r.lines.join("；")}；积分${r.q.score}，可用${r.q.available}，排名${r.q.rank}`);
+    } catch (e) {
+      out.push(`${a.remark}：${e.message}`);
+    }
+  }
+  return ctx.sender.reply(out.join("\n"));
+}
+async function refreshAll(ctx) {
+  const out = [];
+  for (const a of await owned(ctx)) {
+    try {
+      const x = await refresh(ctx, a.x);
+      await ctx.tokens.set(a.account, JSON.stringify(x));
+      out.push(`${a.remark}：刷新成功`);
+    } catch (e) {
+      out.push(`${a.remark}：${e.message}`);
+    }
+  }
+  return ctx.sender.reply(out.join("\n"));
+}
+const rt = createAccountRuntime({
+  title: "顺易充（新）",
+  shortName: "顺易充",
+  prefix: "G_SYC",
+  defaultEnvName: "G_SYC_TOKEN",
+  orderPrefix: "SYC",
+  requireAuthForQuery: false,
+  async login(ctx) {
+    const raw = await ctx.prompt(ctx.sender, "请输入11位手机号，多账号换行", 120000);
+    if (raw === null) return [];
+    const out = [];
+    for (const phone of raw
+      .split(/\r?\n/)
+      .map((v) => v.trim())
+      .filter(Boolean)) {
+      if (!/^1[3-9]\d{9}$/.test(phone)) throw new Error(`${phone}手机号错误`);
+      await sendSms(ctx, phone);
+      const code = await ctx.prompt(
+        ctx.sender,
+        `${phone.slice(0, 3)}****${phone.slice(-4)} 验证码已发送，请输入验证码`,
+        120000,
+      );
+      if (!/^\d{4,8}$/.test(String(code || ""))) throw new Error("验证码格式错误");
+      const x = await login(ctx, phone, code);
+      await score(ctx, x);
+      out.push({ account: phone, token: JSON.stringify(x), remark: phone.slice(0, 3) + "****" + phone.slice(-4) });
+    }
+    return out;
+  },
+  async query(ctx, item) {
+    const q = await score(ctx, sess(item.token));
+    return `🏆 总积分：${q.score}\n💰 可用积分：${q.available}\n📊 排名：${q.rank}`;
+  },
+  async handle(ctx, c) {
+    if (/刷新/.test(c)) return refreshAll(ctx);
+    if (/运行/.test(c)) return runAll(ctx);
+  },
+  async cronCheck(ctx, item) {
+    const r = await run(ctx, sess(item.token));
+    return `${r.lines.join("；")}；积分${r.q.score}`;
+  },
+  envValue(_c, item) {
+    return item.token;
+  },
+  tutorial:
+    "发送“顺易充登录”输入手机号和短信验证码。顺易充运行执行签到及可领取任务，顺易充查询查看积分，顺易充刷新使用 refreshToken 更新登录凭证。",
 });
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("顺易充（新）插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("顺易充（新）：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`顺易充（新）处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`顺易充（新）同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`顺易充（新）提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的顺易充（新）账号");
-  return s.reply([`顺易充（新）账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的顺易充（新）账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个顺易充（新）账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "shunYiChongXin|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "SHUN_YI_CHONG_XIN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+rt.main().catch((e) => s.reply(`顺易充执行失败：${e?.message || e}`));

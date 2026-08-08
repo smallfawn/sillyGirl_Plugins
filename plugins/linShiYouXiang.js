@@ -1,15 +1,16 @@
 // [title: 临时邮箱]
 // [name: linShiYouXiang]
-// [language: javascript]
-// [class: 任务]
+// [desc: 创建 Mail.tm 临时邮箱并等待第一封来信]
 // [author: sillyGirl]
 // [version: v1.0.3]
-// [public: true]
-// [disable: false]
-// [admin: false]
 // [rule: ^临时邮箱$]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 0]
+// [class: 任务]
 // [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 创建 Mail.tm 临时邮箱并等待第一封来信]
+// [origin: backup/临时邮箱_v1.0.0_By.yss.py]
 // [depe: []]
 
 const { randomBytes } = require("node:crypto");
@@ -22,7 +23,7 @@ const config = new plugin.Form({
 });
 
 async function main() {
-  const cfg = await config.get() || {};
+  const cfg = (await config.get()) || {};
   if (cfg.enable === false) return s.reply("临时邮箱插件未启用");
 
   try {
@@ -81,15 +82,24 @@ async function request(path, { method = "GET", body, token } = {}) {
 }
 
 function randomText(length) {
-  return randomBytes(Math.ceil(length * 0.75)).toString("base64url").slice(0, length).toLowerCase();
+  return randomBytes(Math.ceil(length * 0.75))
+    .toString("base64url")
+    .slice(0, length)
+    .toLowerCase();
 }
 
 function stripHtml(value) {
-  return String(value).replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " ");
+  return String(value)
+    .replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
 }
 
 function clean(value) {
-  return String(value).replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  return String(value)
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function clamp(value, min, max) {
@@ -101,7 +111,9 @@ function sleep(ms) {
 }
 
 function message(error) {
-  return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300);
+  return String(error?.message || error)
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 300);
 }
 
 main();

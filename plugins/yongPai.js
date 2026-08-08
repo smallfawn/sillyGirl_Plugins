@@ -1,118 +1,145 @@
 // [title: 甬派]
 // [name: yongPai]
-// [language: javascript]
-// [class: 任务]
-// [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 甬派账号密码登录、支付宝提现信息、抽奖中奖记录与今日收益查询、授权及青龙同步。]
+// [author: 601712460 / sky2022 / linzixuan]
+// [version: v4.5.0]
+// [rule: raw ^甬派(登录|登陆|查询|管理|今日收益|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(甬派|yy)(登录|登陆)$|^登(录|陆)(甬派|yy)$|^甬派(查询|管理|教程)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 甬派凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://img.cdn1.vip/i/6a0b1e9842df2_1779113624.webp]
+// [origin: backup/app_甬派_v0_By.601712460.py;backup/甬派_v4.5_By.sky2022.py;backup/甬派注册机_v1.5.5_By.linzixuan.py;backup/甬派管理_v1.1_By.8165799.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("YONG_PAI"),
-});
-
-async function main() {
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const Q = "1DvvL80TsnkfuVjfbdhTeOa1Xz0ttq5tQkt33EX3Kvc=";
+function parse(x) {
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("甬派插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("甬派：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`甬派处理失败：${message(error)}`);
+    return JSON.parse(x);
+  } catch {
+    return {};
   }
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`甬派同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`甬派提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的甬派账号");
-  return s.reply([`甬派账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的甬派账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个甬派账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function login(ctx, x) {
+  const ts = Date.now(),
+    id = crypto.randomUUID(),
+    sign = crypto
+      .createHash("md5")
+      .update(`globalDatetime${ts}username${x.phone}test_123456679890123456`)
+      .digest("hex"),
+    u = new URL("https://ypapp.cnnb.com.cn/yongpai-user/api/login2/local3");
+  for (const [k, v] of Object.entries({
+    username: x.phone,
+    password: x.password,
+    deviceId: id,
+    globalDatetime: ts,
+    sign,
+  }))
+    u.searchParams.set(k, v);
+  const d = await ctx.requestJson(u.toString(), {
+    headers: {
+      accept: "application/json",
+      "user-agent": "Mozilla/5.0 Android agentweb/4.0.2 UCBrowser/11.6.4.950 yongpai",
+    },
   });
+  if (Number(d?.code) !== 0) throw new Error(d?.message || d?.msg || "登录失败");
+  const z = d.data || {};
+  return {
+    account: String(z.userId || z.id || x.phone),
+    session: z.token,
+    name: z.nickname || x.phone,
+    mobile: z.mobile || x.phone,
+  };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function prizes(ctx, a) {
+  const h = {
+      "user-agent": "Mozilla/5.0 Android yongpai",
+      "x-request-id": `${Math.floor(1000 + Math.random() * 9000)}.${crypto.randomBytes(6).toString("hex")}|${Date.now()}`,
+    },
+    l = await ctx.requestJson("https://act.tmlyun.com/activity-api/lottery/api/auth/userLogin", {
+      method: "POST",
+      headers: h,
+      json: { accountId: a.account, sessionId: a.session, q: Q, tenantCode: "yongpai" },
+    }),
+    d = l.data || {};
+  if (!d.token) return [];
+  const z = await ctx.requestJson(
+    "https://act.tmlyun.com/activity-api/lottery/h5/activity/lottery/accountPrizeRecord/userPrizeRecord?activityId=1997",
+    {
+      headers: { ...h, authorization: d.token, ...(d.xToken || d.x_token ? { "x-token": d.xToken || d.x_token } : {}) },
+    },
+  );
+  return (z?.data?.activityAccountPrizeVoList || []).map((x) => ({
+    type: x.grade || "未知",
+    title: x.prizeName || "未知奖品",
+    time: x.createTime || "",
+  }));
 }
-function ownerKey(sender) { return "yongPai|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "YONG_PAI").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+function income(ps) {
+  const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+  return ps
+    .filter((x) => String(x.time).startsWith(day))
+    .reduce((n, x) => n + Number(String(x.title).match(/([\d.]+)元/)?.[1] || 0), 0);
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "甬派",
+  shortName: "甬派",
+  prefix: "dd_yy",
+  defaultEnvName: "YONGPAI",
+  orderPrefix: "YP",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码#支付宝账号#支付宝姓名，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const [phone, password, alipay = "", realname = ""] = line.split("#"),
+        x = { phone, password, alipay, realname },
+        a = await login(ctx, x);
+      rows.push({ account: a.account, token: JSON.stringify(x), remark: a.name });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = parse(item.token),
+      a = await login(ctx, x),
+      ps = await prizes(ctx, a);
+    return `👤 昵称：${a.name}\n📱 手机：${a.mobile}\n💳 支付宝：${x.alipay || "未填"} ${x.realname || ""}\n🎁 中奖记录：${ps.length}\n💰 今日收益：${income(ps).toFixed(2)}元${
+      ps.length
+        ? `\n${ps
+            .slice(0, 10)
+            .map((p, i) => `${i + 1}. ${p.title}｜${p.time}`)
+            .join("\n")}`
+        : ""
+    }`;
+  },
+  async handle(ctx, c) {
+    if (!/今日收益/.test(c)) return;
+    const uid = await ctx.currentUserId(),
+      as = JSON.parse(await ctx.users.get(uid, "[]"));
+    let sum = 0;
+    for (const k of as) {
+      const x = parse(await ctx.tokens.get(k, "{}")),
+        a = await login(ctx, x),
+        v = income(await prizes(ctx, a));
+      sum += v;
+      await ctx.sender.reply(`${await ctx.remarks.get(k, k)} 今日收益：${v.toFixed(2)}元`);
+    }
+    return ctx.sender.reply(`甬派全部账号今日收益：${sum.toFixed(2)}元`);
+  },
+  async cronCheck(ctx, item) {
+    const a = await login(ctx, parse(item.token)),
+      ps = await prizes(ctx, a);
+    return `账号有效，中奖记录${ps.length}条，今日收益${income(ps).toFixed(2)}元`;
+  },
+  envValue(_c, i) {
+    const x = parse(i.token);
+    return `${x.phone}#${x.password}#${x.alipay || ""}#${x.realname || ""}`;
+  },
+  tutorial: "输入手机号#密码#支付宝账号#支付宝姓名；查询中奖记录与今日红包收益，授权后同步青龙。",
+});
+rt.main().catch((e) => s.reply(`甬派执行失败：${e?.message || e}`));

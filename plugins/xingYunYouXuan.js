@@ -1,118 +1,82 @@
 // [title: 星韵优选]
 // [name: xingYunYouXuan]
-// [language: javascript]
-// [class: 任务]
-// [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 星韵优选3rdsession批量绑定、用户ID/昵称/积分实时查询、授权及青龙/呆呆面板同步。]
+// [author: rujingxianghai / huawei]
+// [version: v1.1.0]
+// [rule: raw ^(星韵|xyyx)(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 18 9 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(星韵|xingyun|xyyx)(登录|登陆)$|^登(录|陆)(星韵|xingyun|xyyx)$|^(星韵|xingyun|xyyx)(查询|管理|检测|教程|清理|上传)$|^(查询|管理)(星韵|xingyun|xyyx)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 星韵优选凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://img-upload.vorto.cc/beb5a0d45aa58e08348e1e4076fa419e.jpg]
+// [origin: backup/【插件】-星韵_v1.0.0_By.huawei.py;backup/星韵优选_v1.1_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("XING_YUN_YOU_XUAN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("星韵优选插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("星韵优选：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`星韵优选处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const API = "https://gzpengru.weimbo.com/api/index.php?ackey=GZYTAPPLET";
+function headers(token) {
+  return {
+    host: "gzpengru.weimbo.com",
+    connection: "keep-alive",
+    "3rdsession": token,
+    "content-type": "application/json",
+    "user-agent":
+      "Mozilla/5.0 (Linux; Android 13; M2012K11AC) AppleWebKit/537.36 MicroMessenger/8.0.45 MiniProgramEnv/Android",
+    referer: "https://servicewechat.com/wxc86c9aecdb67f876/9/page-frame.html",
+  };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+async function user(ctx, token) {
+  const d = await ctx.requestJson(API, { method: "POST", headers: headers(token), json: { action: "userInfoData" } });
+  if (!d?.Status) throw new Error(d?.Message || "3rdsession无效");
+  const u = d?.Data?.user || {},
+    id = String(u.id || "")
+      .replace(/^ID\s*[：:]\s*/, "")
+      .trim();
+  if (!id) throw new Error("接口未返回用户ID");
+  return { id, name: u.name || "未知", points: d?.Data?.u_money?.jifen ?? 0 };
+}
+const rt = createAccountRuntime({
+  title: "星韵优选",
+  shortName: "星韵",
+  prefix: "s_xyyx",
+  defaultEnvName: "S_XYYX",
+  orderPrefix: "XYYX",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入3rdsession，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const token of input
+      .split(/\r?\n/)
+      .map((v) => v.trim())
+      .filter(Boolean))
+      try {
+        const x = await user(ctx, token);
+        rows.push({ account: x.id, token, remark: x.name });
+      } catch (e) {
+        await ctx.sender.reply(`星韵登录失败：${e?.message || e}`);
       }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = await user(ctx, item.token);
+    return `👤 昵称：${x.name}\n🆔 用户ID：${x.id}\n💰 当前积分：${x.points}\n🔐 3rdsession：有效`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const x = await user(ctx, item.token);
+      return `账号有效，当前积分${x.points}`;
+    } catch (_) {
+      return "3rdsession已失效，请重新登录";
     }
-    return replySender.reply(`星韵优选同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`星韵优选提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的星韵优选账号");
-  return s.reply([`星韵优选账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的星韵优选账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个星韵优选账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "xingYunYouXuan|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "XING_YUN_YOU_XUAN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====星韵优选教程=====\n活动入口：#小程序://星韵优选/kt8xm5WOSI0Z6ri\n抓包取得请求头 3rdsession，支持批量换行提交\n实时查询昵称、用户ID和积分，并同步至面板供签到/视频脚本使用\n指令：星韵登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`星韵优选执行失败：${e?.message || e}`));

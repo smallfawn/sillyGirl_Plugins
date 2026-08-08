@@ -1,137 +1,321 @@
 // [title: 众安健康]
 // [name: zhongAnJianKang]
-// [language: javascript]
-// [class: 任务]
-// [author: 97610325]
-// [version: v1.7.0]
-// [public: true]
-// [disable: false]
+// [desc: 按 Python 流程使用 Access-Token 完成账号绑定、签到、任务领奖、余额查询和失效检测]
+// [author: rujingxianghai]
+// [version: v3.1.0]
+// [rule: ^众安(登录|登陆|查询|管理|清理|教程|一键运行|总结|检测)$|^登录众安$]
+// [cron: 56 6,9,13,16,19,20 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^众安管理$|^管理众安$|^众安查询$|^查询众安$|^众安登录$|^登录众安$|^众安$|^众安清理$|^清理众安$]
-// [icon: https://nos.netease.com/ysf/82b362badc596b99e5c3ad437973a560.jpg]
-// [description: 众安健康 Token 绑定、青龙同步、账号查询与清理]
+// [public: true]
+// [priority: 0]
+// [class: 任务]
+// [icon: http://113.45.39.135:8080/admin/images/gallery/1748901594846584338.png]
+// [origin: backup/众安健康_v3.0_By.rujingxianghai.py]
 // [depe: []]
 
-const { container, plugin, sender: s } = require("sillygirl");
+const { createHash, randomBytes } = require("crypto");
+const { Bucket, plugin, sender: s } = require("sillygirl");
 
-const config = new plugin.Form({
+const form = new plugin.Form({
   enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("ZHONGAN_TOKEN"),
+  auto_withdraw: plugin.Form.boolean().title("余额满 5 元自动提现").default(false),
 });
+const users = new Bucket("s_zajk_user");
+const tokens = new Bucket("s_zajk_token");
+const phones = new Bucket("s_zajk_phone");
+const remarks = new Bucket("s_zajk_remark");
+const API = "https://ihealth.zhongan.com";
 
 async function main() {
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("众安健康插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-
-    if (/查询|管理/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录/.test(content)) {
-      s.reply("请发送众安 Token，格式：备注#Token；多账号可换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"],
-        timeout: 60000,
-        user_id: s.getUserId(),
-        chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
+    const cfg = await form.get();
+    if (cfg.enable === false) return s.reply("众安健康插件未启用");
+    const content = String((await s.getContent()) || "").trim();
+    if (!content) return runAll(cfg, false);
+    if (/教程/.test(content))
+      return s.reply("发送 众安登录，再提交 Access-Token#备注；查询显示积分和可提现余额，一键运行完成签到与领奖。");
+    if (/登录|登陆/.test(content)) return login();
+    if (/清理/.test(content)) return clearOwn();
+    if (/检测/.test(content)) return checkOwn();
+    if (/一键运行/.test(content)) {
+      if (!(await s.isAdmin())) return s.reply("仅管理员可运行全部账号");
+      return runAll(cfg, true);
     }
-    return s.reply("指令：众安登录 / 众安查询 / 众安清理");
+    if (/查询|管理|总结/.test(content)) return queryOwn();
+    return s.reply("指令：众安登录 / 众安查询 / 众安清理 / 众安一键运行 / 众安检测 / 众安教程");
   } catch (error) {
-    return s.reply(`众安健康处理失败：${message(error)}`);
+    return s.reply(`众安健康处理失败：${err(error)}`);
   }
 }
 
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0;
-    let updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.token));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.token, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.token, remarks });
-        created += 1;
+async function login() {
+  await s.reply("请发送 Access-Token#备注，多账号换行，输入 q 取消。");
+  return s.listen({
+    rules: ["raw ^([\\s\\S]+)$"],
+    timeout: 120000,
+    user_id: await s.getUserId(),
+    chat_id: await s.getChatId(),
+    handle: async (next) => {
+      const input = String((await next.param(1)) || "").trim();
+      if (/^q$/i.test(input)) return "已取消";
+      try {
+        const owner = await ownerKey(next);
+        const ids = new Set(await accountIds(owner));
+        const reports = [];
+        for (const row of parse(input)) {
+          const phone = await maskedPhone(row.token);
+          const id = createHash("md5").update(row.token).digest("hex").slice(0, 16);
+          await tokens.set(id, row.token);
+          await phones.set(id, phone);
+          await remarks.set(id, row.remark);
+          ids.add(id);
+          reports.push(`${mask(phone)}（${row.remark}）`);
+        }
+        await users.set(owner, JSON.stringify([...ids]));
+        return next.reply([`众安绑定完成：${reports.length} 个`, ...reports].join("\n"));
+      } catch (error) {
+        return next.reply(`众安绑定失败：${err(error)}`);
       }
-    }
-    return replySender.reply(`众安账号同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`众安提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的众安健康账号");
-  return s.reply([`众安健康账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的众安健康账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个众安健康账号`);
-}
-
-function parseRows(input) {
-  const rows = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!rows.length) throw new Error("Token 为空");
-  return rows.map((row, index) => {
-    const cut = row.indexOf("#");
-    const remark = cut >= 0 ? row.slice(0, cut).trim() : `账号${index + 1}`;
-    const token = cut >= 0 ? row.slice(cut + 1).trim() : row;
-    if (!remark || !token || token.length < 8) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, token };
+    },
   });
 }
 
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function queryOwn() {
+  const owner = await ownerKey(s);
+  const ids = await accountIds(owner);
+  if (!ids.length) return s.reply("未绑定众安健康账号，请发送 众安登录");
+  const reports = [];
+  for (const id of ids) {
+    const token = await tokens.get(id, "");
+    try {
+      reports.push(render(await accountInfo(token), await phones.get(id, "未知"), await remarks.get(id, "默认账号")));
+    } catch (error) {
+      reports.push(`${await remarks.get(id, id)}：${err(error)}`);
+    }
+  }
+  return s.reply(reports.join("\n\n"));
 }
 
-function ownerKey(sender) {
-  return `众安|${sender.getPlatform()}:${sender.getUserId()}`;
+async function checkOwn() {
+  const owner = await ownerKey(s);
+  const ids = await accountIds(owner);
+  const valid = [];
+  const invalid = [];
+  for (const id of ids) {
+    try {
+      await accountInfo(await tokens.get(id, ""));
+      valid.push(id);
+    } catch {
+      invalid.push(id);
+      await tokens.delete(id);
+      await phones.delete(id);
+      await remarks.delete(id);
+    }
+  }
+  await users.set(owner, JSON.stringify(valid));
+  return s.reply(`众安检测完成：有效 ${valid.length}，清理失效 ${invalid.length}`);
 }
 
-function ownedBy(item, owner) {
-  return String(item?.remarks || item?.remark || "").startsWith(`${owner}|`);
+async function clearOwn() {
+  const owner = await ownerKey(s);
+  const ids = await accountIds(owner);
+  for (const id of ids) {
+    await tokens.delete(id);
+    await phones.delete(id);
+    await remarks.delete(id);
+  }
+  await users.delete(owner);
+  return s.reply(`已清理 ${ids.length} 个众安健康账号`);
 }
 
-function remarkOf(item) {
-  return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|");
+async function runAll(cfg, notify) {
+  let total = 0;
+  let success = 0;
+  let earned = 0;
+  for (const owner of await users.keys()) {
+    for (const id of await accountIds(owner)) {
+      total += 1;
+      try {
+        const result = await runTasks(await tokens.get(id, ""), cfg.auto_withdraw === true);
+        success += 1;
+        earned += Number(result.earned || 0);
+      } catch {
+        /* 下一账号 */
+      }
+    }
+  }
+  const text = `众安任务完成：成功 ${success}/${total}，本轮新增积分 ${earned}`;
+  if (notify) return s.reply(text);
+  if (total) await s.pushAdmin(text);
 }
 
-function envId(item) {
-  return item?.id || item?._id;
+async function accountInfo(token) {
+  const headers = auth(token);
+  const home = await request("POST", "/api/lemon/v1/common/activity/homePage", headers, {
+    channelCode: "c20195660470001",
+    activityCode: "ONA20220411001",
+  });
+  if (String(home.code) !== "0") throw new Error(home.message || "Token 已失效");
+  const award = await request("POST", "/api/lemon/v1/common/activity/awardList", headers, {
+    channelCode: "c20195660470001",
+    activityCode: "ONA20220411001",
+  });
+  const details = award?.result?.detailList || [];
+  let income = 0;
+  let outcome = 0;
+  for (const item of details) {
+    const raw = String(item?.amount || "");
+    const value = Number(raw.replace(/[^\d.-]/g, "")) || 0;
+    if (raw.startsWith("+")) income += value;
+    else if (raw.startsWith("-")) outcome += Math.abs(value);
+  }
+  return { points: home?.result?.sumAward ?? 0, balance: income - outcome, income, outcome };
 }
 
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "ZHONGAN_TOKEN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+async function runTasks(token, autoWithdraw) {
+  const headers = auth(token);
+  const common = { channelCode: "c20195660470001", activityCode: "ONA20220411001" };
+  const wall = infernal();
+  await request("POST", "/api/lemon/v1/common/activity/signIn", headers, {
+    ...common,
+    infernalWallParams: wall,
+    envSource: "miniprogram",
+  }).catch(() => ({}));
+  const home = await request("POST", "/api/lemon/v1/common/activity/homePage", headers, common);
+  if (String(home.code) !== "0") throw new Error(home.message || "Token 已失效");
+  const taskRows = Object.entries(home?.result?.productRecommend || {}).filter(
+    ([, item]) => item?.status === false && item?.link,
+  );
+  for (const [goodsCode, item] of taskRows) {
+    const url = new URL(item.link);
+    await request("POST", "/api/lemon/v1/applet/mgm/activity/add/award", headers, {
+      activityCode: url.searchParams.get("activityCode") || "",
+      channelCode: url.searchParams.get("healthChannelCode") || "",
+      goodsCode,
+      taskId: url.searchParams.get("taskId") || "",
+    }).catch(() => ({}));
+  }
+  const available = [
+    home?.result?.valuableRewardList,
+    home?.result?.rewardList,
+    home?.result?.taskList,
+    home?.result?.activityTasks,
+    home?.result?.unclaimedRewards,
+  ]
+    .flat()
+    .filter(Boolean)
+    .filter((item) => !(item.received || item.isReceived || item.claimed || item.isClaimed));
+  let base = Number(home?.result?.sumAward || 0);
+  let earned = 0;
+  for (const item of available) {
+    const id = item.awardDetailId || item.awardId || item.id || item.taskId;
+    if (!id) continue;
+    const data = await request("POST", "/api/lemon/v1/common/activity/lottery", headers, {
+      ...common,
+      id,
+      infernalWallParams: infernal(),
+      envSource: "miniprogram",
+    }).catch(() => ({}));
+    const now = Number(data?.result?.sumAward);
+    if (Number.isFinite(now)) {
+      earned += now - base;
+      base = now;
+    }
+  }
+  if (autoWithdraw) {
+    const info = await accountInfo(token);
+    if (info.balance >= 5)
+      await request("POST", "/api/lemon/v1/common/activity/withdraw", headers, {
+        ...common,
+        infernalWallParams: infernal(),
+        envSource: "miniprogram",
+      }).catch(() => ({}));
+  }
+  return { earned, points: base };
 }
 
-function message(error) {
-  return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300);
+async function maskedPhone(token) {
+  const data = await request("POST", "/api/lemon/v1/wechatApplet/obtainBaseInfo/c20195660470001", auth(token), {});
+  if (String(data.code) !== "0" || !data?.result?.phone) throw new Error(data.message || "Token 验证失败");
+  return String(data.result.phone);
+}
+async function request(method, path, headers, body) {
+  const response = await fetch(`${API}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(15000),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+  return data;
+}
+function auth(token) {
+  if (!String(token || "").trim()) throw new Error("Token 为空");
+  return {
+    accept: "application/json",
+    "access-token": String(token).trim(),
+    "content-type": "application/json",
+    "user-agent": "Mozilla/5.0 MicroMessenger/7.0 MiniProgramEnv/Windows",
+    referer: "https://servicewechat.com/wxbac45cc1588a5a75/417/page-frame.html",
+    scene: "fa339ec6a687#prd#support",
+  };
+}
+function infernal() {
+  const ts = Date.now();
+  const scene = `frdadbe${Math.floor(10000 + Math.random() * 90000)}`;
+  const salt = createHash("md5").update(String(ts)).digest("hex").slice(0, 8);
+  const sum = [...salt].reduce((n, c) => n + c.charCodeAt(0), 0) % 100;
+  const did = `${createHash("sha1").update(randomBytes(16)).digest("hex")}:35:${createHash("sha256").update(String(ts)).digest("hex")}`;
+  return {
+    did,
+    token: `2:12:${ts}:${scene}::${salt}:896:${createHash("sha256").update(`896_${ts}`).digest("hex")}:${sum}`,
+    s: scene,
+    scene,
+  };
+}
+function parse(input) {
+  return String(input)
+    .split(/\r?\n/)
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .map((row, index) => {
+      const cut = row.indexOf("#");
+      const token = (cut < 0 ? row : row.slice(0, cut)).trim();
+      const remark = (cut < 0 ? `账号${index + 1}` : row.slice(cut + 1)).trim();
+      if (token.length < 8) throw new Error(`第 ${index + 1} 行 Token 格式错误`);
+      return { token, remark: remark || `账号${index + 1}` };
+    });
+}
+async function accountIds(owner) {
+  try {
+    const value = JSON.parse(await users.get(owner, "[]"));
+    return Array.isArray(value) ? value.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+async function ownerKey(sender) {
+  return `${await sender.getPlatform()}:${await sender.getUserId()}`;
+}
+function render(info, phone, remark) {
+  return [
+    `${remark}（${mask(phone)}）`,
+    `积分：${info.points}`,
+    `可提现：${info.balance.toFixed(2)}`,
+    `累计收入：${info.income.toFixed(2)}`,
+    `累计支出：${info.outcome.toFixed(2)}`,
+  ].join("\n");
+}
+function mask(value) {
+  const text = String(value || "");
+  return text.length > 7 ? `${text.slice(0, 3)}****${text.slice(-4)}` : text;
+}
+function err(error) {
+  return String(error?.message || error)
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 300);
 }
 
 main();

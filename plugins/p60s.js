@@ -1,16 +1,17 @@
-//[title: 60s]
-//[name: p60s]
-//[language: javascript]
-//[class: 工具]
-//[author: XiaoBo_]
-//[version: v1.2.1]
-//[public: true]
-//[disable: false]
-//[admin: false]
-//[rule: ^(早报|新闻|60秒|60s)$|^(文字早报|文本早报)$|^(图文早报|图片早报)$|^早报数据$]
-//[cron: 30 7 * * *]
-//[icon: https://img.icons8.com/fluency/96/news.png]
-//[description: 获取每日 60 秒早报，支持文字、图片及定时管理员推送]
+// [title: 60s]
+// [name: p60s]
+// [desc: 获取每日 60 秒早报，支持文字、图片及定时管理员推送]
+// [author: XiaoBo_]
+// [version: v1.2.1]
+// [rule: ^(早报|新闻|60秒|60s)$|^(文字早报|文本早报)$|^(图文早报|图片早报)$|^早报数据$]
+// [cron: 30 7 * * *]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 0]
+// [class: 工具]
+// [icon: https://img.icons8.com/fluency/96/news.png]
+// [origin: backup/60s_v1.1.2_By.XiaoBo_.txt]
 // [depe: []]
 
 const { sender: s, plugin } = require("sillygirl");
@@ -39,7 +40,9 @@ function text(data) {
     "━━━━━━━━━━━━━━━",
     data.tip ? `☀️ ${data.tip}` : "",
     data.link ? `🔗 ${data.link}` : "",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function main() {
@@ -47,11 +50,11 @@ async function main() {
   const data = await load(conf.api || "https://60s.viki.moe/v2/60s");
   const command = String(await s.getContent().catch(() => "")).trim();
   if (command === "早报数据") {
-    return await s.isAdmin() ? s.reply(JSON.stringify(data, null, 2)) : undefined;
+    return (await s.isAdmin()) ? s.reply(JSON.stringify(data, null, 2)) : undefined;
   }
 
-  const useImage = /^(图文早报|图片早报)$/.test(command)
-    || (!/^(文字早报|文本早报)$/.test(command) && conf.image !== false);
+  const useImage =
+    /^(图文早报|图片早报)$/.test(command) || (!/^(文字早报|文本早报)$/.test(command) && conf.image !== false);
   const output = useImage && data.image ? `[CQ:image,file=${data.image}]` : text(data);
   return command ? s.reply(output) : s.pushAdmin(output);
 }

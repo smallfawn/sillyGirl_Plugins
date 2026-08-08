@@ -1,118 +1,90 @@
 // [title: 雨云签到]
 // [name: yuYunQianDao]
-// [language: javascript]
-// [class: 任务]
-// [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 雨云账号密码批量登录、CSRF会话验证、用户信息查询、授权及青龙/呆呆面板同步。]
+// [author: rujingxianghai / sky2022]
+// [version: v1.1.1]
+// [rule: raw ^雨云(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 12 9 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(雨云|yy)(登录|登陆)$|^登(录|陆)(雨云|yy)$|^(雨云|yy)(查询|管理|检测|教程)$|^(查询|管理)(雨云|yy)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 雨云签到凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://img-upload.vorto.cc/f5359ebff5c25a7d99acf466414d8f76.png]
+// [origin: backup/雨云_v1.1.1_By.sky2022.py;backup/雨云签到_v1.1_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("YU_YUN_QIAN_DAO"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("雨云签到插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("雨云签到：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`雨云签到处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://api.v2.rainyun.com";
+function cookieHeader(headers) {
+  const values =
+    typeof headers.getSetCookie === "function" ? headers.getSetCookie() : [headers.get("set-cookie") || ""];
+  return values
+    .filter(Boolean)
+    .map((v) => v.split(";", 1)[0])
+    .join("; ");
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`雨云签到同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`雨云签到提交失败：${message(error)}`);
-  }
+function csrf(cookie) {
+  return decodeURIComponent(cookie.match(/(?:^|;\s*)X-CSRF-Token=([^;]+)/i)?.[1] || "");
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的雨云签到账号");
-  return s.reply([`雨云签到账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的雨云签到账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个雨云签到账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function session(ctx, username, password) {
+  const r = await ctx.request(`${BASE}/user/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      json: { field: username, password },
+    }),
+    d = JSON.parse(r.text);
+  if (Number(d?.code) !== 200) throw new Error(d?.message || d?.msg || "登录失败");
+  const cookie = cookieHeader(r.headers),
+    token = csrf(cookie);
+  if (!token) throw new Error("登录成功但未获取X-CSRF-Token");
+  const info = await ctx.requestJson(`${BASE}/user/?no_cache=false`, {
+    headers: { "content-type": "application/json", "x-csrf-token": token, cookie },
   });
+  if (Number(info?.code) !== 200) throw new Error(info?.message || info?.msg || "用户信息获取失败");
+  return info.data || {};
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "yuYunQianDao|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "YU_YUN_QIAN_DAO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "雨云签到",
+  shortName: "雨云",
+  prefix: "s_yy",
+  defaultEnvName: "S_YYQD",
+  orderPrefix: "YYQD",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入账号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const cut = line.indexOf("#"),
+          account = line.slice(0, cut).trim(),
+          password = line.slice(cut + 1).trim();
+        if (cut < 0 || !account || !password) throw new Error("格式应为账号#密码");
+        const x = await session(ctx, account, password);
+        rows.push({ account, token: password, remark: x.name || x.username || account });
+      } catch (e) {
+        await ctx.sender.reply(`雨云登录失败：${e?.message || e}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = await session(ctx, item.account, item.token);
+    return `👤 用户：${x.name || x.username || item.remark}\n🆔 ID：${x.id ?? x.uid ?? "未知"}\n💰 积分：${x.points ?? x.point ?? x.score ?? "未知"}\n💴 余额：${x.balance ?? x.money ?? "未知"}\n📧 邮箱：${x.email || "未知"}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      await session(ctx, item.account, item.token);
+      return "登录凭证有效，可由面板签到脚本继续运行";
+    } catch (_) {
+      return "雨云账号或密码已失效，请重新登录";
+    }
+  },
+  envValue(_ctx, item) {
+    return `${item.account}#${item.token}`;
+  },
+  tutorial:
+    "=====雨云签到教程=====\n发送雨云登录，按账号#密码提交，支持批量\n插件实时登录并查询用户信息，授权后同步账号#密码至青龙/呆呆面板，由面板脚本执行每日签到\n指令：雨云登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`雨云签到执行失败：${e?.message || e}`));

@@ -1,118 +1,99 @@
 // [title: 白鲸鱼回收]
 // [name: baiJingYuHuiShou]
-// [language: javascript]
-// [class: 任务]
-// [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 白鲸鱼手机号密码批量登录、回收金额查询、每日签到、授权、青龙/呆呆面板同步和账号管理。]
+// [author: yueiqiu4523 / rujingxianghai]
+// [version: v1.5.1]
+// [rule: raw ^(白鲸鱼|bjy)(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 0 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(白鲸鱼|bjy)(登录|登陆)$|^登(录|陆)(白鲸鱼|bjy)$|^(白鲸鱼|bjy)(查询|管理|教程)$|^(查询|管理)(白鲸鱼|bjy)$|^白鲸鱼$|^白鲸鱼检测$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 白鲸鱼回收凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://www.yili.com/static/images/logo.png]
+// [origin: backup/白鲸鱼_v1.5.1_By.yueiqiu4523.py;backup/白鲸鱼回收_v1.3.0_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("BAI_JING_YU_HUI_SHOU"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("白鲸鱼回收插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("白鲸鱼回收：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`白鲸鱼回收处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const MEMBER = "https://www.52bjy.com/api/app/member.php",
+  USER = "https://www.52bjy.com/api/app/user.php",
+  UA =
+    "Mozilla/5.0 (Linux; Android 11; SHARK KLE-A0 Build/KLEN2202130CN00MR4; wv) AppleWebKit/537.36 Version/4.0 Chrome/83.0.4103.106 Mobile Safari/537.36 uni-app Html5Plus/1.0";
+function headers() {
+  return { "user-agent": UA, connection: "Keep-Alive", "accept-encoding": "gzip", envconnection: "test" };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`白鲸鱼回收同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`白鲸鱼回收提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的白鲸鱼回收账号");
-  return s.reply([`白鲸鱼回收账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的白鲸鱼回收账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个白鲸鱼回收账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function login(ctx, phone, password) {
+  const data = await ctx.requestJson(MEMBER, {
+    method: "POST",
+    headers: headers(),
+    form: { action: "login", username: phone, password, app: "self", sign: "" },
   });
+  if (data?.message !== "登录成功" || !data?.data?.token) throw new Error(data?.message || "登录失败");
+  return data.data.token;
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function balance(ctx, phone, password, sign = false) {
+  const token = await login(ctx, phone, password);
+  let signMessage = "";
+  if (sign) {
+    const r = await ctx.requestJson(
+      `${USER}?action=qiandao&app=self&auth=${encodeURIComponent(token)}&username=${encodeURIComponent(phone)}`,
+      { headers: headers() },
+    );
+    signMessage = r?.message || "签到接口无结果";
+  }
+  const url = new URL(USER);
+  Object.entries({
+    action: "userinfo",
+    app: "self",
+    appkey: "a9827e37ed2becd8",
+    auth: token,
+    is_pop: "0",
+    username: phone,
+    version: "2",
+  }).forEach(([k, v]) => url.searchParams.set(k, v));
+  const data = await ctx.requestJson(url, { headers: headers() }),
+    raw = data?.data?.credit_to_cash;
+  if (raw === undefined) throw new Error(data?.message || "金额查询失败");
+  const cash = Number(String(raw).match(/\d+(?:\.\d+)?/)?.[0] || 0);
+  return { cash, signMessage };
 }
-function ownerKey(sender) { return "baiJingYuHuiShou|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "BAI_JING_YU_HUI_SHOU").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "白鲸鱼回收",
+  shortName: "白鲸鱼",
+  prefix: "JQB.bjy",
+  defaultEnvName: "bjy",
+  orderPrefix: "BJY",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入手机号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const cut = line.indexOf("#"),
+          phone = line.slice(0, cut).trim(),
+          password = line.slice(cut + 1).trim();
+        if (!/^1[3-9]\d{9}$/.test(phone) || cut < 0 || !password) throw new Error("格式应为手机号#密码");
+        await login(ctx, phone, password);
+        rows.push({ account: phone, token: password, remark: phone });
+      } catch (error) {
+        await ctx.sender.reply(`白鲸鱼登录失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = await balance(ctx, item.account, item.token);
+    return `📱 账号：${ctx.mask(item.account)}\n💰 当前可回收金额：${x.cash.toFixed(2)}元`;
+  },
+  async cronCheck(ctx, item) {
+    const x = await balance(ctx, item.account, item.token, true);
+    return `${x.signMessage}，当前可回收金额：${x.cash.toFixed(2)}元`;
+  },
+  envValue(_ctx, item) {
+    return `${item.account}#${item.token}`;
+  },
+  tutorial:
+    "=====白鲸鱼教程=====\n发送白鲸鱼登录，按手机号#密码提交，支持批量\n查询可回收金额；每天8点登录、签到并回查金额\n支持青龙或呆呆面板同步\n指令：白鲸鱼登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`白鲸鱼执行失败：${e?.message || e}`));

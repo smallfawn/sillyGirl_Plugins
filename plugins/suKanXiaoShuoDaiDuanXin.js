@@ -1,118 +1,306 @@
 // [title: 速看小说带短信]
 // [name: suKanXiaoShuoDaiDuanXin]
-// [language: javascript]
-// [class: 任务]
-// [author: 8165799]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 速看小说短信登录、完整福利链接生成、凭证校验及金币查询]
+// [author: 8165799,rujingxianghai]
+// [version: v3.6.0]
+// [rule: ^速看(登录|登陆|查询|管理|教程|授权|清理)$|^登(录|陆)速看$|^(查询|管理)速看$]
+// [status: true]
 // [admin: false]
-// [rule: ^速看(登录|登陆|查询|管理|教程)$|^登(录|陆)速看$|^(查询|管理)速看$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 速看小说带短信凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 50]
+// [class: 任务]
+// [icon: https://img.xxkx.de/file/S27MPofo.jpg]
+// [origin: backup/速看_v3.6_By.8165799.py;backup/速看免费小说_v1.0.3_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js","./sukanCore.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("SU_KAN_XIAO_SHUO_DAI_DUAN_XIN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("速看小说带短信插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("速看小说带短信：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`速看小说带短信处理失败：${message(error)}`);
+const { sender: s } = require("sillygirl");
+const { randomUUID } = require("crypto");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const core = require("./sukanCore.js"),
+  DJ = "https://dj.palmestore.com",
+  WELFARE = "https://welfare-user.palmestore.com";
+function uid() {
+  return randomUUID().replace(/-/g, "");
+}
+function createDevice() {
+  const d = {
+    ...core.SMS,
+    zyeid: randomUUID(),
+    imei: "____" + uid().slice(0, 16),
+    p7: "__" + uid().slice(0, 16),
+    p28: uid().toUpperCase() + uid().slice(0, 32),
+    guest: `j${Math.floor(Date.now() / 1000)}${Math.floor(100 + Math.random() * 900)}`,
+    p1: "",
+    usr: "",
+    ku: "",
+    kt: "",
+    p35: "",
+  };
+  d.usr = d.ku = d.guest;
+  return d;
+}
+function base(d) {
+  const u = d.ku || d.usr || d.guest;
+  return {
+    zyeid: d.zyeid,
+    usr: u,
+    rgt: d.rgt,
+    p1: d.p1,
+    ku: u,
+    pc: d.pc,
+    p2: d.p2,
+    p3: d.p3,
+    p4: d.p4,
+    p5: d.p5,
+    p7: d.p7,
+    p9: d.p9,
+    p12: "",
+    p16: d.p16,
+    p21: d.p21,
+    p22: d.p22,
+    p25: d.p25,
+    p26: d.p26,
+    p28: d.p28,
+    p29: d.p29,
+    p30: "",
+    p31: d.p7,
+    p33: d.p33,
+    p34: d.p34,
+    p36: d.p36,
+    firm: d.firm,
+    d1: d.d1,
+  };
+}
+function qs(o) {
+  return new URLSearchParams(Object.entries(o).map(([k, v]) => [k, String(v ?? "")])).toString();
+}
+function signContent(p) {
+  return Object.keys(p)
+    .sort()
+    .filter((k) => p[k] !== "")
+    .map((k) => `${k}=${p[k]}`)
+    .join("&");
+}
+function headers(d) {
+  return {
+    "user-agent": `Dalvik/2.1.0 (Linux; U; Android ${d.p22 || 14}; ${d.device} Build/BP2A.250605.015)`,
+    accept: "application/json",
+    "accept-encoding": "gzip",
+    "content-type": "application/x-www-form-urlencoded",
+  };
+}
+async function sms(ctx, phone, d) {
+  const timestamp = String(Date.now()),
+    encrypted = core.rsaEncrypt(phone),
+    sp = {
+      channelId: d.channelId,
+      device: d.device,
+      flag: "1",
+      imei: d.imei,
+      phone: encrypted,
+      sendType: "0",
+      times: "1",
+      timestamp,
+      versionId: d.versionId,
+    },
+    r = await ctx.requestJson(`${DJ}/dj_user/out/sms/sendSms/V2?${qs(base(d))}`, {
+      method: "POST",
+      form: { ...sp, sign: core.rsaSign(signContent(sp)) },
+      headers: headers(d),
+    });
+  if (Number(r?.code) !== 0 && r?.msg !== "success") throw new Error(r?.msg || "验证码发送失败");
+}
+async function login(ctx, phone, code, d) {
+  const timestamp = String(Date.now()),
+    encrypted = core.rsaEncrypt(phone),
+    desKey = String(Math.floor(10000000 + Math.random() * 90000000)),
+    encryptedKey = core.rsaEncrypt(desKey),
+    pInfo = JSON.stringify({
+      DesKey: encryptedKey,
+      Data: core.desEncrypt(JSON.stringify({ phone, pCode: code }), desKey),
+    }),
+    sp = {
+      channelId: d.channelId,
+      device: d.device,
+      imei: d.imei,
+      phone: encrypted,
+      timestamp,
+      versionId: d.versionId,
+    },
+    q = { ...base(d), p35: encryptedKey },
+    r = await ctx.requestJson(`${DJ}/dj_user/out/login/loginByPhoneV3?${qs(q)}`, {
+      method: "POST",
+      form: {
+        smboxid: encryptedKey,
+        versionId: d.versionId,
+        device: d.device,
+        userName: q.usr,
+        imei: d.imei,
+        sign: core.rsaSign(signContent(sp)),
+        timestamp,
+        pInfo,
+        phone: encrypted,
+        utdId: d.p1,
+        loginSource: "我的_马上登录",
+        channelId: d.channelId,
+      },
+      headers: headers(d),
+    });
+  if (Number(r?.code) !== 0) throw new Error(r?.msg || "登录失败");
+  const b = r.body || {};
+  d.kt = b.token || b.kt || "";
+  d.p1 = b.utdId || b.signUser || b.p1 || "";
+  d.usr = b.userName || b.usr || d.usr;
+  d.ku = b.signUser || b.ku || d.usr;
+  d.p35 = encryptedKey;
+  if (!d.kt) throw new Error("登录响应缺少token");
+  return d;
+}
+function welfareUrl(d) {
+  const t = {
+      ...core.TASK,
+      p16: d.p16 || d.device || core.TASK.p16,
+      p22: d.p22 || core.TASK.p22,
+      p34: d.firm || d.p34 || core.TASK.p34,
+      firm: d.firm || d.p34 || core.TASK.firm,
+    },
+    p = {
+      zyeid: d.zyeid,
+      rgt: t.rgt,
+      p1: d.p1,
+      kt: d.kt,
+      source: "welfare",
+      showContentInStatusBar: "1",
+      ecpmMix: "0.0",
+      ecpmVideo: "0.0",
+      mcTacid: "",
+      pc: t.pc,
+      p2: t.p2,
+      p3: t.p3,
+      p4: t.p4,
+      p5: t.p5,
+      p7: d.p7,
+      p9: t.p9,
+      p12: "",
+      p16: t.p16,
+      p21: t.p21,
+      p22: t.p22,
+      p25: t.p25,
+      p26: t.p26,
+      p28: d.p28,
+      p29: t.p29,
+      p30: "",
+      p31: d.p7,
+      p33: t.p33,
+      p34: t.p34,
+      p36: t.p36,
+      firm: t.firm,
+      d1: t.d1,
+      pca: "channel-visit",
+      p35: d.p35,
+      usr: d.ku,
+      ku: d.ku,
+    };
+  return `${WELFARE}/sukanread/welfare-package/sudu/welfare.html?${qs(p)}`;
+}
+function parse(raw) {
+  const text = String(raw || "").trim();
+  if (text.startsWith("{") && text.endsWith("}")) {
+    const j = JSON.parse(text);
+    if (j.url) return parse(j.url);
+    if (j.credential) return parse(j.credential);
+    const b = j.body || j;
+    if (b.token || b.kt)
+      return {
+        url: `${WELFARE}/sukanread/welfare-package/sudu/welfare.html?${qs({ kt: b.token || b.kt, zyeid: b.zyeid || b.zyeId, source: "welfare" })}`,
+        params: { kt: b.token || b.kt, zyeid: b.zyeid || b.zyeId, source: "welfare" },
+      };
   }
+  const query = text.includes("?") ? text.split("?", 2)[1] : text,
+    p = Object.fromEntries(new URLSearchParams(query));
+  return {
+    url: text.startsWith("http") ? text : `${WELFARE}/sukanread/welfare-package/sudu/welfare.html?${query}`,
+    params: p,
+  };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`速看小说带短信同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`速看小说带短信提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的速看小说带短信账号");
-  return s.reply([`速看小说带短信账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的速看小说带短信账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个速看小说带短信账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function userInfo(ctx, raw) {
+  const x = parse(raw);
+  if (!(x.params.kt || x.params.token) || !(x.params.zyeid || x.params.zyeId))
+    throw new Error("凭证缺少kt/token或zyeid");
+  x.params.source ||= "welfare";
+  const r = await ctx.requestJson(`${WELFARE}/api/user/info?${qs(x.params)}`, {
+    headers: {
+      origin: WELFARE,
+      referer: `${WELFARE}/sukanread/welfare-package/sudu/welfare.html`,
+      "x-requested-with": "com.chaozh.xincao.only.sk",
+      "user-agent": "Mozilla/5.0 (Linux; Android 13; wv) zyApp/SuKanRead zyVersion/8.0.2 zyChannel/801004",
+    },
   });
+  if (Number(r?.code) !== 0) throw new Error(r?.msg || "速看凭证失效");
+  const b = r.body || {};
+  return {
+    url: x.url,
+    zyeid: x.params.zyeid || x.params.zyeId,
+    coin: b.total_coin || 0,
+    cash: b.total_cash || b.total_money || 0,
+    phone: String(b.phone || b.mobile || ""),
+  };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "suKanXiaoShuoDaiDuanXin|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "SU_KAN_XIAO_SHUO_DAI_DUAN_XIN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "速看小说",
+  shortName: "速看",
+  prefix: "dd_sk",
+  defaultEnvName: "sukan",
+  orderPrefix: "SK",
+  requireAuthForQuery: false,
+  async login(ctx) {
+    const mode = await ctx.prompt(ctx.sender, "[1] 短信登录\n[2] 提交完整福利链接/QueryString", 120000);
+    if (mode === null) return [];
+    if (mode === "2") {
+      const raw = await ctx.prompt(ctx.sender, "请提交包含 kt 和 zyeid 的完整福利链接，多账号换行", 120000);
+      if (raw === null) return [];
+      const out = [];
+      for (const line of raw
+        .split(/\r?\n/)
+        .map((v) => v.trim())
+        .filter(Boolean)) {
+        const q = await userInfo(ctx, line),
+          account = String(q.phone || q.zyeid);
+        out.push({ account, token: q.url, remark: q.phone || `速看-${q.zyeid.slice(-6)}` });
+      }
+      return out;
+    }
+    const phones = await ctx.prompt(ctx.sender, "请输入11位手机号，多账号换行", 120000);
+    if (phones === null) return [];
+    const out = [];
+    for (const phone of phones
+      .split(/\r?\n/)
+      .map((v) => v.trim())
+      .filter(Boolean)) {
+      if (!/^1[3-9]\d{9}$/.test(phone)) throw new Error(`${phone}手机号错误`);
+      const d = createDevice();
+      await sms(ctx, phone, d);
+      const code = await ctx.prompt(ctx.sender, `${phone.slice(0, 3)}****${phone.slice(-4)} 验证码已发送`, 120000);
+      if (!/^\d{4,8}$/.test(String(code || ""))) throw new Error("验证码格式错误");
+      await login(ctx, phone, code, d);
+      const url = welfareUrl(d);
+      await userInfo(ctx, url);
+      out.push({ account: phone, token: url, remark: phone.slice(0, 3) + "****" + phone.slice(-4) });
+    }
+    return out;
+  },
+  async query(ctx, item) {
+    const q = await userInfo(ctx, item.token);
+    return `🪙 当前金币：${Number(q.coin).toLocaleString()}\n💵 当前余额：${q.cash}\n🆔 zyeid：${q.zyeid}`;
+  },
+  async cronCheck(ctx, item) {
+    const q = await userInfo(ctx, item.token);
+    return `凭证有效，金币${q.coin}`;
+  },
+  envValue(_c, item) {
+    return item.token;
+  },
+  tutorial:
+    "发送“速看登录”，可选短信登录自动生成完整福利链接，或直接提交抓包所得含 kt、zyeid 及设备参数的链接。速看查询调用 /api/user/info 校验并显示金币。",
+});
+rt.main().catch((e) => s.reply(`速看执行失败：${e?.message || e}`));

@@ -1,118 +1,197 @@
 // [title: 酷我Music]
 // [name: kuWoMusic]
-// [language: javascript]
-// [class: 任务]
+// [desc: 酷我账号密码及验证码登录、金币/今日收入/提现流水查询、授权与面板同步]
 // [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.4.0]
+// [rule: ^(酷我登录|酷我登陆|登陆酷我|登录酷我|酷我查询|查询酷我|酷我管理|管理酷我|酷我教程|酷我说明|酷我授权|酷我清理)$]
+// [cron: 20 18 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(酷我登录|酷我登陆|登陆酷我|登录酷我|酷我查询|查询酷我|酷我管理|管理酷我|酷我教程|酷我说明)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 酷我Music凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 50]
+// [class: 任务]
+// [icon: https://picui.ogmua.cn/s1/2026/02/26/69a05264c50f8.webp]
+// [origin: backup/q002-酷我音乐_v1.1.0_By.yueiqiu4523.py;backup/酷我Music_v1.3.9_By.sky2022.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("KU_WO_MUSIC"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("酷我Music插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("酷我Music：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`酷我Music处理失败：${message(error)}`);
-  }
+const crypto = require("crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const WEB_UA =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.95 Safari/537.36",
+  H5_UA =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KWMusic/11.1.2.0";
+function parseLogin(v) {
+  const p = String(v).trim().split("#");
+  if (!/^1[3-9]\d{9}$/.test(p[0]) || p.length !== 2) throw new Error("格式应为 手机号#密码");
+  return { phone: p[0], password: p[1] };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+function parseToken(v) {
+  const p = String(v).split("#");
+  if (p.length !== 4) throw new Error("酷我凭证字段不完整");
+  return { appUid: p[0], devId: p[1], loginSid: p[2], phone: p[3] };
+}
+async function login(ctx, raw) {
+  const p = parseLogin(raw),
+    cap = await ctx.requestJson(
+      "http://www.kuwo.cn/api/common/captcha/getcode?reqId=bb7dd120-d1b7-11ef-b9c9-9dd176f54932&httpsStatus=1",
+      {
+        headers: { "user-agent": WEB_UA, accept: "application/json, text/plain, */*", referer: "http://www.kuwo.cn/" },
+      },
+    ),
+    image = cap?.data?.img,
+    verifyToken = cap?.data?.token;
+  if (!image || !verifyToken) throw new Error("获取验证码失败");
+  const ocr = await ctx.requestJson("https://ddddocr.linzixuan.work/classification", {
+      method: "POST",
+      json: { image: String(image).replace(/^data:image\/(jpeg|png);base64,/, "") },
+    }),
+    verifyCode = String(ocr?.result || "").trim();
+  if (!verifyCode) throw new Error("验证码识别失败");
+  const result = await ctx.requestJson("https://wapi.kuwo.cn/api/www/login/loginByKw?httpsStatus=1", {
+    method: "POST",
+    headers: {
+      "user-agent": WEB_UA,
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      origin: "http://www.kuwo.cn",
+      referer: "http://www.kuwo.cn/",
+    },
+    json: {
+      userIp: "www.kuwo.cn",
+      uname: p.phone,
+      password: p.password,
+      verifyCode,
+      img: image,
+      verifyCodeToken: verifyToken,
+    },
+  });
+  if (Number(result?.code) !== 200) throw new Error(result?.msg || "登录失败");
+  const cookies = result?.data?.cookies || {},
+    appUid = String(result?.data?.uid || cookies.userid || ""),
+    loginSid = String(cookies.websid || "");
+  if (!appUid || !loginSid) throw new Error("登录响应缺少uid或websid");
+  return {
+    account: p.phone,
+    remark: cookies.uname3 || p.phone,
+    token: `${appUid}#${crypto.randomBytes(8).toString("hex")}#${loginSid}#${p.phone}`,
+  };
+}
+function params(a) {
+  return new URLSearchParams({
+    uuid: a.devId,
+    newver: "3",
+    corp: "kuwo",
+    uid: a.appUid,
+    loginSid: a.loginSid,
+    plat: "ip",
+    source: "kwplayer_ip_11.1.2.0_TJ.ipa",
+    loginUid: a.appUid,
+    prod: "kwplayer_ip_11.1.2.0",
+    user: a.devId,
+    locationid: "1",
+  }).toString();
+}
+function authHeaders(a) {
+  return {
+    accept: "*/*",
+    cookie: `tmeAppID=kwplayer;loginSid=${a.loginSid};ct=1;newdevicelevel=0;deviceScore=0;loginUid=${a.appUid};cv=11120;chid=TJ;os_ver=17.7.2;user=${a.devId};nettype=WiFi;appUid=${a.appUid}`,
+    "user-agent": "KWPlayer/11.1.2 (iPhone; iOS 17.7.2; Scale/3.00)",
+  };
+}
+async function gold(ctx, a) {
+  const status = await ctx.requestJson(`https://integralapi.kuwo.cn/api/v1/online/sign/new/todayStatus?${params(a)}`, {
+    headers: authHeaders(a),
+  });
+  if (Number(status?.code) !== 200) throw new Error(status?.msg || "金币查询失败");
+  let today = 0,
+    page = 1,
+    more = true;
+  const date = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  while (more && page <= 10) {
+    const r = await ctx.requestJson(
+        `https://integralapi.kuwo.cn/api/v1/online/sign/v1/earningSignIn/userGoldDetail?userId=${a.appUid}&loginSid=${encodeURIComponent(a.loginSid)}&pn=${page}&rn=50`,
+        {
+          headers: {
+            "user-agent": H5_UA,
+            origin: "https://h5app.kuwo.cn",
+            accept: "application/json, text/plain, */*",
+          },
+        },
+      ),
+      list = r?.data?.list || [];
+    if (Number(r?.code) !== 200 || !list.length) break;
+    let found = false;
+    for (const x of list) {
+      if (!x.dateTime) continue;
+      const d = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(x.dateTime));
+      if (d === date) {
+        found = true;
+        const n = Number(x.amount) || 0;
+        if (n > 0) today += n;
       }
     }
-    return replySender.reply(`酷我Music同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`酷我Music提交失败：${message(error)}`);
+    more = found;
+    page++;
   }
+  return { total: status.data?.remainScore || 0, today };
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的酷我Music账号");
-  return s.reply([`酷我Music账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
+async function history(ctx, a) {
+  const r = await ctx.requestJson(
+    `https://integralapi.kuwo.cn/api/v1/online/sign/v1/withdrawDetails?loginUid=${a.appUid}&loginSid=${encodeURIComponent(a.loginSid)}&pn=1&rn=2`,
+    { headers: { "user-agent": H5_UA, origin: "https://h5app.kuwo.cn", accept: "application/json, text/plain, */*" } },
+  );
+  if (Number(r?.code) !== 200) return [];
+  return (r?.data?.list || []).map((x) => ({
+    amount: x.amount || 0,
+    time: x.dateTime
+      ? new Date(x.dateTime).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai", hour12: false })
+      : "未知",
+    status: { 0: "处理中", 1: "成功", 2: "失败" }[Number(x.status)] || "未知",
+  }));
 }
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的酷我Music账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个酷我Music账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "kuWoMusic|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "KU_WO_MUSIC").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "酷我Music",
+  shortName: "酷我",
+  prefix: "dd_Kuwo",
+  defaultEnvName: "Kuwo",
+  orderPrefix: "KW",
+  requireAuthForQuery: false,
+  async login(ctx) {
+    const raw = await ctx.prompt(ctx.sender, "请输入 手机号#密码，支持多行", 120000);
+    if (raw === null) return [];
+    const out = [];
+    for (const line of raw
+      .split(/\r?\n/)
+      .map((x) => x.trim())
+      .filter(Boolean))
+      out.push(await login(ctx, line));
+    return out;
+  },
+  async query(ctx, item) {
+    const a = parseToken(item.token),
+      g = await gold(ctx, a),
+      h = await history(ctx, a);
+    return `📱 账号：${a.phone.replace(/(\d{3})\d{4}(\d{4})/, "$1****$2")}\n🪙 总金币：${g.total}\n📈 今日收入：${g.today}${h.length ? `\n💸 最近提现：\n${h.map((x) => `${x.amount}元｜${x.time}｜${x.status}`).join("\n")}` : "\n💸 最近提现：暂无"}`;
+  },
+  async cronCheck(ctx, item) {
+    const g = await gold(ctx, parseToken(item.token));
+    return `账号有效，总金币${g.total}，今日收入${g.today}`;
+  },
+  envValue(_c, i) {
+    return i.token;
+  },
+  tutorial:
+    "发送酷我登录并输入手机号#密码，插件自动获取并识别验证码；查询返回总金币、今日收入和最近两条提现记录。支持授权、管理和面板同步。",
+});
+rt.main().catch((e) => s.reply(`酷我执行失败：${e?.message || e}`));

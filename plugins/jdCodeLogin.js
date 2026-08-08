@@ -1,32 +1,25 @@
 // [title: 京东CODE登录]
 // [name: jdCodeLogin]
-// [language: javascript]
-// [class: 工具]
+// [desc: 通过 SmallCat OAuth 获取京东 PT Cookie，并同步 JD_COOKIE 到青龙或呆呆]
 // [author: smallfawn]
 // [version: v1.1.3]
-// [public: true]
-// [disable: false]
-// [admin: true]
 // [rule: ^\s*(京东登录|京东同步|京东CODE登录|[Jj][Dd]登录|[Jj][Dd]同步)\s*$]
+// [status: true]
+// [admin: true]
+// [public: true]
 // [priority: 10]
+// [class: 工具]
 // [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 通过 SmallCat OAuth 获取京东 PT Cookie，并同步 JD_COOKIE 到青龙或呆呆]
+// [origin: 自定义]
 // [depe: []]
 
 const http = require("http");
 const https = require("https");
-const {
-  sender: s,
-  console,
-  plugin,
-  user,
-  container,
-  utils,
-} = require('sillygirl');
-
+const { sender: s, console, plugin, user, container, utils } = require("sillygirl");
 
 const SCRIPT_VERSION = "v1.1.3";
-const JD_PT_LOGIN_URL = "https://plogin.m.jd.com/user/login.action?appid=300&returnurl=https%3A%2F%2Fm.jd.com%2F&source=wq_passport";
+const JD_PT_LOGIN_URL =
+  "https://plogin.m.jd.com/user/login.action?appid=300&returnurl=https%3A%2F%2Fm.jd.com%2F&source=wq_passport";
 const JD_COOKIE_ENV_NAME = "JD_COOKIE";
 
 const DEFAULTS = {
@@ -44,11 +37,16 @@ const DEFAULTS = {
 
 const pluginConfig = new plugin.Form({
   enable: plugin.Form.boolean().title("是否启用").default(true),
-  smallcat_id: plugin.Form.integer().title("smallcat 编号").description("后台 smallcat 页面里的编号，从 1 开始").widget("smallcat-panel").default(1),
+  smallcat_id: plugin.Form.integer()
+    .title("smallcat 编号")
+    .description("后台 smallcat 页面里的编号，从 1 开始")
+    .widget("smallcat-panel")
+    .default(1),
   account_mode: plugin.Form.string()
     .title("openid 获取模式")
     .description("普通用户授权：只读取已授权本插件的账号；手动填写：按下方 openid 读取，留空读取 SmallCat 全部账号")
-    .options(["authorized", "manual"]).default("authorized"),
+    .options(["authorized", "manual"])
+    .default("authorized"),
   manual_openids: plugin.Form.string()
     .title("手动 openid")
     .description("仅手动填写模式生效；多个用逗号、空格或换行分隔；留空读取全部账号")
@@ -56,15 +54,28 @@ const pluginConfig = new plugin.Form({
     .default(""),
   accounts_json: plugin.Form.string()
     .title("手动账号 JSON")
-    .description('仅手动填写模式生效且优先于手动 openid；留空从 SmallCat 读取；示例：[{"name":"京东账号1","openid":"openid"}]')
+    .description(
+      '仅手动填写模式生效且优先于手动 openid；留空从 SmallCat 读取；示例：[{"name":"京东账号1","openid":"openid"}]',
+    )
     .widget("textarea")
     .default(""),
   sync_panel: plugin.Form.select([
     { label: "同步青龙", value: "qinglong" },
     { label: "同步呆呆", value: "daidai" },
-  ]).title("同步目标").description("青龙/呆呆容器编号会根据后台容器列表动态渲染").default("qinglong"),
-  qinglong_id: plugin.Form.integer().title("青龙面板编号").description("后台青龙容器页面里的编号，从 1 开始").widget("qinglong-panel").default(1),
-  daidai_id: plugin.Form.integer().title("呆呆面板编号").description("后台呆呆容器页面里的编号，从 1 开始").widget("daidai-panel").default(1),
+  ])
+    .title("同步目标")
+    .description("青龙/呆呆容器编号会根据后台容器列表动态渲染")
+    .default("qinglong"),
+  qinglong_id: plugin.Form.integer()
+    .title("青龙面板编号")
+    .description("后台青龙容器页面里的编号，从 1 开始")
+    .widget("qinglong-panel")
+    .default(1),
+  daidai_id: plugin.Form.integer()
+    .title("呆呆面板编号")
+    .description("后台呆呆容器页面里的编号，从 1 开始")
+    .widget("daidai-panel")
+    .default(1),
   ql_cookie_env_name: plugin.Form.string().title("环境变量名").default(JD_COOKIE_ENV_NAME),
   request_timeout: plugin.Form.integer().title("请求超时秒数").min(5).max(90).default(30),
 });
@@ -87,15 +98,20 @@ async function main() {
 
     const smallcat = new container.SmallCat({ id: cfg.smallcat_id });
     const accounts = await loadAccounts(cfg, smallcat);
-    const panel = cfg.sync_panel === "daidai" ? new container.DaiDai({ id: cfg.daidai_id }) : new container.QingLong({ id: cfg.qinglong_id });
+    const panel =
+      cfg.sync_panel === "daidai"
+        ? new container.DaiDai({ id: cfg.daidai_id })
+        : new container.QingLong({ id: cfg.qinglong_id });
 
-    await s.reply([
-      "京东 PT Cookie 登录开始",
-      `脚本版本：${SCRIPT_VERSION}`,
-      `账号：${accounts.length}`,
-      `smallcat 编号：${cfg.smallcat_id}`,
-      `同步目标：${cfg.sync_panel === "daidai" ? "呆呆 #" + cfg.daidai_id : "青龙 #" + cfg.qinglong_id}`,
-    ].join("\n"));
+    await s.reply(
+      [
+        "京东 PT Cookie 登录开始",
+        `脚本版本：${SCRIPT_VERSION}`,
+        `账号：${accounts.length}`,
+        `smallcat 编号：${cfg.smallcat_id}`,
+        `同步目标：${cfg.sync_panel === "daidai" ? "呆呆 #" + cfg.daidai_id : "青龙 #" + cfg.qinglong_id}`,
+      ].join("\n"),
+    );
 
     let success = 0;
     const failures = [];
@@ -106,7 +122,9 @@ async function main() {
         if (!normalizePtCookie(cookie)) throw new Error("登录结果缺少 pt_key/pt_pin");
         const action = await syncPanel(cfg, panel, account, cookie);
         success += 1;
-        await s.reply(`${account.name}：${action === "update" ? "已更新" : "已创建"}${cfg.sync_panel === "daidai" ? "呆呆" : "青龙"}变量`);
+        await s.reply(
+          `${account.name}：${action === "update" ? "已更新" : "已创建"}${cfg.sync_panel === "daidai" ? "呆呆" : "青龙"}变量`,
+        );
       } catch (err) {
         const message = userErrorMessage(err);
         failures.push(`${account.name}：${message}`);
@@ -144,8 +162,10 @@ function env(name, fallback) {
 
 function validateConfig(cfg) {
   if (!Number.isInteger(cfg.smallcat_id) || cfg.smallcat_id < 1) throw new Error("smallcat 编号必须从 1 开始");
-  if (cfg.sync_panel === "qinglong" && (!Number.isInteger(cfg.qinglong_id) || cfg.qinglong_id < 1)) throw new Error("青龙面板编号必须从 1 开始");
-  if (cfg.sync_panel === "daidai" && (!Number.isInteger(cfg.daidai_id) || cfg.daidai_id < 1)) throw new Error("呆呆面板编号必须从 1 开始");
+  if (cfg.sync_panel === "qinglong" && (!Number.isInteger(cfg.qinglong_id) || cfg.qinglong_id < 1))
+    throw new Error("青龙面板编号必须从 1 开始");
+  if (cfg.sync_panel === "daidai" && (!Number.isInteger(cfg.daidai_id) || cfg.daidai_id < 1))
+    throw new Error("呆呆面板编号必须从 1 开始");
 }
 
 async function loadAccounts(cfg, smallcat) {
@@ -160,9 +180,8 @@ async function loadAccounts(cfg, smallcat) {
   }
 
   if (typeof smallcat.request !== "function") throw new Error("当前 SillyGirl 版本缺少 SmallCat.request");
-  const wanted = cfg.account_mode === "manual"
-    ? new Set(splitOpenids(cfg.manual_openids))
-    : await authorizedOpenidSet();
+  const wanted =
+    cfg.account_mode === "manual" ? new Set(splitOpenids(cfg.manual_openids)) : await authorizedOpenidSet();
   const payload = await smallcat.request("GET", "/api/accounts");
   let values = payload && (payload.value ?? payload.data);
   if (values && typeof values === "object" && !Array.isArray(values)) {
@@ -170,16 +189,21 @@ async function loadAccounts(cfg, smallcat) {
   }
   let accounts = normalizeAccounts(values, "smallcat 用户列表");
   if (wanted.size) accounts = accounts.filter((item) => wanted.has(item.openid));
-  if (!accounts.length) throw new Error(cfg.account_mode === "manual" ? "手动 openid 在 SmallCat 全部账号中没有匹配项" : "没有普通用户授权的 SmallCat 账号");
+  if (!accounts.length)
+    throw new Error(
+      cfg.account_mode === "manual"
+        ? "手动 openid 在 SmallCat 全部账号中没有匹配项"
+        : "没有普通用户授权的 SmallCat 账号",
+    );
   return accounts;
 }
 
 async function authorizedOpenidSet() {
   const users = await user.getUserList();
   const allowed = new Set();
-  for (const user of (Array.isArray(users) ? users : [])) {
+  for (const user of Array.isArray(users) ? users : []) {
     if (!user || user.disabled || !user.authorized) continue;
-    for (const openid of ((user.bindings && user.bindings.smallcat_openids) || [])) {
+    for (const openid of (user.bindings && user.bindings.smallcat_openids) || []) {
       const value = String(openid || "").trim();
       if (value) allowed.add(value);
     }
@@ -189,7 +213,14 @@ async function authorizedOpenidSet() {
 }
 
 function splitOpenids(value) {
-  return [...new Set(String(value || "").split(/[,，;；\s]+/).map((item) => item.trim()).filter(Boolean))];
+  return [
+    ...new Set(
+      String(value || "")
+        .split(/[,，;；\s]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
 }
 
 function normalizeAccounts(values, sourceName) {
@@ -249,7 +280,9 @@ async function jdPtCookieLogin(cfg, smallcat, account) {
   const oauthResult = unwrapServicePayload(oauthPayload);
   const code = nestedString(oauthResult, ["code"]);
   if (!code) {
-    throw new Error(`smallcat /wx/oauth 未返回 code；返回字段=${Object.keys(oauthResult || {}).join(",")}; message=${responseMessage(oauthResult) || "-"}`);
+    throw new Error(
+      `smallcat /wx/oauth 未返回 code；返回字段=${Object.keys(oauthResult || {}).join(",")}; message=${responseMessage(oauthResult) || "-"}`,
+    );
   }
 
   const callback = new URL(redirectUri);
@@ -257,37 +290,48 @@ async function jdPtCookieLogin(cfg, smallcat, account) {
   callback.searchParams.set("state", state);
   const callbackUrl = callback.toString();
 
-  const callbackRes = await requestTextFollowRedirects(cfg, "GET", callbackUrl, {
-    headers: Object.assign({}, jdPtHeaders(), {
-      "Sec-Fetch-Site": "none",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Dest": "document",
-      Priority: "u=0, i",
-    }),
-    jar,
-  }, 8);
+  const callbackRes = await requestTextFollowRedirects(
+    cfg,
+    "GET",
+    callbackUrl,
+    {
+      headers: Object.assign({}, jdPtHeaders(), {
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Dest": "document",
+        Priority: "u=0, i",
+      }),
+      jar,
+    },
+    8,
+  );
 
   const cookie = normalizePtCookie(jar) || cookieFromHeaders(callbackRes.headers) || normalizePtCookie(callbackRes.raw);
   if (cookie) return cookie;
 
   const finalUrl = finalJdUrl(callbackRes);
-  throw userActionError(finalUrl, [
-    "JD wxlogincenter 未返回 pt_key/pt_pin",
-    `login_status=${first.status}`,
-    `callback_status=${callbackRes.status}`,
-    `login_location=${redactUrl(location)}`,
-    `callback=${redactUrl(callbackUrl)}`,
-    `callback_location=${redactUrl(headerValue(callbackRes.headers, "location") || "") || "无"}`,
-    `跳转链=${formatRedirectHops(callbackRes.hops) || "-"}`,
-    `Cookie字段=${jar.names().join(",") || "无"}`,
-    `页面=${htmlTitleOrPreview(callbackRes.raw) || "-"}`,
-  ].join("；"));
+  throw userActionError(
+    finalUrl,
+    [
+      "JD wxlogincenter 未返回 pt_key/pt_pin",
+      `login_status=${first.status}`,
+      `callback_status=${callbackRes.status}`,
+      `login_location=${redactUrl(location)}`,
+      `callback=${redactUrl(callbackUrl)}`,
+      `callback_location=${redactUrl(headerValue(callbackRes.headers, "location") || "") || "无"}`,
+      `跳转链=${formatRedirectHops(callbackRes.hops) || "-"}`,
+      `Cookie字段=${jar.names().join(",") || "无"}`,
+      `页面=${htmlTitleOrPreview(callbackRes.raw) || "-"}`,
+    ].join("；"),
+  );
 }
 
 function jdPtHeaders() {
   return {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf2541939) XWEB/19841 Flue",
-    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 NetType/WIFI MicroMessenger/7.0.20.1781(0x6700143B) WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf2541939) XWEB/19841 Flue",
+    Accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/wxpic,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "zh-CN,zh;q=0.9",
     "Upgrade-Insecure-Requests": "1",
   };
@@ -297,7 +341,8 @@ async function syncPanel(cfg, panel, account, cookie) {
   const pureCookie = normalizePtCookie(cookie);
   if (!pureCookie) throw new Error("待同步结果缺少 pt_key/pt_pin");
 
-  const remark = account.remark || normalizePin(cookiePin(pureCookie)) || `JD_COOKIE自动更新-${account.name}-${account.openid}`;
+  const remark =
+    account.remark || normalizePin(cookiePin(pureCookie)) || `JD_COOKIE自动更新-${account.name}-${account.openid}`;
   const envs = await panelEnvs(cfg, panel);
   const existing = findExistingEnv(envs, pureCookie, remark);
   if (existing) {
@@ -313,7 +358,10 @@ async function syncPanel(cfg, panel, account, cookie) {
 }
 
 async function panelEnvs(cfg, panel) {
-  const data = cfg.sync_panel === "daidai" ? await panel.getEnvs(cfg.ql_cookie_env_name) : await panel.getEnvs({ searchValue: cfg.ql_cookie_env_name });
+  const data =
+    cfg.sync_panel === "daidai"
+      ? await panel.getEnvs(cfg.ql_cookie_env_name)
+      : await panel.getEnvs({ searchValue: cfg.ql_cookie_env_name });
   return envItems({ data }).filter((item) => item.name === cfg.ql_cookie_env_name);
 }
 
@@ -391,8 +439,12 @@ function requestText(cfg, method, url, options = {}) {
         });
       });
     });
-    req.setTimeout(cfg.request_timeout * 1000, () => req.destroy(new Error(`请求超时 ${method.toUpperCase()} ${redactUrl(url)}`)));
-    req.on("error", (err) => reject(new Error(`请求失败 ${method.toUpperCase()} ${redactUrl(url)}：${err.message || err}`)));
+    req.setTimeout(cfg.request_timeout * 1000, () =>
+      req.destroy(new Error(`请求超时 ${method.toUpperCase()} ${redactUrl(url)}`)),
+    );
+    req.on("error", (err) =>
+      reject(new Error(`请求失败 ${method.toUpperCase()} ${redactUrl(url)}：${err.message || err}`)),
+    );
     if (body) req.write(body);
     req.end();
   });
@@ -435,11 +487,9 @@ function isAllowedJdRedirect(url) {
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
-    return parsed.protocol === "https:" && (
-      host === "jd.com" ||
-      host.endsWith(".jd.com") ||
-      host === "3.cn" ||
-      host.endsWith(".3.cn")
+    return (
+      parsed.protocol === "https:" &&
+      (host === "jd.com" || host.endsWith(".jd.com") || host === "3.cn" || host.endsWith(".3.cn"))
     );
   } catch (_) {
     return false;
@@ -447,11 +497,13 @@ function isAllowedJdRedirect(url) {
 }
 
 function formatRedirectHops(hops) {
-  return (Array.isArray(hops) ? hops : []).map((hop, index) => {
-    const location = hop.location ? ` -> ${redactUrl(hop.location)}` : "";
-    const cookies = hop.cookies && hop.cookies.length ? ` cookies=${hop.cookies.join(",")}` : "";
-    return `#${index + 1} ${hop.status} ${redactUrl(hop.url)}${location}${cookies}`;
-  }).join(" | ");
+  return (Array.isArray(hops) ? hops : [])
+    .map((hop, index) => {
+      const location = hop.location ? ` -> ${redactUrl(hop.location)}` : "";
+      const cookies = hop.cookies && hop.cookies.length ? ` cookies=${hop.cookies.join(",")}` : "";
+      return `#${index + 1} ${hop.status} ${redactUrl(hop.url)}${location}${cookies}`;
+    })
+    .join(" | ");
 }
 
 function finalJdUrl(res) {
@@ -507,7 +559,7 @@ function unwrapServicePayload(payload) {
 
 function unwrapServiceData(data) {
   if (data && typeof data === "object" && !Array.isArray(data)) return data;
-  if (typeof data === "string" && /^[\s]*[\[{]/.test(data)) {
+  if (typeof data === "string" && /^[\s]*[[{]/.test(data)) {
     const decoded = parseJsonish(data);
     if (decoded) return decoded;
   }
@@ -534,7 +586,7 @@ function nestedValue(payload, keys) {
     }
   } else if (typeof payload === "string") {
     const text = payload.trim();
-    if (/^[\[{]/.test(text)) {
+    if (/^[[{]/.test(text)) {
       try {
         return nestedValue(JSON.parse(text), keys);
       } catch (_) {}
@@ -553,7 +605,9 @@ function nestedString(payload, keys) {
 function responseMessage(payload) {
   const value = nestedValue(payload, ["errmsg", "errMsg", "message", "msg", "error", "retMsg", "retmsg"]);
   if (value && typeof value === "object") return JSON.stringify(value).slice(0, 300);
-  return String(value || "").trim().slice(0, 300);
+  return String(value || "")
+    .trim()
+    .slice(0, 300);
 }
 
 function normalizePtCookie(cookie) {
@@ -612,7 +666,15 @@ function htmlTitleOrPreview(raw) {
   const text = htmlUnescape(String(raw || ""));
   const title = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (title && title[1]) return safePreview(title[1].replace(/\s+/g, " ").trim(), 120);
-  return safePreview(text.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(), 160);
+  return safePreview(
+    text
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+    160,
+  );
 }
 
 function htmlUnescape(text) {
@@ -669,7 +731,10 @@ class SimpleCookieJar {
 
   addFromHeaders(headers, requestUrl) {
     for (const line of allHeaderValues(headers, "set-cookie")) {
-      const parts = String(line || "").split(";").map((part) => part.trim()).filter(Boolean);
+      const parts = String(line || "")
+        .split(";")
+        .map((part) => part.trim())
+        .filter(Boolean);
       const first = parts.shift() || "";
       const index = first.indexOf("=");
       if (index <= 0) continue;
@@ -719,7 +784,10 @@ class SimpleCookieJar {
 }
 
 function normalizeCookieDomain(domain) {
-  return String(domain || "").trim().toLowerCase().replace(/^\./, "");
+  return String(domain || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\./, "");
 }
 
 function domainMatches(host, domain) {
@@ -756,7 +824,9 @@ function jdActionMessage(url) {
 }
 
 function isJdDebugFailure(message) {
-  return /pt_key|pt_pin|wxlogincenter|login_status|callback_status|login_location|callback_location|跳转链|Cookie字段|页面=/.test(String(message || ""));
+  return /pt_key|pt_pin|wxlogincenter|login_status|callback_status|login_location|callback_location|跳转链|Cookie字段|页面=/.test(
+    String(message || ""),
+  );
 }
 
 function lastJdUrlFromText(message) {

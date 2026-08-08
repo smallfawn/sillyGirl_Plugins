@@ -1,118 +1,138 @@
 // [title: 爱路桥]
 // [name: aiLuQiao]
-// [language: javascript]
-// [class: 任务]
-// [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 爱路桥短信或手机号UID批量登录、昵称/积分/红包历史查询、账号管理、授权、青龙同步和到期检测。]
+// [author: huawei / mrconli]
+// [version: v1.4.1]
+// [rule: raw ^爱路桥(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 0 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(爱路桥|alq)(登录|登陆)$|^登(录|陆)(爱路桥|alq)$|^(爱路桥|alq)(查询|管理|检测|教程)$|^(查询|管理|检测|教程)(爱路桥|alq)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 爱路桥凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://pp.myapp.com/ma_icon/0/icon_52735792_1742312403/256]
+// [origin: backup/【自用】-爱路桥_v1.0.4_By.huawei.py;backup/爱路桥_v1.4.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("AI_LU_QIAO"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("爱路桥插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("爱路桥：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`爱路桥处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://www.ailuqiao.cn/mobile";
+function cookie() {
+  return `beegosessionID=${crypto.randomBytes(16).toString("hex")}`;
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+function headers(c) {
+  return {
+    "user-agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Mobile Safari/537.36",
+    connection: "Keep-Alive",
+    "accept-encoding": "gzip",
+    cookie: c,
+  };
+}
+async function userInfo(ctx, uid, c) {
+  const d = await ctx.requestJson(`${BASE}/myinfo?uid=${encodeURIComponent(uid)}`, { headers: headers(c) }),
+    x = d?.data;
+  if (!x?.mobile) throw new Error(d?.message || "UID认证失败");
+  return { mobile: String(x.mobile), nickname: x.nickname || "未知用户", integral: x.integral ?? 0 };
+}
+async function records(ctx, uid, c) {
+  const d = await ctx.requestJson(`${BASE}/my_luck?uid=${encodeURIComponent(uid)}&cid=1028`, { headers: headers(c) }),
+    rows = Array.isArray(d?.data) ? d.data : [],
+    now = new Date(),
+    cur = now.getMonth(),
+    prev = (cur + 11) % 12;
+  let total = 0,
+    current = 0,
+    last = 0;
+  const recent = [];
+  for (const r of rows) {
+    const amount = Number.parseFloat(String(r.draw || 0).replace("元", "")) || 0,
+      time = new Date(r.create_time);
+    total += amount;
+    if (time.getFullYear() === now.getFullYear() && time.getMonth() === cur) current += amount;
+    const py = cur === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    if (time.getFullYear() === py && time.getMonth() === prev) last += amount;
+    if (recent.length < 5) recent.push(`[${amount.toFixed(2)}元] ${r.create_time || ""}`);
+  }
+  return { total, current, last, recent };
+}
+async function sms(ctx) {
+  const phone = await ctx.prompt(ctx.sender, "请输入手机号", 120000);
+  if (!/^1[3-9]\d{9}$/.test(String(phone || ""))) throw new Error("手机号格式错误");
+  const c = cookie(),
+    sent = await ctx.requestJson(`${BASE}/service_send`, {
+      method: "POST",
+      headers: { ...headers(c), "content-type": "application/x-www-form-urlencoded" },
+      form: { mobile: phone },
+    });
+  if (Number(sent?.status) !== 1) throw new Error(sent?.message || "发送验证码失败");
+  const code = await ctx.prompt(ctx.sender, "请输入收到的验证码", 300000),
+    login = await ctx.requestJson(`${BASE}/service_yz`, {
+      method: "POST",
+      headers: { ...headers(c), "content-type": "application/x-www-form-urlencoded" },
+      form: { mobile: phone, code },
+    });
+  if (Number(login?.status) !== 1 || !login?.uid) throw new Error(login?.message || "验证码登录失败");
+  return { phone: String(phone), uid: String(login.uid), cookie: c };
+}
+const rt = createAccountRuntime({
+  title: "爱路桥",
+  shortName: "爱路桥",
+  prefix: "mrconli.ailuqiao",
+  defaultEnvName: "S_ALQ",
+  orderPrefix: "ALQ",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const choice = await ctx.prompt(ctx.sender, "[1] 短信登录\n[2] 手机号#UID批量登录", 60000);
+    if (choice === null) return [];
+    if (choice === "1") {
+      try {
+        const x = await sms(ctx),
+          u = await userInfo(ctx, x.uid, x.cookie);
+        return [{ account: x.phone, token: `${x.uid}#${x.cookie}`, remark: u.nickname || x.phone }];
+      } catch (error) {
+        await ctx.sender.reply(`短信登录失败：${error?.message || error}`);
+        return [];
       }
     }
-    return replySender.reply(`爱路桥同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`爱路桥提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的爱路桥账号");
-  return s.reply([`爱路桥账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的爱路桥账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个爱路桥账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "aiLuQiao|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "AI_LU_QIAO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+    const input = await ctx.prompt(ctx.sender, "请输入手机号#6位UID，支持批量", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const [phone, uid] = line.trim().split("#"),
+          c = cookie();
+        if (!/^1[3-9]\d{9}$/.test(phone) || !/^\d{6}$/.test(uid)) throw new Error("格式错误");
+        const u = await userInfo(ctx, uid, c),
+          masked = `${phone.slice(0, 3)}*****${phone.slice(-2)}`;
+        if (u.mobile !== masked && u.mobile !== phone) throw new Error("UID与手机号不匹配");
+        rows.push({ account: phone, token: `${uid}#${c}`, remark: u.nickname || phone });
+      } catch (error) {
+        await ctx.sender.reply(`爱路桥登录失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const i = item.token.indexOf("#"),
+      uid = item.token.slice(0, i),
+      c = item.token.slice(i + 1),
+      u = await userInfo(ctx, uid, c),
+      r = await records(ctx, uid, c);
+    return `👤 昵称：${u.nickname}\n🍀 积分：${u.integral}\n🧧 历史汇总：${r.total.toFixed(2)}元\n📈 本月累计：${r.current.toFixed(2)}元\n📊 上月统计：${r.last.toFixed(2)}元\n🎁 最近红包：\n${r.recent.join("\n") || "暂无"}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const i = item.token.indexOf("#");
+      await userInfo(ctx, item.token.slice(0, i), item.token.slice(i + 1));
+      return "";
+    } catch (_) {
+      return "UID/Cookie检测失效，请重新登录";
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====爱路桥教程=====\n支持短信验证码，或手机号#6位UID批量登录\n查询昵称、积分、红包历史/本月/上月统计\n指令：爱路桥登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`爱路桥执行失败：${e?.message || e}`));

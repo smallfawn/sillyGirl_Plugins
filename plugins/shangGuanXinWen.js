@@ -1,118 +1,96 @@
 // [title: 上观新闻]
 // [name: shangGuanXinWen]
-// [language: javascript]
-// [class: 任务]
+// [desc: 上观新闻账密登录、积分查询、授权及青龙同步。]
 // [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.2]
+// [rule: raw ^(上观|sgxw)(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(上观|sgxw)(登录|登陆)$|^登(录|陆)(上观|sgxw)$|^(上观|sgxw)(查询|管理)$|^(查询|管理)(上观|sgxw)$|^清理上观$|^上观$|^上观教程$]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
 // [icon: https://y.gtimg.cn/music/photo_new/T053M000001NYort1rZecQ.png]
-// [description: 上观新闻凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/上观新闻_v1.1.2_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("SHANG_GUAN_XIN_WEN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("上观新闻插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("上观新闻：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`上观新闻处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+async function login(ctx, mobile, password) {
+  const times = Date.now(),
+    sign = crypto.createHash("md5").update(`${mobile}$${times}$rVX9ITrrTPrCurUe`).digest("hex"),
+    d = await ctx.requestJson("https://services.shobserver.cn/user/login", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": "okhttp/4.10.0",
+        "accept-encoding": "gzip",
+        connection: "Keep-Alive",
+      },
+      form: { mobile, password, times, sign },
+    });
+  if (d?.breturn !== true) throw new Error(d?.errorinfo || "账号密码错误");
+  return {
+    userId: String(d?.object?.id || ""),
+    score: d?.object?.score ?? 0,
+    name: d?.object?.nickname || d?.object?.name || mobile,
+  };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
+const parse = (v) => {
   try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+    return JSON.parse(v);
+  } catch {
+    return {};
+  }
+};
+const rt = createAccountRuntime({
+  title: "上观新闻",
+  shortName: "上观",
+  prefix: "sgxw",
+  defaultEnvName: "S_SGXW",
+  orderPrefix: "SGXW",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码#备注，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const raw of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const p = raw.split("#"),
+          mobile = p.shift(),
+          password = p.shift(),
+          remark = p.join("#") || mobile;
+        if (!/^1\d{10}$/.test(mobile) || !password) throw new Error("格式错误");
+        const x = await login(ctx, mobile, password);
+        rows.push({
+          account: mobile,
+          token: JSON.stringify({ mobile, password, userId: x.userId }),
+          remark: remark || x.name,
+        });
+      } catch (e) {
+        await ctx.sender.reply(`上观登录失败：${e?.message || e}`);
       }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = parse(item.token),
+      d = await login(ctx, x.mobile || item.account, x.password);
+    return `📱 手机号：${ctx.mask(item.account)}\n👤 用户：${d.name}\n🪙 当前积分：${d.score}\n🆔 用户ID：${d.userId}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const x = parse(item.token),
+        d = await login(ctx, x.mobile || item.account, x.password);
+      return `账号有效，当前积分${d.score}`;
+    } catch (_) {
+      return "上观新闻账号登录失效，请检查密码";
     }
-    return replySender.reply(`上观新闻同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`上观新闻提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的上观新闻账号");
-  return s.reply([`上观新闻账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的上观新闻账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个上观新闻账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "shangGuanXinWen|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "SHANG_GUAN_XIN_WEN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+  },
+  envValue(_ctx, item) {
+    const x = parse(item.token);
+    return `${x.mobile || item.account}#${x.password}`;
+  },
+  tutorial:
+    "=====上观新闻教程=====\n先在上观新闻客户端注册账号，发送上观登录，按 手机号#密码#备注 提交。\n插件使用原版时间戳MD5签名登录并查询积分，授权后同步青龙。\n指令：上观登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`上观新闻执行失败：${e?.message || e}`));

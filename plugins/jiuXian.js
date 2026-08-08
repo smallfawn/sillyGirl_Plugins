@@ -1,118 +1,89 @@
 // [title: 酒仙]
 // [name: jiuXian]
-// [language: javascript]
-// [class: 任务]
-// [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 酒仙账号密码登录、会员 Token、积分及签到状态查询、授权与青龙同步。]
+// [author: mrconli / rujingxianghai]
+// [version: v1.2.0]
+// [rule: raw ^酒仙(登录|登陆|查询|管理|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(酒仙|jx)(登录|登陆)$|^登(录|陆)(酒仙|jx)$|^(酒仙|jx)(查询|管理)$|^(查询|管理)(酒仙|jx)$|^酒仙$|^酒仙检测$|^(酒仙|jx)教程$|^教程(酒仙|jx)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 酒仙凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://pp.myapp.com/ma_icon/0/icon_10072620_1758940657/256]
+// [origin: backup/m039_酒仙_v1.2.0_By.mrconli.py;backup/酒仙_v1.7_By.rujingxianghai.py;backup/酒仙签到_v1.6_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("JIU_XIAN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("酒仙插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("酒仙：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`酒仙处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const KEY = "ad96ade2-b918-3e05-86b8-ba8c34747b0c",
+  BASE = {
+    appVersion: "9.2.13",
+    areaId: "500",
+    channelCode: "0",
+    cpsId: "xiaomi",
+    deviceIdentify: KEY,
+    deviceType: "ANDROID",
+    deviceTypeExtra: "0",
+    equipmentType: "M2011K2C",
+    netEnv: "wifi",
+    screenReslolution: "1080x2297",
+    supportWebp: "1",
+    sysVersion: "14",
+  },
+  H = { "user-agent": "okhttp/3.14.9" };
+function parse(x) {
+  const i = String(x).indexOf("#");
+  return { user: String(x).slice(0, i), pass: String(x).slice(i + 1) };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`酒仙同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`酒仙提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的酒仙账号");
-  return s.reply([`酒仙账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的酒仙账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个酒仙账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function login(ctx, x) {
+  const d = await ctx.requestJson("https://newappuser.jiuxian.com/user/loginUserNamePassWd.htm", {
+    method: "POST",
+    headers: H,
+    form: { ...BASE, appKey: KEY, userName: x.user, passWord: x.pass },
   });
+  if (String(d?.success) !== "1") throw new Error(d?.errMsg || "登录失败");
+  const u = d.result?.userInfo || {};
+  if (!u.token) throw new Error("登录未返回Token");
+  return { token: u.token, name: u.nickName || x.user };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function info(ctx, token) {
+  const u = new URL("https://newappuser.jiuxian.com/memberChannel/memberInfo.htm");
+  for (const [k, v] of Object.entries({ ...BASE, token, appKey: KEY })) u.searchParams.set(k, v);
+  const d = await ctx.requestJson(u.toString(), { headers: H });
+  if (String(d?.success) !== "1") throw new Error(d?.errMsg || "会员信息失败");
+  return d.result || {};
 }
-function ownerKey(sender) { return "jiuXian|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "JIU_XIAN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "酒仙",
+  shortName: "酒仙",
+  prefix: "m039_jiuxian",
+  defaultEnvName: "JX_COOKIE",
+  orderPrefix: "JX",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 账号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const x = parse(line),
+        a = await login(ctx, x);
+      rows.push({ account: x.user, token: line.trim(), remark: a.name });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const a = await login(ctx, parse(item.token)),
+      d = await info(ctx, a.token);
+    return `👤 昵称：${a.name}\n🎯 积分：${d.goldMoney ?? 0}\n📅 今日签到：${d.isSignTody ? "已签到" : "未签到"}`;
+  },
+  async cronCheck(ctx, item) {
+    const a = await login(ctx, parse(item.token)),
+      d = await info(ctx, a.token);
+    return `账号有效，积分${d.goldMoney ?? 0}，今日${d.isSignTody ? "已签到" : "未签到"}`;
+  },
+  envValue(_c, i) {
+    return i.token;
+  },
+  tutorial: "输入酒仙账号#密码；插件实时登录获取 Token，查询会员积分和今日签到状态，授权后同步青龙。",
+});
+rt.main().catch((e) => s.reply(`酒仙执行失败：${e?.message || e}`));

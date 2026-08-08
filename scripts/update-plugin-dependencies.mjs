@@ -1,5 +1,5 @@
 import { builtinModules } from "node:module";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { access, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
@@ -7,10 +7,7 @@ const root = process.cwd();
 const pluginsDir = path.join(root, "plugins");
 const checkOnly = process.argv.includes("--check");
 const pluginExts = new Set([".js", ".py"]);
-const nodeBuiltins = new Set([
-  ...builtinModules,
-  ...builtinModules.map((name) => `node:${name}`),
-]);
+const nodeBuiltins = new Set([...builtinModules, ...builtinModules.map((name) => `node:${name}`)]);
 
 function commandOutput(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -73,13 +70,19 @@ function normalizePythonPackage(value) {
 }
 
 const pythonPackageNames = new Map([
-  ["bs4", "beautifulsoup4"], ["Crypto", "pycryptodome"], ["Cryptodome", "pycryptodomex"],
-  ["cv2", "opencv-python"], ["dateutil", "python-dateutil"], ["jwt", "pyjwt"],
-  ["PIL", "pillow"], ["sklearn", "scikit-learn"], ["yaml", "pyyaml"],
+  ["bs4", "beautifulsoup4"],
+  ["Crypto", "pycryptodome"],
+  ["Cryptodome", "pycryptodomex"],
+  ["cv2", "opencv-python"],
+  ["dateutil", "python-dateutil"],
+  ["jwt", "pyjwt"],
+  ["PIL", "pillow"],
+  ["sklearn", "scikit-learn"],
+  ["yaml", "pyyaml"],
 ]);
 
-function fallbackNodeDependencies(content) {
-  const deps = new Set();
+function nodeSpecifiers(content) {
+  const values = new Set();
   const patterns = [
     /\brequire\s*\(\s*["']([^"']+)["']\s*\)/g,
     /\bimport\s+(?:[^"']+\s+from\s+)?["']([^"']+)["']/g,
@@ -88,15 +91,51 @@ function fallbackNodeDependencies(content) {
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(content))) {
-      const name = normalizeNodePackage(match[1]);
-      if (name) deps.add(name);
+      values.add(match[1]);
     }
   }
-  return [...deps];
+  return [...values];
 }
 
 async function scanNodeDependencies(file) {
-  return fallbackNodeDependencies(await readFile(file, "utf8")).sort();
+  const content = await readFile(file, "utf8");
+  const deps = new Set();
+  for (const specifier of nodeSpecifiers(content)) {
+    if (specifier.startsWith(".")) {
+      const dependency = await normalizeNodeModule(file, specifier);
+      deps.add(dependency);
+      continue;
+    }
+    const dependency = normalizeNodePackage(specifier);
+    if (dependency) deps.add(dependency);
+  }
+  return [...deps].sort((a, b) => a.localeCompare(b));
+}
+
+async function normalizeNodeModule(file, specifier) {
+  const normalized = String(specifier || "").replaceAll("\\", "/");
+  if (!/^\.\/[A-Za-z0-9._-]+$/.test(normalized) || normalized.includes("..")) {
+    throw new Error(`${path.relative(root, file)} 的模块路径无效：${specifier}`);
+  }
+  const suffix = path.extname(normalized).toLowerCase();
+  if (suffix && suffix !== ".js") {
+    throw new Error(`${path.relative(root, file)} 的模块必须使用 .js：${specifier}`);
+  }
+  const dependency = suffix ? normalized : `${normalized}.js`;
+  const target = path.resolve(path.dirname(file), dependency);
+  if (path.dirname(target) !== path.resolve(path.dirname(file))) {
+    throw new Error(`${path.relative(root, file)} 的模块不在同级目录：${specifier}`);
+  }
+  try {
+    await access(target);
+  } catch {
+    throw new Error(`${path.relative(root, file)} 缺少模块文件：${dependency}`);
+  }
+  const targetContent = await readFile(target, "utf8");
+  if (!/^\s*\/\/\s*\[\s*module\s*:\s*true\s*\]\s*$/im.test(targetContent)) {
+    throw new Error(`${path.relative(root, target)} 未声明 [module: true]`);
+  }
+  return dependency;
 }
 
 async function scanPythonDependencies(file) {
@@ -108,7 +147,9 @@ async function scanPythonDependencies(file) {
     "print(json.dumps(sorted(names-set(sys.stdlib_module_names)-{'sillygirl'})))",
   ].join(";");
   const imports = JSON.parse(await commandOutput(process.env.PYTHON || "python", ["-c", scanner, file]));
-  return [...new Set(imports.map((name) => pythonPackageNames.get(name) || normalizePythonPackage(name)).filter(Boolean))].sort();
+  return [
+    ...new Set(imports.map((name) => pythonPackageNames.get(name) || normalizePythonPackage(name)).filter(Boolean)),
+  ].sort();
 }
 
 function lineForDepe(deps, style = "js") {

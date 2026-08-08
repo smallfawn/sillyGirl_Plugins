@@ -8,6 +8,14 @@ on:
       - "plugins/**"
       - "scripts/generate-public-file-index.mjs"
       - "scripts/update-plugin-dependencies.mjs"
+      - "scripts/normalize-plugin-metadata.mjs"
+      - "scripts/audit-plugin-metadata.mjs"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "eslint.config.mjs"
+      - ".prettierignore"
+      - ".prettierrc.json"
       - ".github/workflows/public-file-index.yml"
   workflow_dispatch:
 
@@ -22,17 +30,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependency scanners
+      - name: Install repository tooling
+        run: npm ci
+      - name: Check formatting and dead code
         run: |
-          npm install --no-save --no-package-lock madge
-          python -m pip install --upgrade pipreqs
+          npm run format:check
+          npm run lint
+      - name: Normalize plugin metadata
+        run: node scripts/normalize-plugin-metadata.mjs --write
       - name: Detect plugin dependencies
         run: node scripts/update-plugin-dependencies.mjs
       - name: Generate publicFileIndex
         run: node scripts/generate-public-file-index.mjs
+      - name: Audit metadata and module closure
+        run: node scripts/audit-plugin-metadata.mjs
+      - name: Run plugin runtime smoke tests
+        run: npm run test:runtime
       - name: Commit plugin metadata
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

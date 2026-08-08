@@ -1,118 +1,105 @@
 // [title: 伊利QQ星]
 // [name: yiLiQqXing]
-// [language: javascript]
-// [class: 任务]
+// [desc: 伊利QQ星 AuthKey 绑定、会员资料/等级/积分查询、授权及青龙同步。]
 // [author: 8165799]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.0]
+// [rule: raw ^伊利QQ星(登录|登陆|查询|管理|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^(伊利|伊利QQ星)(登录|登陆|管理|查询|教程)$|^(登录|登陆|管理|查询)(伊利|伊利QQ星)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 伊利QQ星凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://api.iconify.design/lucide:milk.svg]
+// [origin: backup/伊利QQ星_v1.1_By.8165799.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("YI_LI_QQ_XING"),
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const APP = "wx650bdff059f63f5b",
+  URL = "https://mall.yili.com/MAMAIF/MCSWSIAPI.asmx/Call";
+function key(x) {
+  let s = String(x || "").trim();
+  if (s.includes("#")) s = s.split("#").filter(Boolean).at(-1);
+  try {
+    const j = JSON.parse(s);
+    s = j.auth_key || j.AuthKey || s;
+  } catch {}
+  return s.match(/(?:AuthKey|auth_key)\s*[:=]\s*"?([0-9a-f-]{32,64})/i)?.[1] || s;
+}
+async function call(ctx, k, method, params = "") {
+  const payload = {
+      DeviceCode: APP,
+      AuthKey: k || "0".repeat(36),
+      Method: method,
+      Params: typeof params === "string" ? params : JSON.stringify(params),
+    },
+    r = await ctx.request(URL, {
+      method: "POST",
+      headers: {
+        "user-agent": "Mozilla/5.0 MicroMessenger MiniProgramEnv/Windows",
+        "content-type": "application/x-www-form-urlencoded",
+        referer: `https://servicewechat.com/${APP}/162/page-frame.html`,
+      },
+      form: { RequestPack: JSON.stringify(payload) },
+    });
+  let t = r.text.trim(),
+    m = t.match(/<string[^>]*>([\s\S]*?)<\/string>/i);
+  if (m)
+    t = m[1]
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+  const d = JSON.parse(t);
+  if (typeof d.Result === "string")
+    try {
+      d.Result = JSON.parse(d.Result);
+    } catch {}
+  return d;
+}
+async function info(ctx, k) {
+  const d = await call(ctx, k, "MemberService.GetMyMemberInfo");
+  if (Number(d?.Return) !== 0) throw new Error(`AuthKey无效或已过期：${d?.Return}`);
+  const i = d.Result || {},
+    p = await call(ctx, k, "PointsService.GetPointsBalance").catch(() => ({})),
+    x = Number(p?.Return) === 0 && typeof p.Result === "object" ? p.Result : {};
+  return {
+    id: String(i.ID || crypto.createHash("md5").update(k).digest("hex").slice(0, 10)),
+    name: i.RealName || i.NickName || "伊利QQ星用户",
+    level: i.MemberLevelName || "未知",
+    points: x.Points ?? i.PointsBalance ?? 0,
+  };
+}
+const rt = createAccountRuntime({
+  title: "伊利QQ星",
+  shortName: "伊利QQ星",
+  prefix: "yiliqqx",
+  defaultEnvName: "YILI_QQX_AUTHKEY",
+  orderPrefix: "YLQQX",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 AuthKey，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const raw of input.split(/\r?\n/).filter(Boolean)) {
+      const k = key(raw),
+        u = await info(ctx, k);
+      rows.push({ account: u.id, token: k, remark: u.name });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const u = await info(ctx, key(item.token));
+    return `👤 昵称：${u.name}\n🏅 等级：${u.level}\n💰 积分：${u.points}\n🆔 会员ID：${u.id}`;
+  },
+  async cronCheck(ctx, item) {
+    const u = await info(ctx, key(item.token));
+    return `AuthKey有效，等级${u.level}，积分${u.points}`;
+  },
+  envValue(_c, i) {
+    return key(i.token);
+  },
+  tutorial: "抓包伊利QQ星小程序 RequestPack 中的 AuthKey；绑定后查询会员资料、等级及积分，授权后同步青龙。",
 });
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("伊利QQ星插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("伊利QQ星：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`伊利QQ星处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`伊利QQ星同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`伊利QQ星提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的伊利QQ星账号");
-  return s.reply([`伊利QQ星账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的伊利QQ星账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个伊利QQ星账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "yiLiQqXing|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "YI_LI_QQ_XING").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+rt.main().catch((e) => s.reply(`伊利QQ星执行失败：${e?.message || e}`));

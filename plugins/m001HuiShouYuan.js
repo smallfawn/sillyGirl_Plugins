@@ -1,118 +1,117 @@
 // [title: m001_回收猿]
 // [name: m001HuiShouYuan]
-// [language: javascript]
-// [class: 任务]
+// [desc: 回收猿会员名批量登录、余额/冻结/提现收益查询、备注与CK管理、付费或积分授权、青龙同步和过期清理。]
 // [author: mrconli]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.4.1]
+// [rule: raw ^回收猿(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 32 8,16 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^回收猿(.*)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: m001_回收猿凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://bbs.autman.cn/assets/files/2025-09-07/1757242448-823459-hsy.webp]
+// [origin: backup/m001_回收猿_v1.4.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
 
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("M001_HUI_SHOU_YUAN"),
-});
+const API = "https://www.52bjy.com";
+const APP_KEY = "1079fb245839e765";
+const SIGN_SALT = "UppwYkfBlk";
 
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("m001_回收猿插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("m001_回收猿：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`m001_回收猿处理失败：${message(error)}`);
-  }
+function sign(params) {
+  return crypto
+    .createHash("md5")
+    .update(
+      Object.entries(params)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("&") + SIGN_SALT,
+    )
+    .digest("hex");
 }
 
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+async function getInfo(ctx, username) {
+  const params = {
+    action: "userinfo",
+    app: "hsywx",
+    appkey: APP_KEY,
+    auth: "51db9d390db6c9ef4c544be8ea15b8de",
+    merchant_id: "2",
+    username,
+  };
+  params.sign = sign(params);
+  const url = new URL("/api/app/user.php", API);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  const data = await ctx.requestJson(url, {
+    headers: {
+      "user-agent": "Mozilla/5.0 MicroMessenger/7.0.20 MiniProgramEnv/Windows",
+      referer: "https://servicewechat.com/wxadd84841bd31a665/113/page-frame.html",
+    },
+  });
+  return data?.data ? { mobile: data.data.mobile, passport: data.data.passport } : null;
+}
+
+async function getBalance(ctx, username) {
+  const params = { action: "user", appkey: APP_KEY, merchant_id: "2", method: "center", username, version: "2" };
+  params.sign = sign(params);
+  const url = new URL("/api/app/hsy.php", API);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  const data = await ctx.requestJson(url);
+  if (!data?.data) throw new Error(data?.msg || "余额接口数据为空");
+  const item = data.data,
+    total = Math.round((Number(item.award || 0) + Number(item.award_total || 0)) * 100) / 100;
+  return `🧧 余额：${item.award ?? 0}元\n💳 冻结中：${item.award_freeze_total ?? 0}元\n🍀 可提现：${item.award_balance ?? 0}元\n🔄 提现中：${item.award_check ?? 0}元\n💰 已提现：${item.award_total ?? 0}元\n📊 总收益：${total}元`;
+}
+
+const runtime = createAccountRuntime({
+  title: "回收猿",
+  shortName: "回收猿",
+  prefix: "mrconli.huishouyuan",
+  defaultEnvName: "hsy_username",
+  orderPrefix: "HSY",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(
+      ctx.sender,
+      "=======回收猿登录=======\n请输入：备注#username\n支持批量，每行一个；无需抓包，提交会员名即可\n输入q退出",
+      120000,
+    );
+    if (input === null) return [];
+    const results = [];
+    for (const line of input
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean)) {
+      const cut = line.indexOf("#");
+      if (cut <= 0 || cut === line.length - 1) continue;
+      const remark = line.slice(0, cut).trim(),
+        username = line.slice(cut + 1).trim();
+      try {
+        await getBalance(ctx, username);
+        const info = await getInfo(ctx, username).catch(() => null);
+        results.push({
+          account: username,
+          token: username,
+          remark: remark || info?.passport || username,
+          extra: info ? { profile: info } : undefined,
+        });
+      } catch (error) {
+        await ctx.sender.reply(`${remark || username} 登录认证失败：${error?.message || error}`);
       }
     }
-    return replySender.reply(`m001_回收猿同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`m001_回收猿提交失败：${message(error)}`);
-  }
-}
+    return results;
+  },
+  async query(ctx, item) {
+    return getBalance(ctx, item.token);
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====回收猿教程=====\n入口：小程序『回收猿旧衣服回收』\n登录格式：备注#会员名（支持多行）\n指令：回收猿登录、查询、管理、授权、清理、教程\n收益：查询余额、冻结中、可提现、提现中、已提现和总收益\n==================",
+});
 
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的m001_回收猿账号");
-  return s.reply([`m001_回收猿账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的m001_回收猿账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个m001_回收猿账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "m001HuiShouYuan|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "M001_HUI_SHOU_YUAN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+runtime.main().catch(async (error) => s.reply(`回收猿执行失败：${error?.message || error}`));

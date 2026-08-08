@@ -1,118 +1,82 @@
 // [title: 唔语听书]
 // [name: wuYuTingShu]
-// [language: javascript]
-// [class: 任务]
+// [desc: 唔语听书Bearer Token批量绑定、用户名/红花/广告/收听时长查询、授权和青龙同步。]
 // [author: 97610325]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v2.3.0]
+// [rule: raw ^唔语(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 20 9 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^唔语管理$|^管理唔语$|^唔语查询$|^查询唔语$|^唔语登录$|^登录唔语$|^登陆唔语$|^唔语登陆$|^唔语$|^唔语清理$|^清理唔语$]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
 // [icon: https://nos.netease.com/ysf/d4f8b7f99ae2b9ffb33ebfdedcf0776c.jpg]
-// [description: 唔语听书凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/唔语听书_vV2.3_By.97610325.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("WU_YU_TING_SHU"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("唔语听书插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("唔语听书：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`唔语听书处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const URL = "https://xcx.myinyun.com:4438/napi/wx/getUserDetail";
+function clean(v) {
+  return String(v || "")
+    .trim()
+    .replace(/^bearer\s+/i, "");
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`唔语听书同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`唔语听书提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的唔语听书账号");
-  return s.reply([`唔语听书账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的唔语听书账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个唔语听书账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function detail(ctx, token) {
+  const d = await ctx.requestJson(URL, {
+    headers: {
+      host: "xcx.myinyun.com:4438",
+      connection: "keep-alive",
+      "content-type": "application/json",
+      "accept-encoding": "gzip,compress,br,deflate",
+      "user-agent":
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 MicroMessenger/8.0.70 MiniProgramEnv/iOS",
+      referer: "https://servicewechat.com/wxa25139b08fe6e2b6/23/page-frame.html",
+      authorization: `Bearer ${clean(token)}`,
+    },
   });
+  if (!d?.username) throw new Error(d?.message || "Token失效");
+  return d;
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "wuYuTingShu|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "WU_YU_TING_SHU").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "唔语听书",
+  shortName: "唔语",
+  prefix: "dd_wuyu",
+  defaultEnvName: "WuyuToken",
+  orderPrefix: "WUYU",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入Token，支持Bearer前缀和批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const raw of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const token = clean(raw),
+          x = await detail(ctx, token),
+          account = `wuyu_${crypto.createHash("md5").update(token).digest("hex").slice(0, 12)}`;
+        rows.push({ account, token, remark: x.username });
+      } catch (e) {
+        await ctx.sender.reply(`唔语登录失败：${e?.message || e}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = await detail(ctx, item.token);
+    return `📱 用户名：${x.username}\n🌹 红花数量：${x.flowerCount ?? 0}\n📺 广告次数：${x.adCount ?? 0}\n⏱️ 总收听时长：${x.totalListenTime ?? 0}秒`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const x = await detail(ctx, item.token);
+      return `Token有效，红花${x.flowerCount ?? 0}，收听${x.totalListenTime ?? 0}秒`;
+    } catch (_) {
+      return "唔语Token已失效，请重新登录";
+    }
+  },
+  envValue(_ctx, item) {
+    return clean(item.token);
+  },
+  tutorial:
+    "=====唔语听书教程=====\n抓包 getUserDetail 请求取得 authorization Token，带不带Bearer都支持，可批量换行提交\n查询用户名、红花、广告次数和总收听时长；授权后同步青龙\n指令：唔语登录、查询、管理、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`唔语听书执行失败：${e?.message || e}`));

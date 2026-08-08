@@ -1,118 +1,107 @@
 // [title: 天牛回收]
 // [name: tianNiuHuiShou]
-// [language: javascript]
-// [class: 任务]
+// [desc: 天牛旧衣token批量登录、积分/金额/签到次数查询、账号管理、授权、青龙同步和凭证到期检测。]
 // [author: 8165799]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.1.1]
+// [rule: raw ^天牛(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 25 10 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(天牛)(登录|登陆)$|^登(录|陆)(天牛)$|^(天牛)(查询|管理)$|^(查询|管理)(天牛)$|^天牛清理$|^天牛$|^天牛教程$|^天牛通知 ?(.*)$|^清理天牛$|^天牛广播 ?(.*)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 天牛回收凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://api.iconify.design/lucide:recycle.svg]
+// [origin: backup/天牛回收_v1.1_By.8165799.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("TIAN_NIU_HUI_SHOU"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("天牛回收插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+function normalizeToken(raw) {
+  let value = String(raw || "")
+    .trim()
+    .replace(/^["']|["']$/g, "");
+  if (value.includes("token=")) {
+    try {
+      const parsed = new URL(value.includes("://") ? value : `https://local/?${value}`),
+        token = parsed.searchParams.get("token");
+      if (token) value = token;
+    } catch (_) {
+      const token = value.match(/(?:^|[?&])token=([^&#]+)/)?.[1];
+      if (token) value = decodeURIComponent(token);
     }
-    return s.reply("天牛回收：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`天牛回收处理失败：${message(error)}`);
   }
+  return value.trim();
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+async function profile(ctx, token) {
+  const data = await ctx.requestJson("https://tianniunew.fzjingzhou.com/api/Person/index", {
+    method: "POST",
+    headers: {
+      accept: "*/*",
+      "accept-encoding": "gzip, deflate, br",
+      "accept-language": "zh-CN,zh;q=0.9",
+      "content-type": "application/x-www-form-urlencoded",
+      platform: "MP-WEIXIN",
+      referer: "https://servicewechat.com/wx887c2f947bffa76e/6/page-frame.html",
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20 MiniProgramEnv/Windows",
+      xweb_xhr: "1",
+    },
+    form: { token },
+  });
+  if (Number(data?.code) !== 1000 || !data?.data) throw new Error(data?.msg || "token认证失败");
+  const item = data.data;
+  if (!item.mobile) throw new Error("未识别到手机号，请先在天牛旧衣小程序授权手机号");
+  return {
+    mobile: String(item.mobile),
+    nickname: item.nickname || "",
+    score: item.score ?? 0,
+    exchange: item.exchange ?? item.money ?? "0.00",
+    signCount: item.sign_in_num ?? 0,
+  };
+}
+const runtime = createAccountRuntime({
+  title: "天牛回收",
+  shortName: "天牛",
+  prefix: "tian_niu",
+  defaultEnvName: "tnhs",
+  orderPrefix: "TNHS",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入token或含token参数的URL\n支持 备注#token，支持批量", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input
+      .split(/\r?\n/)
+      .map((v) => v.trim())
+      .filter(Boolean)) {
+      const cut = line.indexOf("#"),
+        remark = cut >= 0 ? line.slice(0, cut).trim() : "",
+        token = normalizeToken(cut >= 0 ? line.slice(cut + 1) : line);
+      try {
+        const info = await profile(ctx, token);
+        rows.push({ account: info.mobile, token, remark: remark || info.nickname || info.mobile });
+      } catch (error) {
+        await ctx.sender.reply(`天牛登录失败：${error?.message || error}`);
       }
     }
-    return replySender.reply(`天牛回收同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`天牛回收提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的天牛回收账号");
-  return s.reply([`天牛回收账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的天牛回收账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个天牛回收账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "tianNiuHuiShou|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "TIAN_NIU_HUI_SHOU").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+    return rows;
+  },
+  async query(ctx, item) {
+    const info = await profile(ctx, item.token);
+    return `👤 昵称：${info.nickname || "未设置"}\n🪙 当前积分：${info.score}\n💰 当前金额：${info.exchange}元\n📅 签到次数：${info.signCount}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      await profile(ctx, item.token);
+      return "";
+    } catch (_) {
+      return "token检测失效，请重新登录";
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====天牛回收教程=====\n入口：天牛旧衣小程序，先授权手机号\n提交token、含token参数的URL或备注#token，支持批量\n查询当前积分、金额和签到次数\n指令：天牛登录、查询、管理、授权、清理、教程\n==================",
+});
+runtime.main().catch(async (error) => s.reply(`天牛回收执行失败：${error?.message || error}`));

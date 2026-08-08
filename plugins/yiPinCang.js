@@ -1,118 +1,200 @@
 // [title: 壹品仓]
 // [name: yiPinCang]
-// [language: javascript]
-// [class: 任务]
+// [desc: 壹品仓短信登录、签到状态查询、每日签到、授权及青龙同步。]
 // [author: huawei]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.2.1]
+// [rule: raw ^(壹品仓|ypc)(登录|登陆|上车|查询|管理|签到|一键运行|授权|清理|教程)$]
+// [cron: 0 8 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(壹品仓|ypc)(登录|登陆)$|^登(录|陆)(壹品仓|ypc)$|^(壹品仓|ypc)(查询|管理)$|^(查询|管理)(壹品仓|ypc)$|^壹品仓$|^壹品仓教程$|^壹品仓一键运行$|^壹品仓签到$|^壹品仓清理$]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
 // [icon: https://tg.96218.xyz/file/BQACAgUAAxkDAAIG_mmxCTjoSpkpvhpHLZ64nnYxoloeAAIVHgACZNKIVVmXCAF9vuQQOgQ.png]
-// [description: 壹品仓凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/壹品仓_v1.2.1_By.huawei.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("YI_PIN_CANG"),
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const HOST = "api.shanghaicang.com.cn",
+  KEY = "base64:qc93zphetnxh2swb/deosb0zuwhhwhwhiu61zdapvdnojkoye=",
+  PUB =
+    "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAxHtZ1EY7AQT2LwzKfI/iWFX/zPxSbi7uqQ3n+8Cwz/YmXYtw2IoSPpzfff+Qhd7SqSqIqnpuB+bg+2nVsDxBLZPMC97vtlbaxRRoYZm7r+d3HzwysuT714InkVIFuqn1+DCwrYN5/ktXJAvfIhteHM1Y4TKfh40tPnTUKm9z8LJL0e9+I32lTJ4ZBurfO/Iv048veGVtJevGXHzq2cTxSxRHn9ulMuUOJPzmlw04x6uGSFnpB37JW+LVi9kt1FbE/vkaPFPXSehmq7oJiJ5YqXiegBPEgKuCsfq5FIg2bi1FeX+zWc7ZnQJuU40urw3wGuUD2O9l9dGqjufqvsURUh6vMuJPswXo402e7c2y2mnTrOW6ZT1J2bXPRxvOEYQVhN7mX2eLOX9naw4yZ7dF4r3h7P5avyhr+E5JIbkNuk/XWLRJHWe0wNqPDbOfWcuPjoWmsJjcQoLIRwvUYeqWh9SigMjv+QQvFitoV37l52WRLBpW8ZdoMvoQg9DulvS/TmzK9VhzwmiV+26rkZZQussb7uilsmGvn0aijbqwU2knvwBaAXlBdMgHtd6LDlj7WHBpXd61z/tH13IIv5vkVuo8aGZS5/35twTN7pt0Eko9c7axc1ujpCjSz/F/XqaDGe2ddPgNtxHO/0cAmxXYQXpL4rSvdAigOuNHJORVqw0CAwEAAQ==";
+const md5 = (x) => crypto.createHash("md5").update(String(x)).digest("hex"),
+  pem = `-----BEGIN PUBLIC KEY-----\n${PUB.match(/.{1,64}/g).join("\n")}\n-----END PUBLIC KEY-----`,
+  encPhone = (p) =>
+    crypto.publicEncrypt({ key: pem, padding: crypto.constants.RSA_PKCS1_PADDING }, Buffer.from(p)).toString("base64");
+function device() {
+  const touchid = crypto.randomBytes(8).toString("hex");
+  return {
+    device: "android",
+    version: "5.8.10",
+    v_code: "32708351",
+    channel: "developer-default",
+    systemversion: "Xiaomi|Redmi K20 Pro|14",
+    sysversion: "34",
+    "content-type": "application/json; charset=UTF-8",
+    "accept-encoding": "gzip",
+    "user-agent": "okhttp/4.9.0",
+    touchid,
+    androidid: crypto.randomBytes(8).toString("hex"),
+  };
+}
+async function serverTime(ctx, h) {
+  const ts = String(Math.floor(Date.now() / 1000)),
+    sign = md5(`device=android&key=${KEY}&timestamp=${ts}&touchid=${h.touchid}`),
+    d = await ctx.requestJson(`https://${HOST}/api/v1/appInit/time?sign=${sign}&timestamp=${ts}`, { headers: h });
+  return String(d?.data?.time || ts);
+}
+async function sms(ctx, phone, h) {
+  const tel = encPhone(phone),
+    ts = await serverTime(ctx, h),
+    sign = md5(`device=android&key=${KEY}&tel=${tel.toLowerCase()}&timestamp=${ts}&touchid=${h.touchid}&type=3`),
+    d = await ctx.requestJson(`https://${HOST}/api/v1/message/sms2?sign=${sign}&timestamp=${ts}`, {
+      method: "POST",
+      headers: h,
+      json: { type: "3", tel },
+    });
+  if (d?.code && Number(d.code) !== 200) throw new Error(d.msg || "短信发送失败");
+  return tel;
+}
+async function fastLogin(ctx, phone, code, h, tel) {
+  const ts = await serverTime(ctx, h),
+    sign = md5(`code=${code}&device=android&key=${KEY}&tel=${tel.toLowerCase()}&timestamp=${ts}&touchid=${h.touchid}`),
+    d = await ctx.requestJson(`https://${HOST}/api/v1/user/login/fast2?sign=${sign}&timestamp=${ts}`, {
+      method: "POST",
+      headers: h,
+      json: { tel, code },
+    }),
+    x = d?.data || {};
+  const token = x.token || x.accessToken;
+  if (!token) throw new Error(d?.msg || "登录失败");
+  return {
+    userId: String(x.userId || x.user_id || x.uid || ""),
+    token: String(token),
+    refreshToken: String(x.refreshToken || ""),
+  };
+}
+function signed(v) {
+  return ["1", "2"].includes(String(v));
+}
+function streak(d) {
+  const prev = Array.isArray(d.lastMonthCalendar) ? d.lastMonthCalendar : [],
+    cur = Array.isArray(d.calendar) ? d.calendar : [],
+    all = [...prev, ...cur];
+  let i = cur.findIndex((x) => String(x?.day) === "今天"),
+    at = i < 0 ? all.length - 1 : prev.length + i;
+  if (i >= 0 && !signed(all[at]?.signStatus) && String(d.isSignIn) !== "1") at--;
+  let n = 0;
+  for (; at >= 0 && signed(all[at]?.signStatus); at--) n++;
+  return n;
+}
+function signParams(o) {
+  const raw =
+    Object.keys(o)
+      .sort()
+      .map((k) => `${k}=${o[k]}`)
+      .join("&") + "base64:qC93ZPHeTNxh2SwB/DeOSb0zUwhHWHWHiU61ZDAPvdnOjkOYE=";
+  return md5(raw);
+}
+async function signApi(ctx, x, confirm = false) {
+  const ts = String(Math.floor(Date.now() / 1000)),
+    biz = confirm ? JSON.stringify({ signInAt: "", type: 0, deviceNo: "19E99BD9-B24E-4D82-8451-147D22E9545C" }) : "{}",
+    o = {
+      version: "5.6.0",
+      token: x.token,
+      device: "h5",
+      timestamp: ts,
+      touchid: "h5",
+      nonstr: confirm ? "oS5rZW8u6YkPihWM" : "pPqkLVmEokfJGbSd",
+      bizData: biz,
+    };
+  o.sign = signParams(o);
+  const d = await ctx.requestJson(
+    `https://ypc-services.shanghaicang.com.cn/activity-service/sign-in/${confirm ? "confirm" : "head/data"}`,
+    {
+      method: "POST",
+      headers: {
+        "user-agent": "Mozilla/5.0 YPCAPPUserAgent",
+        "content-type": "application/json",
+        timestamp: ts,
+        touchid: "h5",
+        token: x.token,
+        device: "h5",
+        origin: "https://ypch5.shanghaicang.com.cn",
+        referer: "https://ypch5.shanghaicang.com.cn/",
+      },
+      json: o,
+    },
+  );
+  if (Number(d?.code) !== 200) throw new Error(d?.msg || "接口请求失败");
+  return d.data || d;
+}
+const parse = (v) => {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return {};
+  }
+};
+const rt = createAccountRuntime({
+  title: "壹品仓",
+  shortName: "壹品仓",
+  prefix: "G_YPC",
+  defaultEnvName: "G_YPC",
+  orderPrefix: "YPC",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    try {
+      const phone = await ctx.prompt(ctx.sender, "请输入11位手机号", 120000);
+      if (!/^1\d{10}$/.test(String(phone || ""))) throw new Error("手机号格式错误");
+      const h = device(),
+        tel = await sms(ctx, phone, h),
+        code = await ctx.prompt(ctx.sender, "验证码已发送，请输入6位验证码", 120000);
+      if (!/^\d{6}$/.test(String(code || ""))) throw new Error("验证码格式错误");
+      const x = await fastLogin(ctx, phone, code, h, tel);
+      return [{ account: phone, token: JSON.stringify(x), remark: phone }];
+    } catch (e) {
+      await ctx.sender.reply(`壹品仓登录失败：${e?.message || e}`);
+      return [];
+    }
+  },
+  async query(ctx, item) {
+    const d = await signApi(ctx, parse(item.token));
+    return `🔥 连续签到：${streak(d)}天\n📅 本月累计：${d.monthAccDays ?? 0}天\n📆 本年累计：${d.yearAccDays ?? 0}天\n✅ 今日状态：${String(d.isSignIn) === "1" ? "已签到" : "未签到"}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      await signApi(ctx, parse(item.token), true);
+      const d = await signApi(ctx, parse(item.token));
+      return `签到成功，连续${streak(d)}天，本月${d.monthAccDays ?? 0}天`;
+    } catch (e) {
+      return `签到失败：${e?.message || e}`;
+    }
+  },
+  async handle(ctx, c) {
+    if (!/(签到|一键运行)/.test(c)) return undefined;
+    const ids = await ctx.users.get(await ctx.currentUserId(), "");
+    let n = 0;
+    let list = [];
+    try {
+      list = JSON.parse(ids || "[]");
+    } catch {
+      list = String(ids).split(",").filter(Boolean);
+    }
+    for (const a of list)
+      try {
+        await signApi(ctx, parse(await ctx.tokens.get(a, "")), true);
+        n++;
+      } catch {}
+    return ctx.sender.reply(`壹品仓签到完成：${n}/${list.length}`);
+  },
+  envValue(_ctx, item) {
+    const x = parse(item.token);
+    return `${x.userId}#${x.token}#${x.refreshToken}`;
+  },
+  tutorial:
+    "=====壹品仓教程=====\n发送壹品仓登录，输入手机号和短信验证码；插件保存 userId、token、refreshToken。\n查询签到日历，每日8点自动签到；授权后同步青龙。\n指令：壹品仓登录、查询、签到、管理、授权、清理、教程\n==================",
 });
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("壹品仓插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("壹品仓：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`壹品仓处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`壹品仓同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`壹品仓提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的壹品仓账号");
-  return s.reply([`壹品仓账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的壹品仓账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个壹品仓账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "yiPinCang|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "YI_PIN_CANG").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+rt.main().catch(async (e) => s.reply(`壹品仓执行失败：${e?.message || e}`));

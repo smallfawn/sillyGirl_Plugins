@@ -1,118 +1,156 @@
 // [title: 中视频管理]
 // [name: zhongShiPinGuanLi]
-// [language: javascript]
-// [class: 任务]
+// [desc: 中视频SecretId/SecretKey/设备码批量登录、面板收入与App签到查询、账号管理、授权、青龙同步和到期检测。]
 // [author: 8165799]
-// [version: v2.0.0]
+// [version: v1.9.1]
+// [rule: raw ^中视频(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 30 10 * * *]
+// [status: true]
+// [admin: false]
 // [public: true]
-// [disable: false]
-// [admin: true]
-// [rule: ^(中视频)(登录|登陆)$|^登(录|陆)(中视频)$|^(中视频)(查询|管理)$|^(查询|管理)(中视频)$|^中视频清理$|^中视频$|^中视频教程$|^中视频通知 ?(.*)$|^清理中视频$|^中视频广播 ?(.*)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 中视频管理凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://api.iconify.design/lucide:video.svg]
+// [origin: backup/中视频管理_v1.9_By.8165799.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("ZHONG_SHI_PIN_GUAN_LI"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("中视频管理插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("中视频管理：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`中视频管理处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const API = "https://x1.zsptv.online";
+function parse(raw) {
+  const p = String(raw)
+    .split("#")
+    .map((v) => v.trim());
+  if (p.length === 2 && p[0] && p[1]) return { secretId: p[0], secretKey: p[1], deviceId: "", remark: "" };
+  if (p.length === 3 && p.every(Boolean)) return { secretId: p[0], secretKey: p[1], deviceId: p[2], remark: "" };
+  if (p.length >= 4 && p.slice(0, 4).every(Boolean))
+    return { remark: p[0], secretId: p[1], secretKey: p[2], deviceId: p[3] };
+  throw new Error("格式应为 SecretId#SecretKey[#deviceId] 或 备注#SecretId#SecretKey#deviceId");
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`中视频管理同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`中视频管理提交失败：${message(error)}`);
-  }
+function credential(item) {
+  return `${item.secretId}#${item.secretKey}${item.deviceId ? `#${item.deviceId}` : ""}`;
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的中视频管理账号");
-  return s.reply([`中视频管理账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
+function appHeaders(item, token = "") {
+  const headers = {
+    accept: "*/*",
+    "content-type": "application/json",
+    "accept-encoding": "gzip",
+    connection: "Keep-Alive",
+    host: "x1.zsptv.online",
+    "user-agent":
+      "Mozilla/5.0 (Linux; Android 14; LE2120 Build/UKQ1.230924.001; wv) AppleWebKit/537.36 Version/4.0 Chrome/146.0.7680.119 Mobile Safari/537.36 (Immersed/32.0) Html5Plus/1.0",
+    "app-device": JSON.stringify({
+      id: item.deviceId || "default_dev_id",
+      brand: "oneplus",
+      model: "LE2120",
+      platform: "android",
+      system: "Android 14",
+    }),
+  };
+  if (token) headers.authorization = `Bearer ${token}`;
+  return headers;
 }
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的中视频管理账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个中视频管理账号`);
+function webHeaders(token) {
+  const headers = {
+    accept: "application/json",
+    "content-type": "application/json",
+    "accept-encoding": "gzip",
+    connection: "Keep-Alive",
+    host: "x1.zsptv.online",
+    origin: "https://zsp.99panel.top",
+    referer: "https://zsp.99panel.top/",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0",
+  };
+  if (token) headers.authorization = `bearer ${token}`;
+  return headers;
 }
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function secretLogin(ctx, item) {
+  const data = await ctx.requestJson(`${API}/api/app/v1/auth/secretKeyLogin`, {
+    method: "POST",
+    headers: appHeaders(item),
+    json: { secretId: item.secretId, secretKey: item.secretKey },
   });
+  if (Number(data?.code) !== 0 || !data?.data?.token) throw new Error(data?.message || "SecretKey登录失败");
+  return data.data.token;
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function getInfo(ctx, item) {
+  const token = await secretLogin(ctx, item);
+  try {
+    const panel = await ctx.requestJson(`${API}/api/web/v1/dashboard/getPanelData`, { headers: webHeaders(token) });
+    if (Number(panel?.code) === 0) {
+      const d = panel.data || {};
+      return {
+        mode: "panel",
+        value: d.incomeScore ?? 0,
+        message: `💵 今日收入：¥${d.todayMoney ?? 0}\n📊 今日广告投播：${d.viewAdCount ?? 0}\n👥 团队规模：${d.userCount ?? 0}`,
+      };
+    }
+  } catch (_) {}
+  const sign = await ctx.requestJson(`${API}/api/app/v1/device/userSign`, {
+    method: "POST",
+    headers: appHeaders(item, token),
+    json: {},
+  });
+  const msg = sign?.message || "";
+  if (Number(sign?.code) === 0)
+    return {
+      mode: "app",
+      value: sign?.data?.qiandao_money ?? 0,
+      message: "✅ 签到成功\nℹ️ Secret登录仅能查询App接口，广告收益需脚本执行任务后统计",
+    };
+  if (msg.includes("已签到"))
+    return {
+      mode: "app",
+      value: 0,
+      message: "✅ 今日已签到\nℹ️ Secret登录仅能查询App接口，广告收益需脚本执行任务后统计",
+    };
+  return { mode: "app", value: 0, message: `⚠️ 签到查询：${msg || "接口未返回详情"}` };
 }
-function ownerKey(sender) { return "zhongShiPinGuanLi|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "ZHONG_SHI_PIN_GUAN_LI").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const runtime = createAccountRuntime({
+  title: "中视频管理",
+  shortName: "中视频",
+  prefix: "zsp_video",
+  defaultEnvName: "ZSPTV",
+  orderPrefix: "ZSP",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(
+      ctx.sender,
+      "请输入 SecretId#SecretKey[#deviceId]\n或 备注#SecretId#SecretKey#deviceId，支持批量",
+      120000,
+    );
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const item = parse(line);
+        await secretLogin(ctx, item);
+        rows.push({
+          account: item.secretId,
+          token: credential(item),
+          remark: item.remark || `中视频_${item.secretId.slice(0, 4)}***`,
+        });
+      } catch (error) {
+        await ctx.sender.reply(`中视频登录失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, stored) {
+    const result = await getInfo(ctx, parse(stored.token));
+    return `💰 查询数值：${result.value}\n${result.message}`;
+  },
+  async cronCheck(ctx, stored) {
+    try {
+      await secretLogin(ctx, parse(stored.token));
+      return "";
+    } catch (_) {
+      return "SecretId/SecretKey检测失效，请更新凭证";
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====中视频管理教程=====\n提交SecretId#SecretKey，可追加#deviceId，支持备注前缀和批量\n查询Web面板今日收入/广告/团队，面板不可用时查询App签到\n指令：中视频登录、查询、管理、授权、清理、教程\n==================",
+});
+runtime.main().catch(async (error) => s.reply(`中视频管理执行失败：${error?.message || error}`));

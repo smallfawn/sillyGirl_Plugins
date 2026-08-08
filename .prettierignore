@@ -1,0 +1,4 @@
+.codex-artifacts/
+.git/
+backup/
+node_modules/

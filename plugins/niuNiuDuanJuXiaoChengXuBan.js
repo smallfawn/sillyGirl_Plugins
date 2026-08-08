@@ -1,118 +1,93 @@
-// [title: 牛牛短剧小程序版]
+// [title: m109_小程序牛牛短剧]
 // [name: niuNiuDuanJuXiaoChengXuBan]
-// [language: javascript]
-// [class: 任务]
-// [author: 8165799]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [desc: 小牛牛短剧token批量登录、积分与现金余额查询、备注/CK管理、付费或积分授权、青龙同步和过期清理。]
+// [author: mrconli]
+// [version: v1.0.1]
+// [rule: raw ^小牛牛(登录|登陆|上车|查询|管理|授权|清理|教程)$]
+// [cron: 49 8,18 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(小牛牛)(登录|登陆)$|^登(录|陆)(小牛牛)$|^(小牛牛)(查询|管理)$|^(查询|管理)(小牛牛)$|^小牛牛清理$|^小牛牛$|^小牛牛教程$|^小牛牛通知 ?(.*)$|^清理小牛牛$|^小牛牛广播 ?(.*)$]
-// [icon: https://api.iconify.design/lucide:bot.svg]
-// [description: 牛牛短剧小程序版凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 99999999]
+// [class: 工具类]
+// [icon: https://api.iconify.design/lucide:clapperboard.svg]
+// [origin: backup/m109_小程序牛牛短剧_v1.0.0_By.mrconli.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
 
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("NIU_NIU_DUAN_JU_XIAO_CHENG_XU_BAN"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("牛牛短剧小程序版插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("牛牛短剧小程序版：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`牛牛短剧小程序版处理失败：${message(error)}`);
-  }
+async function getUserInfo(ctx, token) {
+  const headers = {
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20 MiniProgramEnv/Windows",
+    xweb_xhr: "1",
+    "content-type": "application/x-www-form-urlencoded",
+    token,
+    referer: "https://servicewechat.com/wxcb95401f250e9a53/19/page-frame.html",
+  };
+  const integral = await ctx.requestJson("https://api.tianjinzhitongdaohe.com/sqx_fast/app/integral/selectByUserId", {
+    headers,
+  });
+  if (Number(integral?.code) !== 0 || !integral?.data?.userId) throw new Error(integral?.msg || "token认证失败");
+  const invite = await ctx.requestJson("https://api.tianjinzhitongdaohe.com/sqx_fast/app/invite/selectInviteMoney", {
+    headers,
+  });
+  return {
+    account: String(integral.data.userId),
+    integral: integral.data.integralNum ?? 0,
+    money: invite?.data?.inviteMoney?.money ?? 0,
+  };
 }
 
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+const runtime = createAccountRuntime({
+  title: "小牛牛短剧",
+  shortName: "小牛牛",
+  prefix: "mrconli.xnndj",
+  defaultEnvName: "xnndj",
+  orderPrefix: "XNNDJ",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入：备注#token\n支持批量，每行一个", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean)) {
+      const cut = line.indexOf("#");
+      if (cut <= 0 || cut === line.length - 1) {
+        await ctx.sender.reply(`${line} 格式错误`);
+        continue;
+      }
+      const remark = line.slice(0, cut).trim(),
+        token = line.slice(cut + 1).trim();
+      try {
+        const info = await getUserInfo(ctx, token);
+        rows.push({ account: info.account, token, remark });
+      } catch (error) {
+        await ctx.sender.reply(`${remark} token认证失败：${error?.message || error}`);
       }
     }
-    return replySender.reply(`牛牛短剧小程序版同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`牛牛短剧小程序版提交失败：${message(error)}`);
-  }
-}
+    return rows;
+  },
+  async query(ctx, item) {
+    const info = await getUserInfo(ctx, item.token);
+    return `💎 积分：${info.integral}分\n💰 余额：${info.money}元`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      await getUserInfo(ctx, item.token);
+      return "";
+    } catch (_) {
+      return `${item.remark} CK检测失效，请重新登录`;
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====小牛牛短剧教程=====\n入口：小程序『牛牛短剧』\n抓包提交格式：备注#token（支持多行）\n指令：小牛牛登录、查询、管理、授权、清理、教程\n收益：现金收益、积分与余额查询\n==================",
+});
 
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的牛牛短剧小程序版账号");
-  return s.reply([`牛牛短剧小程序版账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的牛牛短剧小程序版账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个牛牛短剧小程序版账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "niuNiuDuanJuXiaoChengXuBan|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "NIU_NIU_DUAN_JU_XIAO_CHENG_XU_BAN").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+runtime.main().catch(async (error) => s.reply(`小牛牛执行失败：${error?.message || error}`));

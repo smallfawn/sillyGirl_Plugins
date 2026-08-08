@@ -1,15 +1,16 @@
-//[title: 值得买]
-//[name: zhiDeMai]
-//[language: javascript]
-//[class: 工具]
-//[author: chuan85]
-//[version: v1.1.0]
-//[public: true]
-//[disable: false]
-//[admin: false]
-//[rule: ^zdm$]
-//[icon: https://www.smzdm.com/favicon.ico]
-//[description: 查询什么值得买近三小时好价 TOP20]
+// [title: 值得买]
+// [name: zhiDeMai]
+// [desc: 查询什么值得买近三小时好价 TOP20]
+// [author: chuan85]
+// [version: v1.1.0]
+// [rule: ^zdm$]
+// [status: true]
+// [admin: false]
+// [public: true]
+// [priority: 0]
+// [class: 工具]
+// [icon: https://www.smzdm.com/favicon.ico]
+// [origin: backup/值得买_v1.0.0_By.chuan85.txt]
 // [depe: []]
 
 const { sender: s } = require("sillygirl");
@@ -24,9 +25,12 @@ async function main() {
   if (!response.ok) throw new Error(`好价接口 HTTP ${response.status}`);
   const items = (await response.json())?.data?.l;
   if (!Array.isArray(items) || !items.length) throw new Error("好价接口数据为空");
-  await s.reply(items.slice(0, 20).map((item, index) =>
-    `${index + 1}. ${item.t}${item.ls?.length ? `【${item.ls.join(" / ")}】` : ""}\n${item.u}`
-  ).join("\n\n"));
+  await s.reply(
+    items
+      .slice(0, 20)
+      .map((item, index) => `${index + 1}. ${item.t}${item.ls?.length ? `【${item.ls.join(" / ")}】` : ""}\n${item.u}`)
+      .join("\n\n"),
+  );
 }
 
 main().catch((error) => s.reply(`获取好价失败：${error.message}`));

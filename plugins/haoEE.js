@@ -1,119 +1,235 @@
 // [title: 好饿饿]
 // [name: haoEE]
-// [language: javascript]
-// [class: 任务]
+// [desc: 饿了么 Cookie 自动绑定、用户/吃货豆/乐园币/余额/果园/夺宝查询、授权及青龙同步。]
 // [author: Lxg-021002]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v2.2.6]
+// [rule: raw ^.*cookie2=.*$]
+// [rule: raw ^(饿了么|饿了|好饿饿)(登录|登陆|上车|查询|管理|夺宝|授权|清理|教程)$]
+// [cron: 28 8,18,21 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^.*cookie2=.*$|^吃饱了$|^我快饿死了$|^夺宝信息$|^(饿了.*|.*饿了)$]
+// [public: true]
+// [priority: 60]
+// [class: 工具类]
 // [icon: https://pp.myapp.com/ma_icon/0/icon_1029694_1725435529/256]
-// [description: 好饿饿凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/好饿饿_v2.2.6_By.Lxg-021002.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("ELMCK"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("好饿饿插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/cookie2=/.test(content)) return saveAccounts(ql, cfg.envName, content, s);
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("好饿饿：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`好饿饿处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const APP = "12574478";
+function md5(x) {
+  return crypto.createHash("md5").update(String(x)).digest("hex");
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
+function cookieMap(c) {
+  return Object.fromEntries(
+    String(c || "")
+      .replace(/^(chushi|zhuli);?/i, "")
+      .split(";")
+      .map((x) => x.trim())
+      .filter((x) => x.includes("="))
+      .map((x) => {
+        const i = x.indexOf("=");
+        return [x.slice(0, i), x.slice(i + 1)];
+      }),
+  );
+}
+function mergeCookie(c, set) {
+  const m = cookieMap(c),
+    raw = Array.isArray(set) ? set.join(";") : String(set || "");
+  for (const key of ["_m_h5_tk", "_m_h5_tk_enc"]) {
+    const x = raw.match(new RegExp(`${key}=([^;,]+)`));
+    if (x) m[key] = x[1];
+  }
+  return (
+    Object.entries(m)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(";") + ";"
+  );
+}
+async function refresh(ctx, c) {
+  const r = await ctx.request(
+      "https://waimai-guide.ele.me/h5/mtop.alsc.personal.queryminecenter/1.0/?jsv=2.6.2&appKey=12574478",
+      { headers: { cookie: c, "user-agent": "Mozilla/5.0 Chrome/120.0" } },
+    ),
+    set = typeof r.headers.getSetCookie === "function" ? r.headers.getSetCookie() : r.headers.get("set-cookie");
+  return mergeCookie(c, set);
+}
+async function mtop(ctx, c, api, data, v = "1.0") {
+  c = await refresh(ctx, c);
+  const m = cookieMap(c),
+    token = String(m._m_h5_tk || "").split("_")[0];
+  if (!token) throw new Error("Cookie缺少_m_h5_tk");
+  const t = Date.now(),
+    sign = md5(`${token}&${t}&${APP}&${data}`),
+    url = `https://guide-acs.m.taobao.com/h5/${api}/${v}/?jsv=2.6.1&appKey=${APP}&t=${t}&sign=${sign}&api=${api}&v=${v}&type=originaljson&dataType=json`,
+    d = await ctx.requestJson(url, {
+      method: "POST",
+      headers: {
+        cookie: c,
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": "Mozilla/5.0 (Linux; Android 13) Chrome/120.0 Mobile",
+      },
+      form: { data },
+    });
+  if (/FAIL|过期|未登录/.test(JSON.stringify(d?.ret || d?.message || ""))) throw new Error("Cookie已失效");
+  return { d, c };
+}
+async function user(ctx, c) {
+  const r = await mtop(ctx, c, "mtop.alsc.user.detail.query", JSON.stringify({})),
+    x = r.d?.data || {};
+  if (!x.localId) throw new Error("未获取用户信息");
+  return { localId: String(x.localId), mobile: x.encryptMobile || "", name: x.userName || "饿了么用户", cookie: r.c };
+}
+async function detail(ctx, c) {
+  const u = await user(ctx, c),
+    eat = (
+      await mtop(
+        ctx,
+        c,
+        "mtop.alibaba.svip.langrisser.query",
+        JSON.stringify({
+          lgrsRequestItems: '[{"backup":false,"count":1,"data":{"needHead":true,"month":""},"resId":"867018"}]',
+          latitude: "33.76706790179014",
+          longitude: "114.37013771384954",
+        }),
+      )
+    ).d,
+    ed = eat?.data?.data?.["867018"]?.data?.[0] || {},
+    today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    todayEat = (ed.accountMonthRecords?.[0]?.records || [])
+      .filter((x) => String(x.createdTime || "").startsWith(today) && Number(x.optType) !== 2)
+      .reduce((n, x) => n + Number(x.count || 0), 0);
+  let money = "--";
   try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
+    const w = await ctx.requestJson("https://wallet.ele.me/api/storedcard/queryBalanceBycardType?cardType=platform", {
+      headers: { cookie: c },
+    });
+    money = Number(w?.data?.totalAvailableAmount || 0) / 100;
+  } catch {}
+  let coin = "--";
+  try {
+    const r = await mtop(
+      ctx,
+      c,
+      "mtop.koubei.interaction.center.common.queryintegralproperty.v2",
+      JSON.stringify({ templateIds: '["1404"]' }),
+    );
+    coin = r.d?.data?.data?.["1404"]?.count ?? "--";
+  } catch {}
+  let orchard = "--";
+  try {
+    const r = await mtop(
+        ctx,
+        c,
+        "mtop.alsc.playgame.orchard.index.batch.query",
+        JSON.stringify({
+          blockRequestList:
+            '[{"blockCode":"603040_6723057310","status":"PUBLISH","tagCallWay":"SYNC","useRequestBlockTags":false}]',
+          source: "KB_ORCHARD",
+          bizCode: "main",
+          locationInfos: '[{"latitude":"99.597472842782736","longitude":"99.75325090438128"}]',
+          extData: '{"ORCHARD_ELE_MARK":"KB_ORCHARD","orchardVersion":"20240624"}',
+        }),
+      ),
+      role = r.d?.data?.data?.["603040_6723057310"]?.blockData?.role?.tagData?.[0]?.result?.[0]?.roleInfoDtoList?.[0],
+      e = role?.roleLevelExpInfoDto;
+    if (e) orchard = `${(100 - Number(e.remainingProgress || 0)).toFixed(2)}/${e.levelName || ""}`;
+  } catch {}
+  return { u, eat: ed.peaCount ?? "--", todayEat, money, coin, orchard };
+}
+async function wins(ctx, c) {
+  const d = (
+    await mtop(
+      ctx,
+      c,
+      "mtop.koubei.interactioncenter.snatch.mine.page",
+      JSON.stringify({
+        bizScene: "duobao_external",
+        blockList: '["participants","wonDetail","noWonPrize"]',
+        channel: "ELMC",
+        pageSize: "50",
+        rightId: "",
+      }),
+    )
+  ).d;
+  return (d?.data?.list || [])
+    .filter(
+      (x) =>
+        !["ONLINE", "DRAWN"].includes(x.status) &&
+        !["not_won_wait_accept", "not_won_has_finished"].includes(x.awardStatus),
+    )
+    .map((x) => x?.baseInfo?.title || "未知奖品");
+}
+const rt = createAccountRuntime({
+  title: "好饿饿",
+  shortName: "饿了么",
+  prefix: "Yzyxmm_elm",
+  defaultEnvName: "elmck",
+  orderPrefix: "ELM",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入完整饿了么Cookie，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const c of input.split(/\r?\n/).filter(Boolean))
+      try {
+        const u = await user(ctx, c);
+        rows.push({ account: u.localId, token: u.cookie || c.trim(), remark: u.name || u.mobile || u.localId });
+      } catch (e) {
+        await ctx.sender.reply(`饿了么登录失败：${e?.message || e}`);
+      }
+    return rows;
+  },
+  async handle(ctx, content) {
+    if (content.includes("cookie2=")) {
+      try {
+        const u = await user(ctx, content),
+          userId = await ctx.currentUserId(),
+          accounts = JSON.parse(await ctx.users.get(userId, "[]"));
+        if (!accounts.includes(u.localId)) accounts.push(u.localId);
+        await ctx.users.set(userId, JSON.stringify(accounts));
+        await ctx.tokens.set(u.localId, u.cookie || content);
+        await ctx.remarks.set(u.localId, u.name || u.mobile || u.localId);
+        return ctx.sender.reply(`✅ 饿了么Cookie绑定成功：${u.name || u.mobile || u.localId}`);
+      } catch (e) {
+        return ctx.sender.reply(`❌ 饿了么Cookie绑定失败：${e?.message || e}`);
       }
     }
-    return replySender.reply(`好饿饿同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`好饿饿提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的好饿饿账号");
-  return s.reply([`好饿饿账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的好饿饿账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个好饿饿账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "haoEE|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "ELMCK").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+    if (/夺宝/.test(content)) {
+      const userId = await ctx.currentUserId(),
+        accounts = JSON.parse(await ctx.users.get(userId, "[]"));
+      if (!accounts.length) return ctx.sender.reply("❌ 未找到账号，发送“饿了么登录”绑定");
+      for (const account of accounts) {
+        const remark = await ctx.remarks.get(account, account);
+        try {
+          const w = await wins(ctx, await ctx.tokens.get(account, ""));
+          await ctx.sender.reply(`🍡 ${remark} 夺宝中奖：${w.join("、") || "暂无"}`);
+        } catch (e) {
+          await ctx.sender.reply(`❌ ${remark} 夺宝查询失败：${e?.message || e}`);
+        }
+      }
+    }
+  },
+  async query(ctx, item) {
+    const d = await detail(ctx, item.token),
+      w = await wins(ctx, item.token);
+    return `👤 用户：${d.u.name}\n📱 手机：${d.u.mobile}\n🍚 吃货豆：${d.eat}（今日+${d.todayEat}）\n🎮 乐园币：${d.coin}\n💵 余额：${d.money}元\n🍒 果树：${d.orchard}\n🍡 夺宝中奖：${w.join("、") || "暂无"}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const d = await detail(ctx, item.token),
+        w = await wins(ctx, item.token);
+      return `Cookie有效，吃货豆${d.eat}，今日+${d.todayEat}，乐园币${d.coin}${w.length ? `，夺宝中奖：${w.join("、")}` : ""}`;
+    } catch (_) {
+      return "饿了么Cookie已失效，请重新登录";
+    }
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial:
+    "=====好饿饿教程=====\n抓包饿了么请求，复制包含 cookie2、_m_h5_tk 等字段的完整Cookie。\n查询吃货豆、今日收入、乐园币、余额、果园和夺宝中奖，授权后同步青龙变量 elmck。\n指令：饿了么登录、查询、管理、夺宝、授权、清理、教程\n==================",
+});
+rt.main().catch(async (e) => s.reply(`好饿饿执行失败：${e?.message || e}`));

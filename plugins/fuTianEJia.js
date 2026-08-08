@@ -1,118 +1,140 @@
 // [title: 福田e家]
 // [name: fuTianEJia]
-// [language: javascript]
-// [class: 任务]
+// [desc: 福田e家账号密码登录、会员积分/今日积分/订单查询、授权及青龙同步。]
 // [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v5.0.0]
+// [rule: raw ^福田(登录|登陆|查询|管理|订单|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^福田(登录|登陆|批量登录|批量登陆|查询|管理|订单查询|清理)$|^(登录|登陆|批量登录|批量登陆|查询|管理)福田$|^清理福田$]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
 // [icon: https://images.mingming.dev/file/7c1c97c112588fbf7c0db.png]
-// [description: 福田e家凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/福田e家_v5.0_By.sky2022.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("FU_TIAN_E_JIA"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("福田e家插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("福田e家：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`福田e家处理失败：${message(error)}`);
-  }
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://czyl.foton.com.cn/ehomes-new/homeManager";
+function parse(x) {
+  const i = String(x).indexOf("#");
+  return { user: String(x).slice(0, i), pass: String(x).slice(i + 1) };
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`福田e家同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`福田e家提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的福田e家账号");
-  return s.reply([`福田e家账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的福田e家账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个福田e家账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function login(ctx, user, pass) {
+  const d = await ctx.requestJson(`${BASE}/getLoginMember`, {
+    method: "POST",
+    headers: { "user-agent": "okhttp/3.14.9", "content-type": "application/json" },
+    json: { password: pass, name: user },
   });
+  if (!d?.data?.memberID) throw new Error(d?.msg || "登录失败");
+  return { account: String(d.data.uid), memberId: String(d.data.memberID), mobile: user, data: d.data };
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function assets(ctx, id) {
+  const h = { "user-agent": "web", "content-type": "application/json" },
+    today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    [a, b] = await Promise.all([
+      ctx.requestJson(`${BASE}/api/Member/findMemberPointsInfo`, {
+        method: "POST",
+        headers: h,
+        json: { memberId: id },
+      }),
+      ctx.requestJson(`${BASE}/api/Member/getIntegralList`, {
+        method: "POST",
+        headers: h,
+        json: { memberId: id, transactionDate: today },
+      }),
+    ]),
+    x = a?.data,
+    points = Number(typeof x === "object" ? (x.pointValue ?? x.points ?? x.point) : x) || 0,
+    gain = (Array.isArray(b?.data) ? b.data : [])
+      .filter((y) => String(y.date || y.createTime || "").slice(0, 10) === today)
+      .reduce((n, y) => n + Number(y.integral || 0), 0);
+  return { points, today: gain };
 }
-function ownerKey(sender) { return "fuTianEJia|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "FU_TIAN_E_JIA").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
+async function orders(ctx, u) {
+  const d = await ctx.requestJson(`${BASE}/api/other/foton365MyOrders`, {
+    method: "POST",
+    headers: {
+      "user-agent": "web",
+      "app-key": "7918d2d1a92a02cbc577adb8d570601e72d3b640",
+      "app-token": "58891364f56afa1b6b7dae3e4bbbdfbfde9ef489",
+      "content-type": "application/json; charset=utf-8",
+      token: "",
+    },
+    json: {
+      memberId: u.memberId,
+      userId: u.account,
+      userType: "61",
+      uid: u.account,
+      mobile: u.mobile,
+      tel: u.mobile,
+      phone: u.mobile,
+      brandName: "萨普",
+      seriesName: "萨普T",
+      token: "ebf76685e48d4e14a9de6fccc76483e3",
+      safeEnc: Date.now(),
+      businessId: 1,
+      pageNum: 1,
+      pageSize: 10,
+    },
+  });
+  if (Number(d?.code) !== 200) throw new Error(d?.msg || "订单查询失败");
+  return d.data || { items: [], total: 0 };
 }
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "福田e家",
+  shortName: "福田",
+  prefix: "dd_fukuda",
+  defaultEnvName: "FOTON_TOKEN",
+  orderPrefix: "FOTON",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const p = parse(line),
+        u = await login(ctx, p.user, p.pass);
+      rows.push({ account: u.account, token: line.trim(), remark: p.user, extra: { member: u.memberId } });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const p = parse(item.token),
+      u = await login(ctx, p.user, p.pass),
+      a = await assets(ctx, u.memberId),
+      o = await orders(ctx, u);
+    const list = (o.items || [])
+      .slice(0, 5)
+      .map(
+        (x, i) =>
+          `${i + 1}. ${(x.productList?.[0]?.name || "未知商品").slice(0, 24)}｜${x.orderStatusName || "未知状态"}｜${String(x.orderCreateTime || "").slice(0, 16)}`,
+      );
+    return `📱 账号：${p.user}\n🎯 总积分：${a.points}\n📈 今日积分：${a.today}\n📦 订单总数：${o.total ?? list.length}${list.length ? `\n${list.join("\n")}` : ""}`;
+  },
+  async handle(ctx, content) {
+    if (!/订单/.test(content)) return;
+    const uid = await ctx.currentUserId(),
+      accounts = JSON.parse(await ctx.users.get(uid, "[]"));
+    if (!accounts.length) return ctx.sender.reply("❌ 未找到福田账号");
+    for (const account of accounts) {
+      const p = parse(await ctx.tokens.get(account, "")),
+        u = await login(ctx, p.user, p.pass),
+        o = await orders(ctx, u);
+      await ctx.sender.reply(
+        `=====福田订单=====\n${(o.items || []).map((x, i) => `${i + 1}. ${x.productList?.[0]?.name || "未知商品"}｜${x.orderStatusName || "未知状态"}｜${x.orderNumber || ""}`).join("\n") || "暂无订单"}\n==================`,
+      );
+    }
+  },
+  async cronCheck(ctx, item) {
+    const p = parse(item.token),
+      u = await login(ctx, p.user, p.pass),
+      a = await assets(ctx, u.memberId);
+    return `账号有效，总积分${a.points}，今日+${a.today}`;
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial: "发送福田登录，输入 手机号#密码；可查询会员积分、今日积分及订单，授权后同步青龙。",
+});
+rt.main().catch((e) => s.reply(`福田e家执行失败：${e?.message || e}`));

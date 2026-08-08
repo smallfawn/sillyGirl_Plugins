@@ -1,118 +1,277 @@
 // [title: 【插件】-森选质享]
 // [name: chaJianSenXuanZhiXiang]
-// [language: javascript]
-// [class: 任务]
+// [desc: 银辉云选Token批量绑定、余额与奖励/提现记录查询、视频任务、授权、青龙同步和过期清理。]
 // [author: huawei]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.7.1]
+// [rule: raw ^(森选|sz)(登录|登陆|查询|管理|授权|教程|清理|上传|一键运行)$]
+// [cron: 15 22 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^(森选|sz)(登录|登陆|查询|管理|教程|清理|上传|一键运行)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 【插件】-森选质享凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: http://113.45.39.135:8080/admin/images/gallery/1750458890545208841.jpg]
+// [origin: backup/【插件】-森选质享_v1.7.1_By.huawei.py]
+// [depe: ["./mrconliAccountRuntime.js","./vortoUtils.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://yb.yuanhukj.com/api/mobile";
+const COMMON = { source_type: "2314", source_from: "2321", source_lang: "zh_CN", currency_id: "86", site_id: "" };
 
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("CHA_JIAN_SEN_XUAN_ZHI_XIANG"),
-});
-
-async function main() {
+function cleanToken(value) {
+  return String(value || "")
+    .trim()
+    .replace(/^bearer\s+/i, "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+function authHeaders(token, json = false) {
+  return {
+    "accept-encoding": "gzip, deflate, br",
+    "content-type": json ? "application/json" : "application/x-www-form-urlencoded",
+    connection: "keep-alive",
+    referer: "https://servicewechat.com/wx243e6a357085251f/4/page-frame.html",
+    authorization: `Bearer ${cleanToken(token)}`,
+    "app-sign": "wx243e6a357085251f",
+    host: "yb.yuanhukj.com",
+    "user-agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20 MiniProgramEnv/Windows XWEB/16965",
+    xweb_xhr: "1",
+    accept: "*/*",
+    "cb-lang": "zh-CN",
+  };
+}
+function endpoint(path, params = {}) {
+  const url = new URL(BASE + path);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
+  return url;
+}
+function jwtPayload(token) {
   try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("【插件】-森选质享插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("【插件】-森选质享：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`【插件】-森选质享处理失败：${message(error)}`);
+    const part = cleanToken(token).split(".");
+    if (part.length !== 3) return null;
+    return JSON.parse(Buffer.from(part[1], "base64url").toString("utf8"));
+  } catch (_) {
+    return null;
   }
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`【插件】-森选质享同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`【插件】-森选质享提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的【插件】-森选质享账号");
-  return s.reply([`【插件】-森选质享账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的【插件】-森选质享账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个【插件】-森选质享账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function verify(ctx, token) {
+  const payload = jwtPayload(token);
+  if (payload && (!payload.exp || Number(payload.exp) * 1000 >= Date.now()))
+    return { id: String(payload.id || payload.user_id || ""), data: payload };
+  const result = await ctx.requestJson(endpoint("/account/commission", { page: 1, limit: 5 }), {
+    headers: authHeaders(token, true),
   });
+  if (Number(result?.code) !== 0 || !result?.data) throw new Error(result?.msg || "Token验证失败");
+  const records = result.data.records || result.data.list || [],
+    first = records[0] || {};
+  return { id: String(first.uid || first.user_id || ""), data: result.data };
+}
+async function overview(ctx, token) {
+  const result = await ctx.requestJson(endpoint("/account/user/overview_my", { ...COMMON, isOrder: 1 }), {
+    headers: authHeaders(token),
+  });
+  if (Number(result?.code) !== 0 || !result?.data) throw new Error(result?.msg || "账号信息获取失败");
+  return result.data;
+}
+async function consumeRecords(ctx, token, rows = 20) {
+  const result = await ctx.requestJson(
+    endpoint("/pay/index/consumeRecord", { ...COMMON, change_type: 0, page: 1, rows }),
+    { headers: authHeaders(token) },
+  );
+  if (Number(result?.code) !== 0 || !result?.data) return null;
+  return { records: result.data.items || [], income: result.data.income || 0, total: result.data.total || 0 };
+}
+async function commission(ctx, token) {
+  const result = await ctx.requestJson(endpoint("/account/commission", { page: 1, limit: 5 }), {
+    headers: authHeaders(token),
+  });
+  if (Number(result?.code) !== 0 || !result?.data) return [];
+  return result.data.records || result.data.list || [];
+}
+function money(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+async function queryAccount(ctx, token) {
+  const user = await overview(ctx, token),
+    balance = money(user.user_money || user.now_money),
+    consume = await consumeRecords(ctx, token);
+  const out = [`💰 当前余额：¥${balance.toFixed(2)}`, `🎬 待完成视频：${Number(user.video_answer_not || 0)}个`];
+  if (consume?.records?.length) {
+    const rewards = consume.records.filter((row) => !String(row.record_title || "").includes("提现"));
+    const withdraws = consume.records.filter((row) => String(row.record_title || "").includes("提现"));
+    out.push(
+      `🎁 今日奖励：¥${rewards.reduce((sum, row) => sum + money(row.record_money), 0).toFixed(2)}`,
+      `📋 奖励记录：${rewards.length}条`,
+    );
+    if (rewards.length) {
+      out.push("最近奖励：");
+      for (const row of rewards.slice(0, 3))
+        out.push(
+          `- ¥${row.record_money || 0} ${row.record_title || "未知"} ${String(row.record_time || "未知").slice(0, 10)}`,
+        );
+    }
+    out.push(
+      `💸 提现：${withdraws.length}笔  合计：¥${withdraws.reduce((sum, row) => sum + money(row.record_money), 0).toFixed(2)}`,
+    );
+    for (const row of withdraws.slice(0, 3))
+      out.push(`- ¥${row.record_money || 0} ${String(row.record_time || "未知").slice(0, 10)}`);
+  } else {
+    const records = await commission(ctx, token),
+      withdraws = records.filter((row) => row.type === "user_tx");
+    out.push(
+      `💸 提现：${withdraws.length}笔  合计：¥${withdraws.reduce((sum, row) => sum + money(row.number), 0).toFixed(2)}`,
+    );
+    for (const row of withdraws.slice(0, 5)) out.push(`现金${row.number || 0}元-${row.add_time || "未知"}`);
+  }
+  return out.join("\n");
+}
+async function call(ctx, token, method, path, params = {}, json) {
+  const options = { method, headers: authHeaders(token, json !== undefined) };
+  if (json !== undefined) options.json = json;
+  return ctx.requestJson(endpoint(path, params), options);
+}
+async function dailyTask(ctx, token) {
+  const before = await overview(ctx, token),
+    list = await call(ctx, token, "GET", "/video/list", {
+      ...COMMON,
+      page: 1,
+      limit: 10,
+      status: 1,
+      source: 0,
+      isXn: 1,
+    });
+  const videos =
+    Number(list?.code) === 0 && Array.isArray(list?.data?.items)
+      ? list.data.items.map((row) => row.id).filter(Boolean)
+      : [];
+  let completed = 0,
+    rewarded = 0,
+    failed = 0;
+  for (const vid of videos) {
+    try {
+      const detail = await call(ctx, token, "GET", "/video/getOneVideo", { ...COMMON, vid }),
+        wait = Math.max(0, Number.parseInt(detail?.data?.wait_time || 10, 10) || 10);
+      const viewed = await call(
+        ctx,
+        token,
+        "POST",
+        "/video/addUserViewNum",
+        { ...COMMON, vid, playMode: 0 },
+        { baseVersion: "3.12.1", playMode: 0 },
+      );
+      if (Number(viewed?.status) === 500) {
+        failed++;
+        continue;
+      }
+      const startTime = Date.now(),
+        endTime = startTime + wait * 1000 + 1000;
+      if (wait) await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+      const job = await call(
+        ctx,
+        token,
+        "POST",
+        "/video/addVideoJob",
+        {},
+        { ...COMMON, currency_id: "86", vid, startTime, endTime, baseVersion: "3.12.1", playMode: 0 },
+      );
+      if (Number(job?.code) !== 0) {
+        failed++;
+        continue;
+      }
+      completed++;
+      const reward = await call(ctx, token, "GET", "/video/rewardUserSmallChange");
+      if (Number(reward?.code) === 0) rewarded++;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (_) {
+      failed++;
+    }
+  }
+  const after = await overview(ctx, token);
+  return {
+    videos: videos.length,
+    completed,
+    rewarded,
+    failed,
+    before: money(before.user_money || before.now_money),
+    balance: money(after.user_money || after.now_money),
+  };
+}
+function taskMessage(result) {
+  return `🎬 视频：${result.completed}/${result.videos}，奖励${result.rewarded}，失败${result.failed}\n💰 余额：¥${result.balance.toFixed(2)}（变化：¥${(result.balance - result.before).toFixed(2)}）`;
 }
 
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "chaJianSenXuanZhiXiang|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "CHA_JIAN_SEN_XUAN_ZHI_XIANG").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const runtime = createAccountRuntime({
+  title: "森选质享",
+  shortName: "森选",
+  prefix: "G_szyx",
+  defaultEnvName: "S_SZYX",
+  orderPrefix: "SZYX",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入Token或备注#Token，支持批量换行", 300000);
+    if (input === null) return [];
+    const rows = [],
+      lines = input
+        .split(/\r?\n/)
+        .map((row) => row.trim())
+        .filter(Boolean);
+    for (let index = 0; index < lines.length; index++)
+      try {
+        const cut = lines[index].indexOf("#"),
+          remark = cut >= 0 ? lines[index].slice(0, cut).trim() : `账号${index + 1}`,
+          token = cleanToken(cut >= 0 ? lines[index].slice(cut + 1) : lines[index]);
+        if (token.length < 20) throw new Error("Token过短");
+        const checked = await verify(ctx, token);
+        const account = checked.id || `szyx_${crypto.createHash("md5").update(token).digest("hex").slice(0, 10)}`;
+        rows.push({ account, token, remark });
+      } catch (error) {
+        await ctx.sender.reply(`森选第${index + 1}行绑定失败：${error?.message || error}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    return queryAccount(ctx, item.token);
+  },
+  async cronCheck(ctx, item) {
+    return taskMessage(await dailyTask(ctx, item.token));
+  },
+  async handle(ctx, content) {
+    if (/上传/.test(content)) {
+      if (!(await ctx.sender.isAdmin())) return ctx.sender.reply("❌ 您不是管理员");
+      return ctx.sender.reply("请在『森选管理』选择账号后使用“提交青龙”同步环境变量");
+    }
+    if (/一键运行/.test(content)) {
+      if (!(await ctx.sender.isAdmin())) return ctx.sender.reply("❌ 您不是管理员");
+      const userIds = await ctx.users.keys();
+      let success = 0,
+        failed = 0,
+        videos = 0;
+      await ctx.sender.reply(`⛳ 开始处理 ${userIds.length} 个用户的已授权账号，请稍候...`);
+      for (const userId of userIds)
+        for (const account of require("./vortoUtils").parseStoredList(await ctx.users.get(userId, "[]"))) {
+          const expires = require("./vortoUtils").extractExpireDate(await ctx.auth.get(account, ""));
+          if (!expires || expires < new Date().toISOString().slice(0, 10)) continue;
+          try {
+            const token = await ctx.tokens.get(account, ""),
+              result = await dailyTask(ctx, token);
+            success++;
+            videos += result.completed;
+          } catch (_) {
+            failed++;
+          }
+        }
+      return ctx.sender.reply(`森选一键运行汇总\n成功: ${success} 失败: ${failed}\n完成视频: ${videos}`);
+    }
+    return undefined;
+  },
+  envValue(_ctx, item) {
+    return `${item.remark}#${cleanToken(item.token)}`;
+  },
+  tutorial:
+    "=====森选质享教程=====\n入口：#小程序://银辉云选/mpcwyYtMQegcNjc\n抓包域名：yb.yuanhukj.com，取 authorization 并去掉 Bearer\n格式：备注#token，支持批量；查询余额、奖励与提现记录；定时执行视频任务\n指令：森选登录、查询、管理、授权、清理、上传、一键运行、教程\n==================",
+});
+runtime.main().catch(async (error) => s.reply(`森选质享执行失败：${error?.message || error}`));

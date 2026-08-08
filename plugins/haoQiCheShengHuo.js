@@ -1,118 +1,140 @@
 // [title: 好奇车生活]
 // [name: haoQiCheShengHuo]
-// [language: javascript]
-// [class: 任务]
+// [desc: 好奇车生活 accountId 批量绑定、积分/今日收入/到期积分/商城奖励查询、授权及青龙同步。]
 // [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v7.9.0]
+// [rule: raw ^(车生活|好奇)(登录|登陆|上车|查询|管理|奖励|授权|清理|教程)$]
+// [cron: 15 9 * * *]
+// [status: true]
 // [admin: false]
-// [rule: ^车生活(.*)$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 好奇车生活凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 工具类]
+// [icon: https://api.iconify.design/lucide:car-front.svg]
+// [origin: backup/好奇车生活_vV7.9_By.sky2022.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("HAO_QI_CHE_SHENG_HUO"),
-});
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("好奇车生活插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("好奇车生活：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`好奇车生活处理失败：${message(error)}`);
-  }
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const BASE = "https://channel.cheryfs.cn/archer/activity-api",
+  UA =
+    "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 Chrome/81.0.4044.138 MicroMessenger/7.0.9.501 MiniProgramEnv/Windows";
+function clean(v) {
+  return String(v || "").trim();
 }
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`好奇车生活同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`好奇车生活提交失败：${message(error)}`);
-  }
+function headers(accountId, mall = false) {
+  return {
+    host: "channel.cheryfs.cn",
+    connection: "keep-alive",
+    wxappid: "619669369294712832",
+    tenantid: "619669306447261696",
+    activityid: mall ? "621950054462152705" : "621883730893492225",
+    accountid: clean(accountId),
+    "user-agent": UA,
+    accept: "application/json, text/plain, */*",
+    ...(mall
+      ? {
+          timestamp: String(Date.now()),
+          assemblyname: "%E5%88%AE%E5%88%AE%E4%B9%90",
+          sign: "eff41a284067d208807fbd94740245c7",
+          requesturl:
+            "https://channel.cheryfs.cn/archer/act/619669306447261696/619669369294712832/activity/luckydraw-detail/620821692188483585",
+          referer:
+            "https://channel.cheryfs.cn/archer/act/619669306447261696/619669369294712832/activity/pointsmall-detail/621911913692942337",
+        }
+      : {}),
+  };
 }
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的好奇车生活账号");
-  return s.reply([`好奇车生活账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
+async function point(ctx, ck) {
+  const d = await ctx.requestJson(
+    `${BASE}/common/accountPointLeft?pointId=620415610219683840&showExpire=true&timeType=day&indexDay=`,
+    { headers: headers(ck) },
+  );
+  if (Number(d?.code) !== 200) throw new Error(d?.message || "accountId失效");
+  return { point: d.result, expire: d.message };
 }
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的好奇车生活账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个好奇车生活账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
+async function today(ctx, ck) {
+  const d = await ctx.requestJson(`${BASE}/common/accountPointInfo`, {
+    method: "POST",
+    headers: { ...headers(ck, true), "content-type": "application/json" },
+    json: {
+      pointId: "620415610219683840",
+      accountId: "",
+      type: 2,
+      pageNumber: 1,
+      pageSize: 10,
+      startDate: "",
+      endDate: "",
+    },
   });
+  if (Number(d?.code) !== 200) throw new Error(d?.message || "积分流水获取失败");
+  const day = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+  return (d?.result?.accountPointLogs || [])
+    .filter((x) => String(x?.updateTime || "").startsWith(day))
+    .reduce((n, x) => n + Number(x?.amount || 0), 0);
 }
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
+async function rewards(ctx, ck) {
+  const d = await ctx.requestJson(`${BASE}/pointsmall/queryPointsMallCardList?isGroup=false`, {
+    headers: headers(ck, true),
+  });
+  if (d?.success !== true) throw new Error(d?.message || "奖励列表获取失败");
+  return (d?.result?.["全部"] || []).map((x) => `${x.cardName}：${x.exchangePointsValue}积分（ID:${x.id}）`);
 }
-function ownerKey(sender) { return "haoQiCheShengHuo|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "HAO_QI_CHE_SHENG_HUO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+const rt = createAccountRuntime({
+  title: "好奇车生活",
+  shortName: "车生活",
+  prefix: "dd_hqcsh",
+  defaultEnvName: "hqcshck",
+  orderPrefix: "HQC",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入accountId，格式 备注#accountId，支持批量换行", 180000);
+    if (input === null) return [];
+    const rows = [];
+    for (const [i, raw] of input.split(/\r?\n/).filter(Boolean).entries())
+      try {
+        const p = raw.indexOf("#"),
+          remark = p > 0 ? raw.slice(0, p).trim() : `账号${i + 1}`,
+          token = clean(p > 0 ? raw.slice(p + 1) : raw);
+        await point(ctx, token);
+        rows.push({
+          account: `hqc_${crypto.createHash("sha256").update(token).digest("hex").slice(0, 16)}`,
+          token,
+          remark,
+        });
+      } catch (e) {
+        await ctx.sender.reply(`第${i + 1}个账号失败：${e?.message || e}`);
+      }
+    return rows;
+  },
+  async query(ctx, item) {
+    const [p, t, r] = await Promise.all([point(ctx, item.token), today(ctx, item.token), rewards(ctx, item.token)]);
+    return `💰 当前积分：${p.point}\n📈 今日获得：${t}\n⏳ 到期积分：${p.expire || "无"}\n🎁 最新奖励：\n${r.length ? r.join("\n") : "暂无"}`;
+  },
+  async cronCheck(ctx, item) {
+    try {
+      const p = await point(ctx, item.token);
+      return `accountId有效，当前积分${p.point}${p.expire ? `，到期积分${p.expire}` : ""}`;
+    } catch (_) {
+      return "accountId已失效，请重新登录";
+    }
+  },
+  async handle(ctx, content) {
+    if (!/奖励/.test(content)) return undefined;
+    const input = await ctx.prompt(ctx.sender, "请输入accountId查询奖励，退出输入q", 60000);
+    if (input === null || /^q$/i.test(input)) return ctx.sender.reply("已退出");
+    try {
+      const list = await rewards(ctx, input);
+      return ctx.sender.reply(`======最新奖励======\n${list.join("\n") || "暂无奖励"}\n==================`);
+    } catch (e) {
+      return ctx.sender.reply(`奖励查询失败：${e?.message || e}`);
+    }
+  },
+  envValue(_ctx, item) {
+    return clean(item.token);
+  },
+  tutorial:
+    "=====好奇车生活教程=====\n抓包好奇车生活小程序 channel.cheryfs.cn，请求头 accountId 即凭证。\n登录格式：备注#accountId，支持批量换行。\n查询返回当前积分、今日积分、到期积分和商城奖励；授权后同步青龙变量 hqcshck。\n指令：车生活登录、查询、奖励、管理、授权、清理、教程\n======================",
+});
+rt.main().catch(async (e) => s.reply(`好奇车生活执行失败：${e?.message || e}`));

@@ -1,28 +1,23 @@
-//[title: getPrinterStatus]
-//[name: getPrinterStatus]
-//[language: javascript]
-//[class: 工具]
-//[author: smallfawn]
-//[version: v1.0.1]
-//[public: true]
-//[admin: true]
-//[rule: ^(打印机|打印机状态|打印测试图片)$]
-//[priority: 0]
-//[icon: https://api.iconify.design/lucide:bot.svg]
-//[description: 定时获取打印机状态，支持 IPP 打印测试图片]
+// [title: getPrinterStatus]
+// [name: getPrinterStatus]
+// [desc: 定时获取打印机状态，支持 IPP 打印测试图片]
+// [author: smallfawn]
+// [version: v1.0.1]
+// [rule: ^(打印机|打印机状态|打印测试图片)$]
+// [status: true]
+// [admin: true]
+// [public: true]
+// [priority: 0]
+// [class: 工具]
+// [icon: https://api.iconify.design/lucide:bot.svg]
+// [origin: smallfawn/Bncr_Plugins]
 // [depe: ["ipp"]]
-//[origin: smallfawn/Bncr_Plugins]
 
 const http = require("http");
 const https = require("https");
 const ipp = require("ipp");
-const {
-promisify } = require("node:util");
-const {
-  sender: s,
-console,
-plugin
-} = require('sillygirl');
+const { promisify } = require("node:util");
+const { sender: s, console, plugin } = require("sillygirl");
 
 const config = new plugin.Form({
   enable: plugin.Form.boolean().title("是否开启该打印机脚本").default(false),
@@ -30,7 +25,9 @@ const config = new plugin.Form({
   test_enable: plugin.Form.boolean().title("是否开启每周自动打印测试图防止堵头").default(false),
   test_image: plugin.Form.string()
     .title("测试打印图片地址")
-    .default("https://raw.githubusercontent.com/smallfawn/Bncr_Plugins/main/plugins/smallfawn/assets/printer_test.jpeg"),
+    .default(
+      "https://raw.githubusercontent.com/smallfawn/Bncr_Plugins/main/plugins/smallfawn/assets/printer_test.jpeg",
+    ),
 });
 class PrinterService {
   async execute(operation, message, url) {

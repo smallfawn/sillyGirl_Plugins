@@ -1,118 +1,100 @@
 // [title: 胖乖生活]
 // [name: pangGuaiShengHuo]
-// [language: javascript]
-// [class: 任务]
+// [desc: 胖乖生活短信登录、签名鉴权、余额/积分及今日积分查询、授权和青龙同步。]
 // [author: sky2022]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v4.4.0]
+// [rule: raw ^胖乖(登录|登陆|查询|管理|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^胖乖管理$|^管理胖乖$|^胖乖查询$|^查询胖乖$|^胖乖登录$|^登录胖乖$|^登陆胖乖$|^胖乖登陆$|^胖乖$|^胖乖清理$|^清理胖乖$]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
 // [icon: https://y.gtimg.cn/music/photo_new/T053M000002Qqrye0oyZSp.jpg]
-// [description: 胖乖生活凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [origin: backup/胖乖生活_v4.4_By.sky2022.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("PANG_GUAI_SHENG_HUO"),
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+const SECRET = "xl8v4s/5qpBLvN+8CzFx7vVjy31NgXXcedU7G0QpOMM=";
+function path(url) {
+  return new URL(url).pathname;
+}
+function headers(url, token = "", multipart = false) {
+  const t = Date.now(),
+    sign = crypto
+      .createHash("sha256")
+      .update(`appSecret=${SECRET}&channel=alipay&timestamp=${t}&token=${token}&version=1.57.0&${path(url)}`)
+      .digest("hex");
+  return {
+    "user-agent": "okhttp/3.14.9",
+    authorization: token,
+    version: "1.57.0",
+    channel: "android_app",
+    phonebrand: "meizu",
+    timestamp: String(t),
+    sign,
+    ...(multipart ? {} : { "content-type": "application/x-www-form-urlencoded" }),
+  };
+}
+async function post(ctx, url, token, form) {
+  return ctx.requestJson(url, { method: "POST", headers: headers(url, token), form });
+}
+async function profile(ctx, token) {
+  const d = await post(ctx, "https://userapi.qiekj.com/user/info", token, { token });
+  if (Number(d?.code) !== 0 || !d.data) throw new Error(d?.msg || "Token失效");
+  return { id: String(d.data.id), phone: String(d.data.phone || "") };
+}
+async function assets(ctx, token) {
+  const url = "https://userapi.qiekj.com/user/balance",
+    a = await post(ctx, url, token, { token });
+  if (Number(a?.code) !== 0 || !a.data) throw new Error(a?.msg || "查询失败");
+  const fd = new FormData();
+  for (const [k, v] of Object.entries({ page: "1", pageSize: "100", type: "100", receivedStatus: "1", token }))
+    fd.append(k, v);
+  const b = await ctx.requestJson("https://userapi.qiekj.com/integralRecord/pageList", {
+      method: "POST",
+      headers: headers("https://userapi.qiekj.com/integralRecord/pageList", token, true),
+      body: fd,
+    }),
+    today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" }),
+    gain = (b?.data?.items || [])
+      .filter((x) => String(x.receivedTime || "").slice(0, 10) === today)
+      .reduce((n, x) => n + Number(x.amount || 0), 0);
+  return { balance: a.data.balance ?? 0, integral: a.data.integral ?? 0, today: gain };
+}
+const rt = createAccountRuntime({
+  title: "胖乖生活",
+  shortName: "胖乖",
+  prefix: "dd_pg",
+  defaultEnvName: "PGSH_TOKEN",
+  orderPrefix: "PG",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const phone = await ctx.prompt(ctx.sender, "请输入11位手机号", 120000);
+    if (!phone) return [];
+    let d = await post(ctx, "https://userapi.qiekj.com/common/sms/sendCode", "", { phone, template: "reg" });
+    if (Number(d?.code) !== 0) throw new Error(d?.msg || "验证码发送失败");
+    const code = await ctx.prompt(ctx.sender, "请输入4位验证码", 120000);
+    if (!code) return [];
+    d = await post(ctx, "https://userapi.qiekj.com/user/reg", "", { channel: "h5", phone, verify: code });
+    const token = d?.data?.token;
+    if (Number(d?.code) !== 0 || !token) throw new Error(d?.msg || "登录失败");
+    const u = await profile(ctx, token);
+    return [{ account: u.id, token, remark: u.phone || phone, extra: { mobile: u.phone || phone } }];
+  },
+  async query(ctx, item) {
+    const u = await profile(ctx, item.token),
+      a = await assets(ctx, item.token);
+    return `📱 手机：${u.phone}\n💵 余额：${a.balance}\n🎯 总积分：${a.integral}\n📈 今日积分：${a.today}`;
+  },
+  async cronCheck(ctx, item) {
+    const a = await assets(ctx, item.token);
+    return `Token有效，总积分${a.integral}，今日+${a.today}，余额${a.balance}`;
+  },
+  envValue(_ctx, item) {
+    return item.token;
+  },
+  tutorial: "输入手机号和4位短信验证码登录；查询胖乖余额、总积分和今日积分，授权后同步青龙。",
 });
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("胖乖生活插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("胖乖生活：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`胖乖生活处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`胖乖生活同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`胖乖生活提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的胖乖生活账号");
-  return s.reply([`胖乖生活账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的胖乖生活账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个胖乖生活账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "pangGuaiShengHuo|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "PANG_GUAI_SHENG_HUO").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+rt.main().catch((e) => s.reply(`胖乖生活执行失败：${e?.message || e}`));

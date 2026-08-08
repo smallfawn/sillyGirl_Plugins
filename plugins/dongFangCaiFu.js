@@ -1,118 +1,146 @@
 // [title: 东方财富]
 // [name: dongFangCaiFu]
-// [language: javascript]
-// [class: 任务]
+// [desc: 东方财富账号密码登录、CToken/UToken 资产查询、红包余额流水、授权及青龙同步。]
 // [author: rujingxianghai]
-// [version: v2.0.0]
-// [public: true]
-// [disable: false]
+// [version: v1.4.0]
+// [rule: raw ^东方(登录|登陆|查询|管理|授权|清理|教程)$]
+// [status: true]
 // [admin: false]
-// [rule: ^东方登录$|^登录东方$|^东方查询$|^东方管理$|^东方$|^东方$|^东方检测$|^东方教程$]
-// [icon: https://api.iconify.design/lucide:apple.svg]
-// [description: 东方财富凭证绑定、青龙同步、账号查询与清理]
-// [depe: []]
+// [public: true]
+// [priority: 55]
+// [class: 任务]
+// [icon: https://api.iconify.design/lucide:landmark.svg]
+// [origin: backup/东方财富_v1.4_By.rujingxianghai.py]
+// [depe: ["./mrconliAccountRuntime.js"]]
 
-const { container, plugin, sender: s } = require("sillygirl");
-
-const config = new plugin.Form({
-  enable: plugin.Form.boolean().title("是否启用").default(true),
-  qinglong_id: plugin.Form.number().title("青龙容器编号").default(1),
-  env_name: plugin.Form.string().title("脚本环境变量名").default("DONG_FANG_CAI_FU"),
+const crypto = require("node:crypto");
+const { sender: s } = require("sillygirl");
+const { createAccountRuntime } = require("./mrconliAccountRuntime");
+function device() {
+  return crypto.randomBytes(16).toString("hex");
+}
+function parse(x) {
+  try {
+    return JSON.parse(x);
+  } catch {
+    return {};
+  }
+}
+function loginHeaders(id, gt) {
+  const md = Buffer.from(id).toString("base64");
+  return {
+    accept: "application/json",
+    "em-clt-uiid": crypto.randomUUID(),
+    "em-clt-auth": "202107280688;qXU2bhqAdsux+eTFLOqWgXwz8GJyfhX/ejnm0eJ9aMc=",
+    "qgqp-b-id": gt,
+    "em-os": "Android",
+    "em-pkg": "com.eastmoney.android.berlin",
+    "em-ver": "10.28.1",
+    "em-gt": gt,
+    "em-md": md,
+    "em-chl": "xiaomi22_64",
+    "em-gv": "3f4605b67",
+    "content-type": "application/json",
+    "user-agent": "okhttp/3.12.13",
+  };
+}
+async function login(ctx, account, password) {
+  const id = device(),
+    gt = "ceab-" + crypto.randomBytes(16).toString("hex").slice(0, 31),
+    h = loginHeaders(id, gt),
+    d = await ctx.requestJson("https://awebapi2-account.eastmoney.com/core/api/MPassport/LoginMobileV4", {
+      method: "POST",
+      headers: h,
+      json: {
+        AppId: "202107280688",
+        UniqueId: crypto.randomUUID(),
+        ProductType: "DFCFT",
+        Version: "10.28.1",
+        DeviceType: "Android15",
+        DomainName: "EastMoneyApp",
+        DeviceModel: "2210132C",
+        DeviceAlias: "",
+        ScenarioId: "202003257918",
+        Account: account,
+        Password: crypto.createHash("md5").update(password).digest("hex"),
+      },
+    });
+  if (String(d?.ReturnCode) !== "0") throw new Error(d?.Msg || `登录失败(${d?.ReturnCode || "未知"})`);
+  const x = d.Data || {};
+  if (!x.UID || !x.CToken || !x.UToken) throw new Error("登录返回Token不完整");
+  return {
+    UID: String(x.UID),
+    CToken: x.CToken,
+    UToken: x.UToken,
+    "EM-MD": Buffer.from(id).toString("base64"),
+    GToken: gt,
+    DeviceID: id,
+    Alias: x.Alias || account,
+    UpdateTime: Math.floor(Date.now() / 1000),
+  };
+}
+function qh(x) {
+  return {
+    ctoken: x.CToken,
+    utoken: x.UToken,
+    "em-os": "Android",
+    "em-ver": "10.37.1",
+    appkey: "EIBnBlYuvK",
+    "em-md": x["EM-MD"],
+    origin: "https://vipmoney.eastmoney.com",
+    "x-requested-with": "com.eastmoney.android.berlin",
+    referer: "https://vipmoney.eastmoney.com/",
+    "user-agent": "Mozilla/5.0 Android WebView;eastmoney_android",
+  };
+}
+async function query(ctx, x) {
+  const h = qh(x),
+    [a, b] = await Promise.all([
+      ctx.requestJson("https://empointcpf.eastmoney.com/cashredpackets/Cash/balance?v=0723667712619922", {
+        headers: h,
+      }),
+      ctx.requestJson("https://empointcpf.eastmoney.com/cashredpackets/cash/flows?pageIndex=1&pageSize=20", {
+        headers: h,
+      }),
+    ]);
+  if (Number(a?.result) !== 1) throw new Error(a?.message || "余额查询失败");
+  return { balance: a.data ?? 0, flows: Number(b?.result) === 1 ? b.data || [] : [] };
+}
+const rt = createAccountRuntime({
+  title: "东方财富",
+  shortName: "东方",
+  prefix: "s_dfcf",
+  defaultEnvName: "DONG_FANG_CAI_FU",
+  orderPrefix: "DFCF",
+  requireAuthForQuery: true,
+  async login(ctx) {
+    const input = await ctx.prompt(ctx.sender, "请输入 手机号#密码，支持批量换行", 120000);
+    if (input === null) return [];
+    const rows = [];
+    for (const line of input.split(/\r?\n/).filter(Boolean)) {
+      const i = line.indexOf("#"),
+        x = await login(ctx, line.slice(0, i), line.slice(i + 1));
+      rows.push({ account: x.UID, token: JSON.stringify(x), remark: x.Alias });
+    }
+    return rows;
+  },
+  async query(ctx, item) {
+    const x = parse(item.token),
+      d = await query(ctx, x),
+      f = d.flows
+        .slice(0, 5)
+        .map(
+          (y) => `${Number(y.FlowType) === 1 ? "💵 +" : "💸 -"}${Number(y.Amount || 0).toFixed(2)} ${y.FlowTime || ""}`,
+        );
+    return `👤 用户：${x.Alias}\n📱 UID：${x.UID}\n🧧 红包余额：${d.balance}${f.length ? `\n${f.join("\n")}` : ""}`;
+  },
+  async cronCheck(ctx, item) {
+    const d = await query(ctx, parse(item.token));
+    return `Token有效，红包余额${d.balance}，流水${d.flows.length}条`;
+  },
+  envValue(_c, i) {
+    return i.token;
+  },
+  tutorial: "输入东方财富手机号#密码登录；查询红包余额及最近流水，授权后将完整 CToken/UToken/EM-MD 数据同步青龙。",
 });
-
-async function main() {
-  try {
-    const cfg = normalize(await config.get());
-    if (!cfg.enable) return s.reply("东方财富插件未启用");
-    const content = String(s.getContent() || "").trim();
-    const ql = new container.QingLong({ id: cfg.qinglongId });
-    if (/教程|说明/.test(content)) return s.reply("发送登录指令后提交原始凭证；可用 备注::凭证 添加备注，多账号换行。");
-    if (/查询|管理|检测|统计|订单查询|上传|同步|刷新|后台/.test(content)) return showAccounts(ql, cfg.envName);
-    if (/清理|删除/.test(content)) return removeAccounts(ql, cfg.envName);
-    if (/登录|登陆|绑定|上车|提交/.test(content)) {
-      s.reply("请发送原始账号凭证；可用 备注::凭证 添加备注，多账号换行，输入 q 取消。");
-      return s.listen({
-        rules: ["raw ^([\\s\\S]+)$"], timeout: 60000,
-        user_id: s.getUserId(), chat_id: s.getChatId(),
-        handle: (next) => {
-          const value = String(next.param(1) || "").trim();
-          if (/^q$/i.test(value)) return "已取消";
-          return saveAccounts(ql, cfg.envName, value, next);
-        },
-      });
-    }
-    return s.reply("东方财富：请使用登录、查询、管理或清理指令");
-  } catch (error) {
-    return s.reply(`东方财富处理失败：${message(error)}`);
-  }
-}
-
-async function saveAccounts(ql, envName, input, replySender) {
-  try {
-    const rows = parseRows(input);
-    const owner = ownerKey(replySender);
-    const current = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-    let created = 0, updated = 0;
-    for (const row of rows) {
-      const existing = current.find((item) => ownedBy(item, owner) && (remarkOf(item) === row.remark || item.value === row.value));
-      const remarks = `${owner}|${row.remark}`;
-      if (existing) {
-        await ql.updateEnv({ id: envId(existing), name: envName, value: row.value, remarks });
-        updated += 1;
-      } else {
-        await ql.createEnv({ name: envName, value: row.value, remarks });
-        created += 1;
-      }
-    }
-    return replySender.reply(`东方财富同步完成：新增 ${created}，更新 ${updated}`);
-  } catch (error) {
-    return replySender.reply(`东方财富提交失败：${message(error)}`);
-  }
-}
-
-async function showAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const visible = s.isAdmin() ? all : all.filter((item) => ownedBy(item, owner));
-  if (!visible.length) return s.reply("没有找到你的东方财富账号");
-  return s.reply([`东方财富账号：${visible.length} 个`, ...visible.map((item, index) => `${index + 1}. ${remarkOf(item) || "未备注"}${item.status ? "（已禁用）" : ""}`)].join("\n"));
-}
-
-async function removeAccounts(ql, envName) {
-  const owner = ownerKey(s);
-  const all = onlyNamed(await ql.getEnvs({ searchValue: envName }), envName);
-  const ids = all.filter((item) => s.isAdmin() || ownedBy(item, owner)).map(envId).filter(Boolean);
-  if (!ids.length) return s.reply("没有可清理的东方财富账号");
-  await ql.deleteEnvs(ids);
-  return s.reply(`已清理 ${ids.length} 个东方财富账号`);
-}
-
-function parseRows(input) {
-  const values = String(input).split(/\r?\n/).map((row) => row.trim()).filter(Boolean);
-  if (!values.length) throw new Error("凭证为空");
-  return values.map((value, index) => {
-    const cut = value.indexOf("::");
-    const remark = cut >= 0 ? value.slice(0, cut).trim() : `账号${index + 1}`;
-    const payload = cut >= 0 ? value.slice(cut + 2).trim() : value;
-    if (!remark || !payload) throw new Error(`第 ${index + 1} 行格式错误`);
-    return { remark, value: payload };
-  });
-}
-
-function onlyNamed(value, name) {
-  const rows = Array.isArray(value) ? value : Array.isArray(value?.data) ? value.data : [];
-  return rows.filter((item) => item?.name === name);
-}
-function ownerKey(sender) { return "dongFangCaiFu|" + sender.getPlatform() + ":" + sender.getUserId(); }
-function ownedBy(item, owner) { return String(item?.remarks || item?.remark || "").startsWith(owner + "|"); }
-function remarkOf(item) { return String(item?.remarks || item?.remark || "").split("|").slice(2).join("|"); }
-function envId(item) { return item?.id || item?._id; }
-function normalize(raw) {
-  const value = raw || {};
-  const envName = String(value.env_name || "DONG_FANG_CAI_FU").trim();
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(envName)) throw new Error("环境变量名格式错误");
-  return { enable: value.enable !== false, qinglongId: Number(value.qinglong_id) || 1, envName };
-}
-function message(error) { return String(error?.message || error).replace(/[\r\n]+/g, " ").slice(0, 300); }
-
-main();
+rt.main().catch((e) => s.reply(`东方财富执行失败：${e?.message || e}`));
